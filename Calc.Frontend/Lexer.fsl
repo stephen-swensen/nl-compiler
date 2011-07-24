@@ -27,6 +27,7 @@ rule tokenize = parse
 | "("			{ OPEN }
 | ")"			{ CLOSE }
 // Numberic constants
-| digit+('.'digit+)?(['e''E']digit+)?		{ RATIONAL (Double.Parse(lexeme lexbuf)) }
+| digit+									{ INTEGER (lexeme lexbuf |> int) }
+| digit+('.'digit+)?(['e''E']digit+)?		{ RATIONAL (lexeme lexbuf |> float) }
 // EOF
 | eof   { EOF }

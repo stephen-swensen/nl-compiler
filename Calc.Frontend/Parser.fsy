@@ -4,7 +4,8 @@ open Swensen.Calc.Ast
 
 %}
 
-%token <System.Double> RATIONAL
+%token <int> INTEGER
+%token <float> RATIONAL
 %token PLUS MINUS TIMES DIV POW FACT
 %token OPEN CLOSE
 %token EOF
@@ -17,11 +18,16 @@ open Swensen.Calc.Ast
 
 %start start
 %type <exp> start
+%type <value> exp_value
 
 %%
 
 start:
     | exp EOF				 { $1 }
+
+exp_value:
+	| INTEGER				 { Integer($1) }
+	| RATIONAL				 { Rational($1) }
 
 exp: 
     | exp PLUS  exp			 { Plus($1, $3)  }
@@ -31,5 +37,5 @@ exp:
 	| exp POW exp			 { Pow($1, $3) }
 	| exp FACT				 { Fact($1) }
 	| MINUS exp %prec UMINUS { UMinus($2) }
-	| RATIONAL				 { Rational($1) }
+	| exp_value				 { Value($1) }
 	| OPEN exp CLOSE		 { $2 }
