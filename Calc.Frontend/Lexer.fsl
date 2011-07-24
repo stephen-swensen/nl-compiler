@@ -1,0 +1,32 @@
+﻿{
+module Swensen.Calc.Lexer
+open System
+open Parser
+open Microsoft.FSharp.Text.Lexing
+
+let lexeme lexbuf =
+    LexBuffer<char>.LexemeString lexbuf
+}
+
+// These are some regular expression definitions
+let digit = ['0'-'9']
+let whitespace = [' ' '\t' ]
+let newline = ('\n' | '\r' '\n')
+
+rule tokenize = parse
+| whitespace	{ tokenize lexbuf }
+| newline       { tokenize lexbuf }
+// Operators
+| "+"			{ PLUS }
+| "-"			{ MINUS }
+| "*"			{ TIMES }
+| "/"			{ DIV }
+| "^"			{ POW }
+| "!"			{ FACT }
+// Misc
+| "("			{ OPEN }
+| ")"			{ CLOSE }
+// Numberic constants
+| digit+('.'digit+)?(['e''E']digit+)?		{ RATIONAL (Double.Parse(lexeme lexbuf)) }
+// EOF
+| eof   { EOF }
