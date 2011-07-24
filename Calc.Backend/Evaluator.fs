@@ -9,6 +9,9 @@ open Parser
 let (|Box|) x = box x
 let (|Float|) x = float x
 
+let integerPow x n = 
+    int ((x |> float) ** (n |> float))
+
 let eval str =
     let rec eval exp =
         match exp with
@@ -21,7 +24,7 @@ let eval str =
         | Minus(x,y) -> callCoercedBinop x y (-) (-) 
         | Div(x,y) -> callCoercedBinop x y (/) (/) 
         | Times(x,y) -> callCoercedBinop x y (*) (*)
-        | Pow(x,y) -> callCoercedBinop x y ( ** ) ( ** )
+        | Pow(x,y) -> callCoercedBinop x y ( integerPow ) ( ** )
         | Fact(n) -> 
             match eval n with
             | Integer(n) ->
@@ -31,8 +34,8 @@ let eval str =
             | _ -> failwith "factorial is only valid on integers"
     and callCoercedBinop x y onInteger onRational =
         match eval x, eval y with
-        | Integer x, Integer y -> Integer(x + y)
-        | (Rational(x) | Integer(Float(x))), (Integer(Float(y)) | Rational(y)) -> Rational(x + y)
+        | Integer x, Integer y -> Integer(onInteger x y)
+        | (Rational(x) | Integer(Float(x))), (Integer(Float(y)) | Rational(y)) -> Rational(onRational x y)
     
     let lexbuff = LexBuffer<char>.FromString(str)
     let exp = Parser.start Lexer.tokenize lexbuff
