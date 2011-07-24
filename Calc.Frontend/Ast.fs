@@ -1,8 +1,12 @@
 ﻿module Swensen.Calc.Ast
 open System
 
+type value =
+    | Rational of float
+    | Integer  of int
+
 type exp =
-    | Rational of Double
+    | Value    of value
     | Plus     of exp * exp
     | Minus    of exp * exp
     | Times    of exp * exp

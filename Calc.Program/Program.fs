@@ -7,7 +7,10 @@ let rec loop() =
     | "exit" -> ()
     | str ->
         try
-            printfn "%s" (Evaluator.eval str |> string)
+            printfn "%A" 
+               (match Evaluator.eval str with
+                | Ast.Integer x -> box x
+                | Ast.Rational x -> box x)
         with ex ->
             printfn "Unhandled Exception: %s" ex.Message
 

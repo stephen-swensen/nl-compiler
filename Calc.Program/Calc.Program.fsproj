@@ -50,6 +50,11 @@
       <Project>{58dd256c-7812-480c-b871-954ba0de0479}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\Calc.Frontend\Calc.Fontend.fsproj">
+      <Name>Calc.Fontend</Name>
+      <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
