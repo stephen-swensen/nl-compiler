@@ -6,13 +6,13 @@ let rec loop() =
     match Console.ReadLine() with
     | "exit" -> ()
     | str ->
-        try
-            printfn "%A" 
-               (match Evaluator.eval str with
-                | Ast.Integer x -> box x
-                | Ast.Rational x -> box x)
-        with ex ->
-            printfn "Unhandled Exception: %s" ex.Message
+//        try
+        printfn "%A" 
+            (match Evaluator.eval_il str with
+            | Ast.Integer x -> box x
+            | Ast.Rational x -> box x)
+//        with ex ->
+//            printfn "Unhandled Exception: %s" ex.Message
 
         loop()
 
