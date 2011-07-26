@@ -65,10 +65,10 @@ let eval_il str =
             Console.WriteLine code
             il.Emit(code)
             ty
-//        | Plus(x,y) -> callCoercedBinop x y (+) (+)
-//        | Minus(x,y) -> callCoercedBinop x y (-) (-) 
-//        | Div(x,y) -> callCoercedBinop x y (/) (/) 
-//        | Times(x,y) -> callCoercedBinop x y (*) (*)
+//        | Plus(x,y) -> callCoercedBinop x y OpCodes.Add
+//        | Minus(x,y) -> callCoercedBinop x y OpCodes.Sub
+//        | Div(x,y) -> callCoercedBinop x y OpCodes.Div
+//        | Times(x,y) -> callCoercedBinop x y OpCodes.Mul
 //        | Pow(x,y) -> callCoercedBinop x y ( integerPow ) ( ** )
 //        | Fact(n) -> 
 //            match eval n with
@@ -78,7 +78,7 @@ let eval_il str =
 //                Integer(fact n)
 //            | _ -> failwith "factorial is only valid on integers"
 //    and callCoercedBinop x y onInteger onRational =
-//        match eval x, eval y with
+//        match emit x, emit y with
 //        | Integer x, Integer y -> Integer(onInteger x y)
 //        | (Rational(x) | Integer(Float(x))), (Integer(Float(y)) | Rational(y)) -> Rational(onRational x y)
     
