@@ -50,25 +50,19 @@ let eval_il str =
     let rec emit exp =
         match exp with
         | Value(Integer x) -> 
-            let code = OpCodes.Ldc_I4
-            Console.WriteLine code
-            il.Emit(code, x)
+            il.Emit(OpCodes.Ldc_I4, x)
             typeof<int>
         | Value(Rational x) -> 
-            let code = OpCodes.Ldc_R8
-            Console.WriteLine code
-            il.Emit(code, x)
+            il.Emit(OpCodes.Ldc_R8, x)
             typeof<float>
         | UMinus(x) -> 
-            let ty = emit x; 
-            let code = OpCodes.Neg
-            Console.WriteLine code
-            il.Emit(code)
+            let ty = emit x
+            il.Emit(OpCodes.Neg)
             ty
-//        | Plus(x,y) -> callCoercedBinop x y OpCodes.Add
-//        | Minus(x,y) -> callCoercedBinop x y OpCodes.Sub
-//        | Div(x,y) -> callCoercedBinop x y OpCodes.Div
-//        | Times(x,y) -> callCoercedBinop x y OpCodes.Mul
+        | Plus(x,y) -> callCoercedBinop x y OpCodes.Add
+        | Minus(x,y) -> callCoercedBinop x y OpCodes.Sub
+        | Div(x,y) -> callCoercedBinop x y OpCodes.Div
+        | Times(x,y) -> callCoercedBinop x y OpCodes.Mul
 //        | Pow(x,y) -> callCoercedBinop x y ( integerPow ) ( ** )
 //        | Fact(n) -> 
 //            match eval n with
@@ -77,25 +71,29 @@ let eval_il str =
 //                    if n=0 then 1 else n * fact(n - 1)
 //                Integer(fact n)
 //            | _ -> failwith "factorial is only valid on integers"
-//    and callCoercedBinop x y onInteger onRational =
-//        match emit x, emit y with
-//        | Integer x, Integer y -> Integer(onInteger x y)
-//        | (Rational(x) | Integer(Float(x))), (Integer(Float(y)) | Rational(y)) -> Rational(onRational x y)
+    and callCoercedBinop x y oc =
+        let ty = 
+            if emit x = typeof<float> then
+                if emit y = typeof<int> then
+                    il.Emit(OpCodes.Conv_R8)
+                else ()
+                typeof<float>
+            elif emit y = typeof<float> then
+                il.Emit(OpCodes.Conv_R8)
+                typeof<float>
+            else
+                typeof<int>
+
+        il.Emit(oc)
+        ty
     
     let lexbuff = LexBuffer<char>.FromString(str)
     let exp = Parser.start Lexer.tokenize lexbuff
     
     let retTy = emit exp
-    
-//    il.Emit(OpCodes.Dup)
-//
-    let code = OpCodes.Box
-    Console.WriteLine code
-    il.Emit(code, retTy)
-    
-    let code = OpCodes.Ret
-    Console.WriteLine code
-    il.Emit(code)    
+
+    il.Emit(OpCodes.Box, retTy)
+    il.Emit(OpCodes.Ret)    
 
     let d = dm.CreateDelegate(typeof<System.Func<obj>>) :?> System.Func<obj>
 
