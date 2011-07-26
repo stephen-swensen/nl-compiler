@@ -44,7 +44,7 @@ let eval str =
 open System.Reflection.Emit
 
 let eval_il str =
-    let dm = System.Reflection.Emit.DynamicMethod("eval", typeof<int>, null)
+    let dm = System.Reflection.Emit.DynamicMethod("eval", typeof<obj>, null)
     let il = dm.GetILGenerator()
 
     let rec emit exp =
@@ -53,15 +53,18 @@ let eval_il str =
             let code = OpCodes.Ldc_I4
             Console.WriteLine code
             il.Emit(code, x)
+            typeof<int>
         | Value(Rational x) -> 
             let code = OpCodes.Ldc_R8
             Console.WriteLine code
             il.Emit(code, x)
+            typeof<float>
         | UMinus(x) -> 
-            emit x; 
+            let ty = emit x; 
             let code = OpCodes.Neg
             Console.WriteLine code
             il.Emit(code)
+            ty
 //        | Plus(x,y) -> callCoercedBinop x y (+) (+)
 //        | Minus(x,y) -> callCoercedBinop x y (-) (-) 
 //        | Div(x,y) -> callCoercedBinop x y (/) (/) 
@@ -82,19 +85,20 @@ let eval_il str =
     let lexbuff = LexBuffer<char>.FromString(str)
     let exp = Parser.start Lexer.tokenize lexbuff
     
-    emit exp |> ignore
+    let retTy = emit exp
     
-//    let code = OpCodes.Box
-//    Console.WriteLine code
-//    il.Emit(code)
+//    il.Emit(OpCodes.Dup)
+//
+    let code = OpCodes.Box
+    Console.WriteLine code
+    il.Emit(code, retTy)
     
     let code = OpCodes.Ret
     Console.WriteLine code
     il.Emit(code)    
 
-    let d = dm.CreateDelegate(typeof<System.Func<int>>) :?> System.Func<int>
-    Integer(d.Invoke())
-    
-//    match d.Invoke() with
-//    | :? float as x -> Rational(x)
-//    | :? int as x -> Integer(x)
+    let d = dm.CreateDelegate(typeof<System.Func<obj>>) :?> System.Func<obj>
+
+    match d.Invoke() with
+    | :? float as x -> Rational(x)
+    | :? int as x -> Integer(x)
