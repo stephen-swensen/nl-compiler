@@ -50,10 +50,10 @@ let eval_il str =
     let rec emit exp =
         match exp with
         | Value(Integer x) -> 
-            il.Emit(OpCodes.Ldc_I4, x)
+            il.Emit(OpCodes.Ldc_I4)
             typeof<int>
         | Value(Rational x) -> 
-            il.Emit(OpCodes.Ldc_R8, x)
+            il.Emit(OpCodes.Ldc_R8)
             typeof<float>
         | UMinus(x) -> 
             let ty = emit x
@@ -93,7 +93,7 @@ let eval_il str =
     let retTy = emit exp
 
     il.Emit(OpCodes.Box, retTy)
-    il.Emit(OpCodes.Ret)    
+    il.Emit(OpCodes.Ret)
 
     let d = dm.CreateDelegate(typeof<System.Func<obj>>) :?> System.Func<obj>
 

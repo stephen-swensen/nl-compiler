@@ -22,4 +22,3 @@ let main(args:string[]) =
     printfn @"Enter an equation and press ENTER, or enter ""exit"" and press ENTER to exit."
     loop()
     0
-
