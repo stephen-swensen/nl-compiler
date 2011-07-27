@@ -34,9 +34,9 @@ let emitOpCodes (il:ILGenerator) ast =
     let rec emit ast =
         match ast with
         | Value(Integer x,_) -> 
-            il.Emit(OpCodes.Ldc_I4)
+            il.Emit(OpCodes.Ldc_I4, x)
         | Value(Rational x,_) -> 
-            il.Emit(OpCodes.Ldc_R8)
+            il.Emit(OpCodes.Ldc_R8, x)
         | UMinus(x,_) -> 
             emit x
             il.Emit(OpCodes.Neg)
@@ -60,14 +60,16 @@ let emitOpCodes (il:ILGenerator) ast =
         il.Emit(oc)
 
     emit ast |> ignore
-    il
 
 let delegateFromAst (ast:exp) =
-    let dm = System.Reflection.Emit.DynamicMethod("eval", typeof<obj>, null)
+    let dm = System.Reflection.Emit.DynamicMethod("", typeof<obj>, null)
     let il = dm.GetILGenerator()
+    emitOpCodes il ast
     il.Emit(OpCodes.Box, ast.Type)
     il.Emit(OpCodes.Ret)
     dm.CreateDelegate(typeof<System.Func<obj>>) :?> System.Func<obj>
 
 let delegateFromString code =
     (parseFromString>>delegateFromAst) code
+
+let eval code = (delegateFromString code).Invoke()
