@@ -43,7 +43,6 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Evaluator.fs" />
     <Compile Include="Compiler.fs" />
   </ItemGroup>
   <ItemGroup>
