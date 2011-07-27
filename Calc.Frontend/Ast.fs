@@ -6,7 +6,7 @@ type value =
     | Integer  of int
 
 type exp =
-    | Value    of value * (Type ref)
+    | Value    of value
     | Plus     of exp * exp * (Type ref)
     | Minus    of exp * exp * (Type ref)
     | Times    of exp * exp * (Type ref)
@@ -17,7 +17,8 @@ type exp =
     with
         member this.Type =
             match this with
-            | Value(_,ty) 
+            | Value(Integer _) -> typeof<int>
+            | Value(Rational _) -> typeof<float>
             | Plus(_,_,ty) 
             | Minus(_,_,ty) 
             | Times(_,_,ty) 
