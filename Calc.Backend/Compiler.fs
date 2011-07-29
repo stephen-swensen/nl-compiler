@@ -9,7 +9,14 @@ open Parser
 
 open  System.Reflection.Emit
 
-type PowDelegate = delegate of (float * float) -> float
+type CoreOps =
+    static member Factorial(n:int) =
+        let rec fact n = 
+            match n with 
+            | 1 | 0 -> 1
+            | n -> n * fact (n-1)
+        fact n
+
 
 let parseFromString code =
     let lexbuff = LexBuffer<char>.FromString(code)
@@ -36,7 +43,10 @@ let emitOpCodes (il:ILGenerator) ast =
             | Pow -> 
                 let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
                 il.Emit(OpCodes.Call, meth)
-            
+        | Fact(n,_) ->
+            emit lenv n
+            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
+            il.Emit(OpCodes.Call, meth)
         | Let(id, assign, body,ty) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit lenv assign
