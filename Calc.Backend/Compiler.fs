@@ -48,7 +48,7 @@ let emitOpCodes (il:ILGenerator) ast =
             il.Emit(ilop)
         | Let(id, assign, body,ty) ->
             let local = il.DeclareLocal(assign.Type)
-            local.SetLocalSymInfo(id)
+            //local.SetLocalSymInfo(id)
             emit assign
             il.Emit(OpCodes.Stloc, !vloc)
             vloc := !vloc + 1
