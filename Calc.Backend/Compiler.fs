@@ -14,25 +14,25 @@ let parseFromString code =
     let ast = Parser.start Lexer.tokenize lexbuff
     ast
 
-let emitOpCodes (il:ILGenerator) ast =
-    let rec emit ast =
+let emitOpCodesWithEnvs lenv (il:ILGenerator) ast =
+    let rec emit lenv ast =
         match ast with
         | Int32(x,_) -> 
             il.Emit(OpCodes.Ldc_I4, x)
         | Double(x,_) -> 
             il.Emit(OpCodes.Ldc_R8, x)
         | UMinus(x,_) -> 
-            emit x
+            emit lenv x
             il.Emit(OpCodes.Neg)
         | Binop(op,x,y,ty) -> 
             if ty = typeof<int> then
-                emit x ; emit y
+                emit lenv x ; emit lenv y
             else //float
-                emit x
+                emit lenv x
                 if x.Type = typeof<int> then
                     il.Emit(OpCodes.Conv_R8)
 
-                emit y
+                emit lenv y
                 if y.Type = typeof<int> then
                     il.Emit(OpCodes.Conv_R8)
 
@@ -46,14 +46,18 @@ let emitOpCodes (il:ILGenerator) ast =
 
             il.Emit(ilop)
         | Let(id, assign, body,ty) ->
-            let local = il.DeclareLocal(assign.Type)
-            //local.SetLocalSymInfo(id)
-            emit assign
+            let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
+            emit lenv assign
             il.Emit(OpCodes.Stloc, local)
-            emit body
+            emit (Map.add id local lenv) body
+        | Var(id, ty) ->
+            let local = lenv |> Map.find id
+            il.Emit(OpCodes.Ldloc, local)
         | _ -> failwithf "not implemented: %A" ast
 
-    emit ast |> ignore
+    emit lenv ast |> ignore
+
+let emitOpCodes = emitOpCodesWithEnvs Map.empty
 
 let delegateFromAst ast =
     let dm = System.Reflection.Emit.DynamicMethod("", typeof<obj>, null)
