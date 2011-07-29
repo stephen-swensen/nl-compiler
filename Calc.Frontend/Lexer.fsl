@@ -24,10 +24,10 @@ rule tokenize = parse
 | "^"			{ POW }
 | "!"			{ FACT }
 // Misc
-| "("			{ OPEN }
-| ")"			{ CLOSE }
+| "("			{ LPAREN }
+| ")"			{ RPAREN }
 // Numberic constants
-| digit+									{ INTEGER (lexeme lexbuf |> int) }
-| digit+('.'digit+)?(['e''E']digit+)?		{ RATIONAL (lexeme lexbuf |> float) }
+| digit+									{ INT32 (lexeme lexbuf |> int) }
+| digit+('.'digit+)?(['e''E']digit+)?		{ DOUBLE (lexeme lexbuf |> float) }
 // EOF
 | eof   { EOF }
