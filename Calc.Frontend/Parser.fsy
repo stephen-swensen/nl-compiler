@@ -4,10 +4,10 @@ open Swensen.Calc.Ast
 
 %}
 
-%token <int> INTEGER
-%token <float> RATIONAL
+%token <int> INT32
+%token <float> DOUBLE
 %token PLUS MINUS TIMES DIV POW FACT
-%token OPEN CLOSE
+%token LPAREN RPAREN
 %token EOF
 
 %left PLUS MINUS
@@ -17,25 +17,22 @@ open Swensen.Calc.Ast
 %nonassoc FACT
 
 %start start
-%type <exp> start
-%type <value> value
+%type <typedExp> start
+%type <UT.exp> exp
 
 %%
 
 start:
-    | exp EOF				 { $1 }
-
-value:
-	| INTEGER				 { Integer($1) }
-	| RATIONAL				 { Rational($1) }
+    | exp EOF				 { $1 |> tycheck }
 
 exp: 
-    | exp PLUS  exp			 { Plus($1, $3, ref null)  }
-    | exp MINUS exp			 { Minus($1, $3, ref null) }
-	| exp TIMES exp			 { Times($1, $3, ref null) }
-	| exp DIV exp			 { Div($1, $3, ref null) }
-	| exp POW exp			 { Pow($1, $3, ref null) }
-	| exp FACT				 { Fact($1) }
-	| MINUS exp %prec UMINUS { UMinus($2, ref null) }
-	| value					 { Value($1) }
-	| OPEN exp CLOSE		 { $2 }
+    | exp PLUS  exp			 { UT.Binop(Plus, $1, $3)  }
+    | exp MINUS exp			 { UT.Binop(Minus, $1, $3) }
+	| exp TIMES exp			 { UT.Binop(Times, $1, $3) }
+	| exp DIV exp			 { UT.Binop(Div, $1, $3) }
+	| exp POW exp			 { UT.Binop(Pow, $1, $3) }
+	| exp FACT				 { UT.Fact($1) }
+	| MINUS exp %prec UMINUS { UT.UMinus($2) }
+	| INT32					 { UT.Int32($1) }
+	| DOUBLE				 { UT.Double($1) }
+	| LPAREN exp RPAREN		 { $2 }
