@@ -10,7 +10,7 @@ let lexeme lexbuf =
 
 // These are some regular expression definitions
 let digit = ['0'-'9']
-let identifier = [^'"' '0'-'9' '(' ')' ' ' '\t' '\n' '\r']
+let identifier = ['a' - 'z']
 let whitespace = [' ' '\t' ]
 let newline = ('\n' | '\r' '\n')
 

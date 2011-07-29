@@ -6,12 +6,12 @@ let rec loop() =
     match Console.ReadLine() with
     | "exit" -> ()
     | str ->
-//        try
-//            printfn "%A" (Compiler.eval str)
-//        with ex ->
-//            printfn "Unhandled Exception: %s" ex.Message
+        try
+            printfn "%A" (Compiler.eval str)
+        with ex ->
+            printfn "Unhandled Exception: %s" ex.Message
 
-        printfn "%A" (Compiler.eval str)
+        //printfn "%A" (Compiler.eval str)
         loop()
 
 [<EntryPoint>]
