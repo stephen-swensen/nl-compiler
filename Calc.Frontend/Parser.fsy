@@ -17,7 +17,7 @@ open Swensen.Calc.Ast
 %nonassoc FACT
 
 %start start
-%type <typedExp> start
+%type <exp> start
 %type <UT.exp> exp
 
 %%

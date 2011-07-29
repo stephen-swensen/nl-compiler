@@ -12,14 +12,12 @@ module UT =
         | UMinus   of exp
         | Fact     of exp
 
-open UT
-
-type typedExp =
+type exp =
     | Double   of float * Type
     | Int32    of int * Type
-    | Binop    of binop * typedExp * typedExp * Type
-    | UMinus   of typedExp * Type
-    | Fact     of typedExp * Type
+    | Binop    of binop * exp * exp * Type
+    | UMinus   of exp * Type
+    | Fact     of exp * Type
     with 
         member this.Type =
             match this with
@@ -31,18 +29,18 @@ type typedExp =
 
 let rec tycheck exp =
     match exp with
-    | exp.Double(x) -> Double(x,typeof<float>)
-    | exp.Int32(x) -> Int32(x,typeof<int>)
-    | exp.UMinus(x) ->
+    | UT.Double(x) -> Double(x,typeof<float>)
+    | UT.Int32(x) -> Int32(x,typeof<int>)
+    | UT.UMinus(x) ->
         let x = tycheck x
         UMinus(x,x.Type)
-    | exp.Fact(x) ->
+    | UT.Fact(x) ->
         let x = tycheck x
         if x.Type <> typeof<int> then
             failwithf "factorial expects int but got: %A" x.Type
         else
             Fact(x, x.Type)
-    | exp.Binop(op,x,y) ->
+    | UT.Binop(op,x,y) ->
         let x, y = tycheck x, tycheck y
         let ty =
             if x.Type = typeof<int> && y.Type = typeof<int> then
