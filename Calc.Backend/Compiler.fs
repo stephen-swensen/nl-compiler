@@ -14,7 +14,7 @@ let parseFromString code =
     let ast = Parser.start Lexer.tokenize lexbuff
     ast
 
-let emitOpCodesWithEnvs lenv (il:ILGenerator) ast =
+let emitOpCodes (il:ILGenerator) ast =
     let rec emit lenv ast =
         match ast with
         | Int32(x,_) -> 
@@ -55,9 +55,7 @@ let emitOpCodesWithEnvs lenv (il:ILGenerator) ast =
             il.Emit(OpCodes.Ldloc, local)
         | _ -> failwithf "not implemented: %A" ast
 
-    emit lenv ast |> ignore
-
-let emitOpCodes = emitOpCodesWithEnvs Map.empty
+    emit Map.empty ast |> ignore
 
 let delegateFromAst ast =
     let dm = System.Reflection.Emit.DynamicMethod("", typeof<obj>, null)
