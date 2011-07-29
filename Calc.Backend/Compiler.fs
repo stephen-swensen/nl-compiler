@@ -9,6 +9,8 @@ open Parser
 
 open  System.Reflection.Emit
 
+type PowDelegate = delegate of (float * float) -> float
+
 let parseFromString code =
     let lexbuff = LexBuffer<char>.FromString(code)
     let ast = Parser.start Lexer.tokenize lexbuff
@@ -26,16 +28,15 @@ let emitOpCodes (il:ILGenerator) ast =
             il.Emit(OpCodes.Neg)
         | Binop(op,x,y,ty) -> 
             emit lenv x ; emit lenv y
-            let ilop =
-                match op with
-                | Plus -> OpCodes.Add
-                | Minus -> OpCodes.Sub
-                | Times -> OpCodes.Mul
-                | Div -> OpCodes.Div
-                | Pow -> 
-                    failwith "pow not implemented"
-
-            il.Emit(ilop)
+            match op with
+            | Plus -> il.Emit(OpCodes.Add)
+            | Minus -> il.Emit(OpCodes.Sub)
+            | Times -> il.Emit(OpCodes.Mul)
+            | Div -> il.Emit(OpCodes.Div)
+            | Pow -> 
+                let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
+                il.Emit(OpCodes.Call, meth)
+            
         | Let(id, assign, body,ty) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit lenv assign
@@ -48,6 +49,8 @@ let emitOpCodes (il:ILGenerator) ast =
             emit lenv x
             if ty = typeof<float> then
                 il.Emit(OpCodes.Conv_R8)
+            elif ty = typeof<int> then
+                il.Emit(OpCodes.Conv_I4)
             else
                 failwithf "unsupported coersion: %A" ty
             
