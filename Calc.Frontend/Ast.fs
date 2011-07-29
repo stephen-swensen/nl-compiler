@@ -24,6 +24,7 @@ type exp =
     | Fact      of exp * Type
     | Let       of string * exp * exp * Type
     | Var       of string * Type
+    | Coerce    of exp * Type
     with 
         member this.Type =
             match this with
@@ -33,7 +34,9 @@ type exp =
             | UMinus(_,ty)
             | Fact(_,ty) 
             | Let(_,_,_,ty)
-            | Var(_,ty) -> ty
+            | Var(_,ty) 
+            | Coerce(_,ty)
+                -> ty
 
 ///Symantic analysis (type checking)
 let rec tycheck venv exp =
@@ -58,7 +61,7 @@ let rec tycheck venv exp =
                 typeof<float>
             else
                 failwithf "binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
-        Binop(op,x,y,ty)
+        Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
     | UT.Let(id, assign, body) ->
         let assign = tycheck venv assign
         let body = tycheck (venv |> Map.add id assign.Type) body
