@@ -25,24 +25,15 @@ let emitOpCodes (il:ILGenerator) ast =
             emit lenv x
             il.Emit(OpCodes.Neg)
         | Binop(op,x,y,ty) -> 
-            if ty = typeof<int> then
-                emit lenv x ; emit lenv y
-            else //float
-                emit lenv x
-                if x.Type = typeof<int> then
-                    il.Emit(OpCodes.Conv_R8)
-
-                emit lenv y
-                if y.Type = typeof<int> then
-                    il.Emit(OpCodes.Conv_R8)
-
+            emit lenv x ; emit lenv y
             let ilop =
                 match op with
                 | Plus -> OpCodes.Add
                 | Minus -> OpCodes.Sub
                 | Times -> OpCodes.Mul
                 | Div -> OpCodes.Div
-                | Pow -> failwith "pow not implemented"
+                | Pow -> 
+                    failwith "pow not implemented"
 
             il.Emit(ilop)
         | Let(id, assign, body,ty) ->
@@ -53,6 +44,13 @@ let emitOpCodes (il:ILGenerator) ast =
         | Var(id, ty) ->
             let local = lenv |> Map.find id
             il.Emit(OpCodes.Ldloc, local)
+        | Coerce(x,ty) ->
+            emit lenv x
+            if ty = typeof<float> then
+                il.Emit(OpCodes.Conv_R8)
+            else
+                failwithf "unsupported coersion: %A" ty
+            
         | _ -> failwithf "not implemented: %A" ast
 
     emit Map.empty ast |> ignore
