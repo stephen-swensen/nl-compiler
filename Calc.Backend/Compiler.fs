@@ -15,6 +15,7 @@ let parseFromString code =
     ast
 
 let emitOpCodes (il:ILGenerator) ast =
+    let vloc = ref 0
     let rec emit ast =
         match ast with
         | Int32(x,_) -> 
@@ -45,7 +46,14 @@ let emitOpCodes (il:ILGenerator) ast =
                 | Pow -> failwith "pow not implemented"
 
             il.Emit(ilop)
-        | _ -> failwith "not implemented"
+        | Let(id, assign, body,ty) ->
+            let local = il.DeclareLocal(assign.Type)
+            local.SetLocalSymInfo(id)
+            emit assign
+            il.Emit(OpCodes.Stloc, !vloc)
+            vloc := !vloc + 1
+            emit body
+        | _ -> failwithf "not implemented: %A" ast
 
     emit ast |> ignore
 
