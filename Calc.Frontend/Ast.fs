@@ -11,6 +11,7 @@ module UT =
         | Binop    of binop * exp * exp
         | UMinus   of exp
         | Fact     of exp
+        | Let      of string * exp * exp
 
 type exp =
     | Double   of float * Type
@@ -18,14 +19,16 @@ type exp =
     | Binop    of binop * exp * exp * Type
     | UMinus   of exp * Type
     | Fact     of exp * Type
+    | Let      of string * exp * exp * Type
     with 
         member this.Type =
             match this with
-            | Double(_,ty) -> ty
+            | Double(_,ty)
             | Int32(_,ty)
             | Binop(_,_,_,ty)
             | UMinus(_,ty)
-            | Fact(_,ty) -> ty
+            | Fact(_,ty) 
+            | Let(_,_,_,ty) -> ty
 
 let rec tycheck exp =
     match exp with
@@ -50,3 +53,6 @@ let rec tycheck exp =
             else
                 failwithf "binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
         Binop(op,x,y,ty)
+    | UT.Let(id, assign, body) ->
+        let assign, body = tycheck assign, tycheck body
+        Let(id,assign, body, body.Type)

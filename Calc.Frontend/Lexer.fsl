@@ -10,12 +10,14 @@ let lexeme lexbuf =
 
 // These are some regular expression definitions
 let digit = ['0'-'9']
+let identifier = [^'"' '0'-'9' '(' ')' ' ' '\t' '\n' '\r']
 let whitespace = [' ' '\t' ]
 let newline = ('\n' | '\r' '\n')
 
 rule tokenize = parse
 | whitespace	{ tokenize lexbuf }
 | newline       { tokenize lexbuf }
+
 // Operators
 | "+"			{ PLUS }
 | "-"			{ MINUS }
@@ -23,11 +25,20 @@ rule tokenize = parse
 | "/"			{ DIV }
 | "^"			{ POW }
 | "!"			{ FACT }
+
 // Misc
 | "("			{ LPAREN }
 | ")"			{ RPAREN }
+
 // Numberic constants
 | digit+									{ INT32 (lexeme lexbuf |> int) }
 | digit+('.'digit+)?(['e''E']digit+)?		{ DOUBLE (lexeme lexbuf |> float) }
+
+//assignment
+| "let" { LET }
+| "=" { EQ }
+| "in" { IN }
+| identifier+ { ID (lexeme lexbuf |> string) }
+
 // EOF
 | eof   { EOF }
