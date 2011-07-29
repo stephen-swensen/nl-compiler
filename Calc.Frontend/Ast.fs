@@ -4,6 +4,7 @@ open System
 type binop =
     | Plus | Minus | Times | Div | Pow
 
+///"UnTyped" expressions produces by the parser before typed checking
 module UT =
     type exp =
         | Double   of float
@@ -13,6 +14,7 @@ module UT =
         | Fact     of exp
         | Let      of string * exp * exp
 
+///Symantically check expressions generated from UT.exp
 type exp =
     | Double   of float * Type
     | Int32    of int * Type
@@ -30,6 +32,7 @@ type exp =
             | Fact(_,ty) 
             | Let(_,_,_,ty) -> ty
 
+///Symantic analysis (type checking)
 let rec tycheck exp =
     match exp with
     | UT.Double(x) -> Double(x,typeof<float>)
