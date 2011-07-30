@@ -28,7 +28,7 @@ let emitOpCodes (il:ILGenerator) ast =
         | Int32(x,_) -> 
             il.Emit(OpCodes.Ldc_I4, x)
         | Double(x,_) -> 
-            il.Emit(OpCodes.Ldc_R8, x)
+            il.Emit(OpCodes.Ldind_R8, x)
         | String(x,_) -> 
             il.Emit(OpCodes.Ldstr, x)
         | UMinus(x,_) -> 
@@ -69,30 +69,46 @@ let emitOpCodes (il:ILGenerator) ast =
             il.Emit(OpCodes.Call, meth)
         | InstanceCall(instance,meth,args,_) ->
             emit lenv instance
-            if instance.Type.BaseType = typeof<System.ValueType> then
-                il.Emit(OpCodes.Box, instance.Type)
-
-            args |> List.iter (emit lenv)
-            il.Emit(OpCodes.Callvirt, meth)
+            if instance.Type.IsValueType then
+                let loc = il.DeclareLocal(instance.Type)
+                il.Emit(OpCodes.Stloc, loc)
+                il.Emit(OpCodes.Ldloca, loc)
+            
+            for arg in args do emit lenv arg
+            
+            if instance.Type.IsValueType then
+                il.Emit(OpCodes.Call, meth)
+            else
+                il.Emit(OpCodes.Callvirt, meth)
             
         //| _ -> failwithf "not implemented: %A" ast
 
     emit Map.empty ast |> ignore
 
-let delegateFromAst ast =
-    let dm = System.Reflection.Emit.DynamicMethod("", typeof<obj>, null)
+let dmFromAst (ast:exp) =
+    let dm = System.Reflection.Emit.DynamicMethod("Calc", ast.Type, null)
     let il = dm.GetILGenerator()
     emitOpCodes il ast
-    
-    if ast.Type.BaseType = typeof<System.ValueType> then
-        il.Emit(OpCodes.Box, ast.Type)
-//    else
-//        il.Emit(OpCodes.Castclass, typeof<obj>)
-
     il.Emit(OpCodes.Ret)
-    dm.CreateDelegate(typeof<System.Func<obj>>) :?> System.Func<obj>
+    dm
 
-let delegateFromString code =
-    (parseFromString>>delegateFromAst) code
+let dmFromString code =
+    (parseFromString>>dmFromAst) code
 
-let eval code = (delegateFromString code).Invoke()
+let eval code = (dmFromString code).Invoke(null,null)
+
+open System
+open System.Reflection
+open System.Reflection.Emit
+type Broken = 
+    static member bad() =
+        let dm = DynamicMethod("", typeof<string>, null)
+        let mi = typeof<int>.GetMethod("ToString", BindingFlags.Public ||| BindingFlags.Instance, null, [||], null)
+        let il = dm.GetILGenerator()
+        il.Emit(OpCodes.Ldc_I4, 3)
+        let loc = il.DeclareLocal(typeof<int>)
+        il.Emit(OpCodes.Stloc, loc)
+        il.Emit(OpCodes.Ldloca, loc)
+        il.Emit(OpCodes.Call, mi)
+        il.Emit(OpCodes.Ret)
+        dm.Invoke(null,null)
