@@ -33,7 +33,7 @@ let emitOpCodes (il:ILGenerator) ast =
         | UMinus(x,_) -> 
             emit lenv x
             il.Emit(OpCodes.Neg)
-        | Binop(op,x,y,ty) -> 
+        | Binop(op,x,y,_) -> 
             emit lenv x ; emit lenv y
             match op with
             | Plus -> il.Emit(OpCodes.Add)
@@ -47,12 +47,12 @@ let emitOpCodes (il:ILGenerator) ast =
             emit lenv n
             let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
             il.Emit(OpCodes.Call, meth)
-        | Let(id, assign, body,ty) ->
+        | Let(id, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit lenv assign
             il.Emit(OpCodes.Stloc, local)
             emit (Map.add id local lenv) body
-        | Var(id, ty) ->
+        | Var(id, _) ->
             let local = lenv |> Map.find id
             il.Emit(OpCodes.Ldloc, local)
         | Coerce(x,ty) ->
@@ -63,8 +63,18 @@ let emitOpCodes (il:ILGenerator) ast =
                 il.Emit(OpCodes.Conv_I4)
             else
                 failwithf "unsupported coersion: %A" ty
+        | StaticCall(meth,args,_) ->
+            args |> List.iter (emit lenv)
+            il.Emit(OpCodes.Call, meth)
+        | InstanceCall(instance,meth,args,_) ->
+            emit lenv instance
+            if instance.Type.BaseType = typeof<System.ValueType> then
+                il.Emit(OpCodes.Box, instance.Type)
+
+            args |> List.iter (emit lenv)
+            il.Emit(OpCodes.Callvirt, meth)
             
-        | _ -> failwithf "not implemented: %A" ast
+        //| _ -> failwithf "not implemented: %A" ast
 
     emit Map.empty ast |> ignore
 
@@ -72,7 +82,12 @@ let delegateFromAst ast =
     let dm = System.Reflection.Emit.DynamicMethod("", typeof<obj>, null)
     let il = dm.GetILGenerator()
     emitOpCodes il ast
-    il.Emit(OpCodes.Box, ast.Type)
+    
+    if ast.Type.BaseType = typeof<System.ValueType> then
+        il.Emit(OpCodes.Box, ast.Type)
+    else
+        il.Emit(OpCodes.Castclass, typeof<obj>)
+
     il.Emit(OpCodes.Ret)
     dm.CreateDelegate(typeof<System.Func<obj>>) :?> System.Func<obj>
 

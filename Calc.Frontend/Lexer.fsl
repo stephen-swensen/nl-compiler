@@ -43,6 +43,7 @@ rule tokenize = parse
 // More misc
 | "." { DOT }
 | "," { COMMA }
+| "#" { INVOKE }
 
 // EOF
 | eof   { EOF }
