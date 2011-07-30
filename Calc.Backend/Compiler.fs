@@ -28,7 +28,7 @@ let emitOpCodes (il:ILGenerator) ast =
         | Int32(x,_) -> 
             il.Emit(OpCodes.Ldc_I4, x)
         | Double(x,_) -> 
-            il.Emit(OpCodes.Ldind_R8, x)
+            il.Emit(OpCodes.Ldc_R8, x)
         | String(x,_) -> 
             il.Emit(OpCodes.Ldstr, x)
         | UMinus(x,_) -> 
