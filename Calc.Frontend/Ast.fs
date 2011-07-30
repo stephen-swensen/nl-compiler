@@ -9,6 +9,7 @@ module UT =
     type exp =
         | Double    of float
         | Int32     of int
+        | String    of string
         | Binop     of binop * exp * exp
         | UMinus    of exp
         | Fact      of exp
@@ -21,6 +22,7 @@ module UT =
 type exp =
     | Double        of float * Type
     | Int32         of int * Type
+    | String        of string * Type
     | Binop         of binop * exp * exp * Type
     | UMinus        of exp * Type
     | Fact          of exp * Type
@@ -35,6 +37,7 @@ type exp =
             match this with
             | Double(_,ty)
             | Int32(_,ty)
+            | String(_,ty)
             | Binop(_,_,_,ty)
             | UMinus(_,ty)
             | Fact(_,ty) 
@@ -50,6 +53,7 @@ let rec tycheck venv exp =
     match exp with
     | UT.Double(x) -> Double(x,typeof<float>)
     | UT.Int32(x) -> Int32(x,typeof<int>)
+    | UT.String(x) -> String(x,typeof<string>)
     | UT.UMinus(x) ->
         let x = tycheck venv x
         UMinus(x,x.Type)

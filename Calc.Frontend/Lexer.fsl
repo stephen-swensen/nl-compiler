@@ -30,6 +30,9 @@ rule tokenize = parse
 | "("			{ LPAREN }
 | ")"			{ RPAREN }
 
+//string literal
+| '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
+
 // Numberic constants
 | digit+									{ INT32 (lexeme lexbuf |> int) }
 | digit+('.'digit+)?(['e''E']digit+)?		{ DOUBLE (lexeme lexbuf |> float) }

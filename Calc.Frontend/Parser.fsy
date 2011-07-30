@@ -6,6 +6,7 @@ open Swensen.Calc.Ast
 
 %token <int> INT32
 %token <float> DOUBLE
+%token <string> STRING
 %token PLUS MINUS TIMES DIV POW FACT
 %token <string> ID
 %token LET IN EQ
@@ -51,6 +52,7 @@ exp:
 	| MINUS exp %prec UMINUS { UT.UMinus($2) }
 	| INT32					 { UT.Int32($1) }
 	| DOUBLE				 { UT.Double($1) }
+	| STRING				 { UT.String($1) }
 	| ID					 { UT.Var($1)}
 	| LPAREN exp RPAREN		 { $2 }
 	| LET ID EQ exp IN exp   { UT.Let($2,$4,$6) }
