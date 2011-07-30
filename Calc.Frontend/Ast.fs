@@ -48,6 +48,7 @@ type exp =
             | InstanceCall(_,_,_,ty)
                 -> ty
 
+open System.Reflection
 ///Symantic analysis (type checking)
 let rec tycheck venv exp =
     match exp with
@@ -80,7 +81,7 @@ let rec tycheck venv exp =
         if ty = null then
             failwithf "not a valid type: %s" tyName
         
-        let meth = ty.GetMethod(methodName, argTys)
+        let meth = ty.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static, null, argTys, null)
         if meth = null then
             failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" tyName methodName argTys
         
@@ -89,11 +90,11 @@ let rec tycheck venv exp =
         let instance = tycheck venv instance
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        let meth = instance.Type.GetMethod(methodName, argTys)
+        let meth = instance.Type.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance, null, argTys, null)
         if meth = null then
             failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys
         
-        InstanceCall(instance, meth, args, meth.ReturnType)    
+        InstanceCall(instance, meth, args, meth.ReturnType)
     | UT.Let(id, assign, body) ->
         let assign = tycheck venv assign
         let body = tycheck (venv |> Map.add id assign.Type) body
