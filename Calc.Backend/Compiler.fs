@@ -17,7 +17,6 @@ type CoreOps =
             | n -> n * fact (n-1)
         fact n
 
-
 let parseFromString code =
     let lexbuff = LexBuffer<char>.FromString(code)
     let ast = Parser.start Lexer.tokenize lexbuff
@@ -30,6 +29,8 @@ let emitOpCodes (il:ILGenerator) ast =
             il.Emit(OpCodes.Ldc_I4, x)
         | Double(x,_) -> 
             il.Emit(OpCodes.Ldc_R8, x)
+        | String(x,_) -> 
+            il.Emit(OpCodes.Ldstr, x)
         | UMinus(x,_) -> 
             emit lenv x
             il.Emit(OpCodes.Neg)
@@ -85,8 +86,8 @@ let delegateFromAst ast =
     
     if ast.Type.BaseType = typeof<System.ValueType> then
         il.Emit(OpCodes.Box, ast.Type)
-    else
-        il.Emit(OpCodes.Castclass, typeof<obj>)
+//    else
+//        il.Emit(OpCodes.Castclass, typeof<obj>)
 
     il.Emit(OpCodes.Ret)
     dm.CreateDelegate(typeof<System.Func<obj>>) :?> System.Func<obj>
