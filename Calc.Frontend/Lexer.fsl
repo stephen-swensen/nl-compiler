@@ -10,7 +10,7 @@ let lexeme lexbuf =
 
 // These are some regular expression definitions
 let digit = ['0'-'9']
-let identifier = ['a' - 'z']
+let alpha = (['a' - 'z'] | ['A' - 'Z'])
 let whitespace = [' ' '\t' ]
 let newline = ('\n' | '\r' '\n')
 
@@ -38,7 +38,11 @@ rule tokenize = parse
 | "let" { LET }
 | "=" { EQ }
 | "in" { IN }
-| identifier+ { ID (lexeme lexbuf |> string) }
+| (alpha | '_')+(digit | alpha | '_')* { ID (lexeme lexbuf |> string) }
+
+// More misc
+| "." { DOT }
+| "," { COMMA }
 
 // EOF
 | eof   { EOF }

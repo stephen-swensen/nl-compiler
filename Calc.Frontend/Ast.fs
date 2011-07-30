@@ -14,19 +14,21 @@ module UT =
         | Fact      of exp
         | Let       of string * exp * exp
         | Var       of string
-        //| Call      of string *  exp list
+        | StaticCall    of string * string * exp list
+        | InstanceCall  of exp * string * exp list
 
 ///Symantically check expressions generated from UT.exp
 type exp =
-    | Double    of float * Type
-    | Int32     of int * Type
-    | Binop     of binop * exp * exp * Type
-    | UMinus    of exp * Type
-    | Fact      of exp * Type
-    | Let       of string * exp * exp * Type
-    | Var       of string * Type
-    | Coerce    of exp * Type
-    //| Call      of string * exp list * Type
+    | Double        of float * Type
+    | Int32         of int * Type
+    | Binop         of binop * exp * exp * Type
+    | UMinus        of exp * Type
+    | Fact          of exp * Type
+    | Let           of string * exp * exp * Type
+    | Var           of string * Type
+    | Coerce        of exp * Type
+    | StaticCall    of System.Reflection.MethodInfo * exp list * Type
+    | InstanceCall  of exp * System.Reflection.MethodInfo * exp list * Type
 
     with 
         member this.Type =
@@ -39,7 +41,8 @@ type exp =
             | Let(_,_,_,ty)
             | Var(_,ty) 
             | Coerce(_,ty)
-            //| Call(_,_,ty)
+            | StaticCall(_,_,ty)
+            | InstanceCall(_,_,_,ty)
                 -> ty
 
 ///Symantic analysis (type checking)
@@ -66,9 +69,27 @@ let rec tycheck venv exp =
             else
                 failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
         Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
-//    | UT.Call(name, exps) =
-//        let expTys = exps |> List.map tycheck
-//        let meth = Type.Get
+    | UT.StaticCall(tyName, methodName, args) ->
+        let args = args |> List.map (tycheck venv)
+        let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
+        let ty = Type.GetType(tyName)
+        if ty = null then
+            failwithf "not a valid type: %s" tyName
+        
+        let meth = ty.GetMethod(methodName, argTys)
+        if meth = null then
+            failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" tyName methodName argTys
+        
+        StaticCall(meth, args, meth.ReturnType)
+    | UT.InstanceCall(instance,methodName, args) ->
+        let instance = tycheck venv instance
+        let args = args |> List.map (tycheck venv)
+        let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
+        let meth = instance.Type.GetMethod(methodName, argTys)
+        if meth = null then
+            failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys
+        
+        InstanceCall(instance, meth, args, meth.ReturnType)    
     | UT.Let(id, assign, body) ->
         let assign = tycheck venv assign
         let body = tycheck (venv |> Map.add id assign.Type) body
