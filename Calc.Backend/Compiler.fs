@@ -96,19 +96,3 @@ let dmFromString code =
     (parseFromString>>dmFromAst) code
 
 let eval code = (dmFromString code).Invoke(null,null)
-
-open System
-open System.Reflection
-open System.Reflection.Emit
-type Broken = 
-    static member bad() =
-        let dm = DynamicMethod("", typeof<string>, null)
-        let mi = typeof<int>.GetMethod("ToString", BindingFlags.Public ||| BindingFlags.Instance, null, [||], null)
-        let il = dm.GetILGenerator()
-        il.Emit(OpCodes.Ldc_I4, 3)
-        let loc = il.DeclareLocal(typeof<int>)
-        il.Emit(OpCodes.Stloc, loc)
-        il.Emit(OpCodes.Ldloca, loc)
-        il.Emit(OpCodes.Call, mi)
-        il.Emit(OpCodes.Ret)
-        dm.Invoke(null,null)
