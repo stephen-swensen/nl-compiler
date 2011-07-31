@@ -26,7 +26,6 @@ open Swensen.Calc.Ast
 %type <exp> start
 %type <UT.exp> exp
 %type <UT.exp list> expList
-%type <string> tyname
 
 %%
 
@@ -38,9 +37,9 @@ expList:
 	| exp COMMA expList { $1::$3 }
 	| { [] }
 
-tyname:
+longId:
 	| ID { $1 }
-	| ID DOT tyname { $1 + "." + $3 }
+	| ID DOT longId { $1 + "." + $3 }
 
 exp: 
     | exp PLUS  exp			 { UT.Binop(Plus, $1, $3)  }
@@ -53,8 +52,8 @@ exp:
 	| INT32					 { UT.Int32($1) }
 	| DOUBLE				 { UT.Double($1) }
 	| STRING				 { UT.String($1) }
-	| ID					 { UT.Var($1)}
+	| longId				 { UT.Var($1)}
 	| LPAREN exp RPAREN		 { $2 }
-	| LET ID EQ exp IN exp   { UT.Let($2,$4,$6) }
-	| tyname INVOKE ID LPAREN expList RPAREN	{ UT.StaticCall($1,$3,$5) }
-	| exp INVOKE ID LPAREN expList RPAREN		{ UT.InstanceCall($1,$3,$5) }
+	| LET longId EQ exp IN exp   { UT.Let($2,$4,$6) }
+	| longId INVOKE ID LPAREN expList RPAREN	{ UT.IdCall($1,$3,$5) }
+	| exp INVOKE ID LPAREN expList RPAREN		{ UT.ExpCall($1,$3,$5) }

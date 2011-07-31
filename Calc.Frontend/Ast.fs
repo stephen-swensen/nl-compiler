@@ -15,8 +15,8 @@ module UT =
         | Fact      of exp
         | Let       of string * exp * exp
         | Var       of string
-        | StaticCall    of string * string * exp list
-        | InstanceCall  of exp * string * exp list
+        | IdCall    of string * string * exp list
+        | ExpCall   of exp * string * exp list
 
 ///Symantically check expressions generated from UT.exp
 type exp =
@@ -74,19 +74,27 @@ let rec tycheck venv exp =
             else
                 failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
         Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
-    | UT.StaticCall(tyName, methodName, args) ->
+    | UT.IdCall(id, methodName, args) ->
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        let ty = Type.GetType(tyName)
-        if ty = null then
-            failwithf "not a valid type: %s" tyName
+        match Map.tryFind id venv with
+        | Some(instanceTy:Type) -> 
+            let meth = instanceTy.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance, null, argTys, null)
+            if meth = null then
+                failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instanceTy.Name methodName argTys
         
-        let meth = ty.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static, null, argTys, null)
-        if meth = null then
-            failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" tyName methodName argTys
+            InstanceCall(Var(id,instanceTy), meth, args, meth.ReturnType)
+        | None ->        
+            let ty = Type.GetType(id)
+            if ty = null then
+                failwithf "not a valid type: %s" id
         
-        StaticCall(meth, args, meth.ReturnType)
-    | UT.InstanceCall(instance,methodName, args) ->
+            let meth = ty.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static, null, argTys, null)
+            if meth = null then
+                failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" id methodName argTys
+        
+            StaticCall(meth, args, meth.ReturnType)
+    | UT.ExpCall(instance,methodName, args) ->
         let instance = tycheck venv instance
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
