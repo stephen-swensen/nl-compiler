@@ -52,8 +52,8 @@ exp:
 	| INT32					 { UT.Int32($1) }
 	| DOUBLE				 { UT.Double($1) }
 	| STRING				 { UT.String($1) }
-	| longId				 { UT.Var($1)}
+	| longId				 { UT.Var($1.ToLower())}
 	| LPAREN exp RPAREN		 { $2 }
-	| LET longId EQ exp IN exp   { UT.Let($2,$4,$6) }
-	| longId LPAREN expList RPAREN	{ UT.IdCall($1,$3) }
-	| exp DOT ID LPAREN expList RPAREN		{ UT.ExpCall($1,$3,$5) }
+	| LET longId EQ exp IN exp   { UT.Let($2.ToLower(),$4,$6) }
+	| longId LPAREN expList RPAREN	{ UT.IdCall($1.ToLower(),$3) }
+	| exp DOT ID LPAREN expList RPAREN		{ UT.ExpCall($1,$3.ToLower(),$5) }

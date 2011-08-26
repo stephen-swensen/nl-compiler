@@ -78,42 +78,42 @@ let rec tycheck venv exp =
                     failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
             Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
     | UT.IdCall(longId, args) ->
-        let id, methodName =
+        let idLead, methodName =
             let split = longId.Split('.')
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        match Map.tryFind id venv with
+        match Map.tryFind idLead venv with
         | Some(instanceTy:Type) -> 
-            let meth = instanceTy.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance, null, argTys, null)
+            let meth = instanceTy.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.IgnoreCase, null, argTys, null)
             if meth = null then
                 failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instanceTy.Name methodName argTys
         
-            InstanceCall(Var(id,instanceTy), meth, args, meth.ReturnType)
+            InstanceCall(Var(idLead,instanceTy), meth, args, meth.ReturnType)
         | None ->        
-            let ty = Type.GetType(id)
+            let ty = Type.GetType(idLead,true,true)
             if ty = null then
-                failwithf "not a valid type: %s" id
+                failwithf "not a valid type: %s" idLead
         
-            let meth = ty.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static, null, argTys, null)
+            let meth = ty.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static ||| BindingFlags.IgnoreCase, null, argTys, null)
             if meth = null then
-                failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" id methodName argTys
+                failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" idLead methodName argTys
         
             StaticCall(meth, args, meth.ReturnType)
     | UT.ExpCall(instance,methodName, args) ->
         let instance = tycheck venv instance
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        let meth = instance.Type.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance, null, argTys, null)
+        let meth = instance.Type.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.IgnoreCase, null, argTys, null)
         if meth = null then
             failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys
         
         InstanceCall(instance, meth, args, meth.ReturnType)
-    | UT.Let(id, assign, body) ->
+    | UT.Let(idLead, assign, body) ->
         let assign = tycheck venv assign
-        let body = tycheck (venv |> Map.add id assign.Type) body
-        Let(id,assign, body, body.Type)
-    | UT.Var(id) ->
-        match Map.tryFind id venv with
-        | Some(ty) -> Var(id,ty)
-        | None -> failwithf "Var not found in environment: %s" id
+        let body = tycheck (venv |> Map.add idLead assign.Type) body
+        Let(idLead,assign, body, body.Type)
+    | UT.Var(idLead) ->
+        match Map.tryFind idLead venv with
+        | Some(ty) -> Var(idLead,ty)
+        | None -> failwithf "Var not found in environment: %s" idLead
