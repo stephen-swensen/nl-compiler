@@ -37,6 +37,9 @@ let emitOpCodes (il:ILGenerator) ast =
         | Binop(op,x,y,_) -> 
             emit lenv x ; emit lenv y
             match op with
+            | Plus when x.Type = typeof<string> && y.Type = typeof<string> ->
+                let meth = typeof<System.String>.GetMethod("Concat",[|typeof<string>;typeof<string>|])
+                il.Emit(OpCodes.Call, meth)
             | Plus -> il.Emit(OpCodes.Add)
             | Minus -> il.Emit(OpCodes.Sub)
             | Times -> il.Emit(OpCodes.Mul)

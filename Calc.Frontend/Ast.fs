@@ -66,14 +66,17 @@ let rec tycheck venv exp =
             Fact(x, x.Type)
     | UT.Binop(op,x,y) ->
         let x, y = tycheck venv x, tycheck venv y
-        let ty =
-            if op = Pow || x.Type = typeof<float> || y.Type = typeof<float> then
-                typeof<float>
-            elif x.Type = typeof<int> && y.Type = typeof<int> then
-                typeof<int>
-            else
-                failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
-        Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
+        if x.Type = typeof<string> && y.Type = typeof<string> then
+            Binop(op, x, y, typeof<string>)
+        else
+            let ty =
+                if op = Pow || x.Type = typeof<float> || y.Type = typeof<float> then
+                    typeof<float>
+                elif x.Type = typeof<int> && y.Type = typeof<int> then
+                    typeof<int>
+                else
+                    failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
+            Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
     | UT.IdCall(longId, args) ->
         let id, methodName =
             let split = longId.Split('.')
