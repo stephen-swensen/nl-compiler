@@ -15,7 +15,7 @@ module UT =
         | Fact      of exp
         | Let       of string * exp * exp
         | Var       of string
-        | IdCall    of string * string * exp list
+        | IdCall    of string * exp list
         | ExpCall   of exp * string * exp list
 
 ///Symantically check expressions generated from UT.exp
@@ -74,7 +74,10 @@ let rec tycheck venv exp =
             else
                 failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
         Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
-    | UT.IdCall(id, methodName, args) ->
+    | UT.IdCall(longId, args) ->
+        let id, methodName =
+            let split = longId.Split('.')
+            String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         match Map.tryFind id venv with
