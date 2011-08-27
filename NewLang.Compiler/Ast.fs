@@ -57,6 +57,13 @@ type CoreOps =
 
 open System.Reflection
 
+///Binding flags for our language
+module BF =
+    let Access = BindingFlags.Public ||| BindingFlags.NonPublic
+    let Case = BindingFlags.IgnoreCase
+    let StaticMember = BindingFlags.Static ||| Access ||| Case
+    let InstanceMember = BindingFlags.Instance  ||| Access ||| Case
+
 let checkMeth (meth:MethodInfo) name tys =
     if meth = null then failwithf "method %s not found for parameter types %A" name tys
 
@@ -110,7 +117,7 @@ let rec tycheck venv exp =
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         match Map.tryFind idLead venv with
         | Some(instanceTy:Type) -> 
-            let meth = instanceTy.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.IgnoreCase, null, argTys, null)
+            let meth = instanceTy.GetMethod(methodName, BF.InstanceMember, null, argTys, null)
             if meth = null then
                 failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instanceTy.Name methodName argTys
         
@@ -120,7 +127,7 @@ let rec tycheck venv exp =
             if ty = null then
                 failwithf "not a valid type: %s" idLead
         
-            let meth = ty.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static ||| BindingFlags.IgnoreCase, null, argTys, null)
+            let meth = ty.GetMethod(methodName, BF.StaticMember, null, argTys, null)
             if meth = null then
                 failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" idLead methodName argTys
         
@@ -129,7 +136,7 @@ let rec tycheck venv exp =
         let instance = tycheck venv instance
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        let meth = instance.Type.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.IgnoreCase, null, argTys, null)
+        let meth = instance.Type.GetMethod(methodName, BF.InstanceMember, null, argTys, null)
         if meth = null then
             failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys
         
