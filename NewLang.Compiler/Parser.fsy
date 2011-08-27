@@ -9,7 +9,7 @@ open Swensen.NewLang.Ast
 %token <string> STRING
 %token PLUS MINUS TIMES DIV POW FACT CONCAT
 %token <string> ID
-%token LET IN EQ
+%token IN EQ
 %token LPAREN RPAREN
 %token EOF
 %token COMMA
@@ -56,6 +56,6 @@ exp:
 	| STRING				 				{ UT.String($1) }
 	| longId				 				{ UT.Var($1.ToLower())}
 	| LPAREN exp RPAREN		 				{ $2 }
-	| LET longId EQ exp IN exp   			{ UT.Let($2.ToLower(),$4,$6) }
+	| longId EQ exp IN exp   				{ UT.Let($1.ToLower(),$3,$5) }
 	| longId LPAREN expList RPAREN			{ UT.IdCall($1.ToLower(),$3) }
 	| exp DOT ID LPAREN expList RPAREN		{ UT.ExpCall($1,$3.ToLower(),$5) }

@@ -39,7 +39,6 @@ rule tokenize = parse
 | digit+('.'digit+)?(['e''E']digit+)?		{ DOUBLE (lexeme lexbuf |> float) }
 
 //assignment
-| "let" { LET }
 | "=" { EQ }
 | "in" { IN }
 | (alpha | '_')+(digit | alpha | '_')* { ID (lexeme lexbuf |> string) }
