@@ -76,3 +76,18 @@ let dmFromString code =
     (parseFromString>>dmFromAst) code
 
 let eval code = (dmFromString code).Invoke(null,null)
+
+open System.Reflection
+
+let compile ast asmName asmFileName =
+    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
+    let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".netmodule")
+    let tyBuilder = modBuilder.DefineType(asmName + ".Application", TypeAttributes.Public)
+    let methBuilder = tyBuilder.DefineMethod("Run", MethodAttributes.Public ||| MethodAttributes.Static, typeof<System.Void>, null)
+    
+    let il = methBuilder.GetILGenerator()
+    emitOpCodes il ast
+    il.Emit(OpCodes.Ret)
+
+    asmBuilder.SetEntryPoint(methBuilder)
+    asmBuilder.Save(asmFileName)
