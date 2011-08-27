@@ -8,7 +8,7 @@
     <ProjectGuid>{e25f2830-8e94-4680-882b-39e30ce3d586}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Language</RootNamespace>
-    <AssemblyName>Calc</AssemblyName>
+    <AssemblyName>NewLang</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <Name>NewLang.Compiler</Name>
@@ -54,7 +54,7 @@
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
     <FsYacc Include="Parser.fsy">
-      <OtherFlags>--module Swensen.Calc.Parser</OtherFlags>
+      <OtherFlags>--module Swensen.NewLang.Parser</OtherFlags>
     </FsYacc>
     <Compile Include="Compiler.fs" />
   </ItemGroup>

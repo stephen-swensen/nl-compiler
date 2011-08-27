@@ -1,4 +1,4 @@
-﻿module Swensen.Calc.Compiler
+﻿module Swensen.NewLang.Compiler
 
 open Microsoft.FSharp.Text.Lexing
 open System
@@ -89,7 +89,7 @@ let emitOpCodes (il:ILGenerator) ast =
     emit Map.empty ast |> ignore
 
 let dmFromAst (ast:exp) =
-    let dm = System.Reflection.Emit.DynamicMethod("Calc", ast.Type, null)
+    let dm = System.Reflection.Emit.DynamicMethod("NewLang", ast.Type, null)
     let il = dm.GetILGenerator()
     emitOpCodes il ast
     il.Emit(OpCodes.Ret)

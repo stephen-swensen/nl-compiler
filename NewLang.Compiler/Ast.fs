@@ -1,4 +1,4 @@
-﻿module Swensen.Calc.Ast
+﻿module Swensen.NewLang.Ast
 open System
 
 type binop =

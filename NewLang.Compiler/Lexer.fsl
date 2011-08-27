@@ -1,5 +1,5 @@
 ﻿{
-module Swensen.Calc.Lexer
+module Swensen.NewLang.Lexer
 open System
 open Parser
 open Microsoft.FSharp.Text.Lexing
