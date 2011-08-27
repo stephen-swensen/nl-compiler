@@ -1,31 +1,32 @@
 ﻿module Swensen.NewLang.Ast
 open System
 
-type binop =
-    | Plus | Minus | Times | Div | Pow
+type numericBinop = Plus | Minus | Times | Div
+type logicBinop = And | Or | ExOr
 
 ///"UnTyped" expressions produces by the parser before typed checking
 module UT =
     type exp =
-        | Double    of float
-        | Int32     of int
-        | String    of string
-        | Binop     of binop * exp * exp
-        | UMinus    of exp
-        | Fact      of exp
-        | Let       of string * exp * exp
-        | Var       of string
-        | IdCall    of string * exp list
-        | ExpCall   of exp * string * exp list
+        | Double           of float
+        | Int32            of int
+        | String           of string
+        | NumericBinop     of numericBinop * exp * exp
+        | Concat           of exp * exp
+        | Pow              of exp * exp
+        | UMinus           of exp
+        | Fact             of exp
+        | Let              of string * exp * exp
+        | Var              of string
+        | IdCall           of string * exp list
+        | ExpCall          of exp * string * exp list
 
 ///Symantically check expressions generated from UT.exp
 type exp =
-    | Double        of float * Type
-    | Int32         of int * Type
-    | String        of string * Type
-    | Binop         of binop * exp * exp * Type
+    | Double        of float
+    | Int32         of int
+    | String        of string
+    | NumericBinop  of numericBinop * exp * exp * Type
     | UMinus        of exp * Type
-    | Fact          of exp * Type
     | Let           of string * exp * exp * Type
     | Var           of string * Type
     | Coerce        of exp * Type
@@ -35,26 +36,39 @@ type exp =
     with 
         member this.Type =
             match this with
-            | Double(_,ty)
-            | Int32(_,ty)
-            | String(_,ty)
-            | Binop(_,_,_,ty)
+            | Double(_)              -> typeof<float>
+            | Int32(_)               -> typeof<int>
+            | String(_)              -> typeof<string>
+            | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
-            | Fact(_,ty) 
             | Let(_,_,_,ty)
             | Var(_,ty) 
             | Coerce(_,ty)
             | StaticCall(_,_,ty)
-            | InstanceCall(_,_,_,ty)
-                -> ty
+            | InstanceCall(_,_,_,ty) -> ty
+
+type CoreOps =
+    static member Factorial(n:int) =
+        let rec fact n = 
+            match n with 
+            | 1 | 0 -> 1
+            | n     -> n * fact (n-1)
+        fact n
 
 open System.Reflection
+
+let checkMeth (meth:MethodInfo) name tys =
+    if meth = null then failwithf "method %s not found for parameter types %A" name tys
+
+let coerceIfNeeded  (expectedTy:Type) (targetExp:exp) =
+    if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
+
 ///Symantic analysis (type checking)
 let rec tycheck venv exp =
     match exp with
-    | UT.Double(x) -> Double(x,typeof<float>)
-    | UT.Int32(x) -> Int32(x,typeof<int>)
-    | UT.String(x) -> String(x,typeof<string>)
+    | UT.Double(x) -> Double x
+    | UT.Int32(x)  -> Int32 x
+    | UT.String(x) -> String x
     | UT.UMinus(x) ->
         let x = tycheck venv x
         UMinus(x,x.Type)
@@ -63,20 +77,31 @@ let rec tycheck venv exp =
         if x.Type <> typeof<int> then
             failwithf "factorial expects int but got: %A" x.Type
         else
-            Fact(x, x.Type)
-    | UT.Binop(op,x,y) ->
+            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
+            StaticCall(meth, [x], meth.ReturnType)
+    | UT.Concat(x,y) ->
         let x, y = tycheck venv x, tycheck venv y
-        if x.Type = typeof<string> && y.Type = typeof<string> then
-            Binop(op, x, y, typeof<string>)
+        if x.Type = typeof<string> || y.Type = typeof<string> then
+            let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
+            checkMeth meth "Concat" [x;y]
+            StaticCall(meth, [x;y], meth.ReturnType)
         else
-            let ty =
-                if op = Pow || x.Type = typeof<float> || y.Type = typeof<float> then
-                    typeof<float>
-                elif x.Type = typeof<int> && y.Type = typeof<int> then
-                    typeof<int>
-                else
-                    failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
-            Binop(op,(if x.Type <> ty then Coerce(x,ty) else x),(if y.Type <> ty then Coerce(y,ty) else y),ty)
+            failwithf "invalid types for Concat: %A" [x;y]
+    | UT.Pow(x,y) ->
+        let x, y = tycheck venv x, tycheck venv y
+        let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
+        checkMeth meth "Pow" [x;y]
+        StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
+    | UT.NumericBinop(op,x,y) ->
+        let x, y = tycheck venv x, tycheck venv y
+        let ty =
+            if x.Type = typeof<float> || y.Type = typeof<float> then
+                typeof<float>
+            elif x.Type = typeof<int> && y.Type = typeof<int> then
+                typeof<int>
+            else
+                failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
+        NumericBinop(op, coerceIfNeeded ty x, coerceIfNeeded ty x, ty)
     | UT.IdCall(longId, args) ->
         let idLead, methodName =
             let split = longId.Split('.')

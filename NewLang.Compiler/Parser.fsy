@@ -7,7 +7,7 @@ open Swensen.NewLang.Ast
 %token <int> INT32
 %token <float> DOUBLE
 %token <string> STRING
-%token PLUS MINUS TIMES DIV POW FACT
+%token PLUS MINUS TIMES DIV POW FACT CONCAT
 %token <string> ID
 %token LET IN EQ
 %token LPAREN RPAREN
@@ -19,6 +19,7 @@ open Swensen.NewLang.Ast
 %left PLUS MINUS
 %left TIMES DIV
 %right POW
+%left CONCAT
 %nonassoc UMINUS
 %nonassoc FACT
 
@@ -42,18 +43,19 @@ longId:
 	| ID DOT longId { $1 + "." + $3 }
 
 exp: 
-    | exp PLUS  exp			 { UT.Binop(Plus, $1, $3)  }
-    | exp MINUS exp			 { UT.Binop(Minus, $1, $3) }
-	| exp TIMES exp			 { UT.Binop(Times, $1, $3) }
-	| exp DIV exp			 { UT.Binop(Div, $1, $3) }
-	| exp POW exp			 { UT.Binop(Pow, $1, $3) }
-	| exp FACT				 { UT.Fact($1) }
-	| MINUS exp %prec UMINUS { UT.UMinus($2) }
-	| INT32					 { UT.Int32($1) }
-	| DOUBLE				 { UT.Double($1) }
-	| STRING				 { UT.String($1) }
-	| longId				 { UT.Var($1.ToLower())}
-	| LPAREN exp RPAREN		 { $2 }
-	| LET longId EQ exp IN exp   { UT.Let($2.ToLower(),$4,$6) }
-	| longId LPAREN expList RPAREN	{ UT.IdCall($1.ToLower(),$3) }
+    | exp PLUS  exp			 				{ UT.NumericBinop(Plus, $1, $3)  }
+    | exp MINUS exp			 				{ UT.NumericBinop(Minus, $1, $3) }
+	| exp TIMES exp			 				{ UT.NumericBinop(Times, $1, $3) }
+	| exp DIV exp			 				{ UT.NumericBinop(Div, $1, $3) }
+	| exp POW exp			 				{ UT.Pow($1, $3) }
+	| exp CONCAT exp		 				{ UT.Concat($1, $3) }
+	| exp FACT				 				{ UT.Fact($1) }
+	| MINUS exp %prec UMINUS 				{ UT.UMinus($2) }
+	| INT32					 				{ UT.Int32($1) }
+	| DOUBLE				 				{ UT.Double($1) }
+	| STRING				 				{ UT.String($1) }
+	| longId				 				{ UT.Var($1.ToLower())}
+	| LPAREN exp RPAREN		 				{ $2 }
+	| LET longId EQ exp IN exp   			{ UT.Let($2.ToLower(),$4,$6) }
+	| longId LPAREN expList RPAREN			{ UT.IdCall($1.ToLower(),$3) }
 	| exp DOT ID LPAREN expList RPAREN		{ UT.ExpCall($1,$3.ToLower(),$5) }
