@@ -9,7 +9,7 @@ let rec loop() =
         try
             printfn "%A" (Compiler.eval str)
         with ex ->
-            printfn "Unhandled Exception: %s" ex.Message
+            printfn "%A" ex
 
         //printfn "%A" (Compiler.eval str)
         loop()
