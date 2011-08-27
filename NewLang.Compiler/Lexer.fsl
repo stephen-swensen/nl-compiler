@@ -25,6 +25,7 @@ rule tokenize = parse
 | "/"			{ DIV }
 | "^"			{ POW }
 | "!"			{ FACT }
+| "++"			{ CONCAT }
 
 // Misc
 | "("			{ LPAREN }
@@ -33,7 +34,7 @@ rule tokenize = parse
 //string literal
 | '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
 
-// Numberic constants
+// Numeric constants
 | digit+									{ INT32 (lexeme lexbuf |> int) }
 | digit+('.'digit+)?(['e''E']digit+)?		{ DOUBLE (lexeme lexbuf |> float) }
 
