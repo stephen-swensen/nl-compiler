@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Calc.Program", "Calc.Program\Calc.Program.fsproj", "{ABD56F8C-A0B9-4285-9825-8176A5A50EB2}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang.Program", "NewLang.Program\NewLang.Program.fsproj", "{ABD56F8C-A0B9-4285-9825-8176A5A50EB2}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Calc.Fontend", "Calc.Frontend\Calc.Fontend.fsproj", "{E25F2830-8E94-4680-882B-39E30CE3D586}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang.Compiler", "NewLang.Compiler\NewLang.Compiler.fsproj", "{E25F2830-8E94-4680-882B-39E30CE3D586}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
