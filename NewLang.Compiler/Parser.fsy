@@ -1,6 +1,6 @@
 ﻿%{
 //note, the module name of the parser is given by the --module flag (set in project)
-open Swensen.Calc.Ast
+open Swensen.NewLang.Ast
 
 %}
 
