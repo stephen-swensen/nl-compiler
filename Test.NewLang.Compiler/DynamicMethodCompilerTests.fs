@@ -113,3 +113,26 @@ let ``nested var binding`` () =
 let ``var shadowing`` () =
     test <@ C.eval "x = 3 in y = 5 in x = 5 in x + y" = box 10 @>
 
+[<Fact>]
+let ``var ids are case insensitive`` () =
+    test <@ C.eval "x.x.x = 3 in X.x.X" = box 3 @>
+
+[<Fact>]
+let ``instance call on value type`` () =
+    test <@ C.eval "3.ToString()" = box "3" @>
+
+[<Fact>]
+let ``instance calls are case insensitive`` () =
+    test <@ C.eval "3.tostrINg()" = box "3" @>
+
+[<Fact>]
+let ``instance call on obj type`` () =
+    test <@ C.eval "\"3\".ToString()" = box "3" @>
+
+[<Fact>]
+let ``static call`` () =
+    test <@ C.eval "System.String.Concat(\"hello \", \"world\")" = box "hello world" @>
+
+[<Fact>]
+let ``static call is case insensitive`` () =
+    test <@ C.eval "System.STRING.Concat(\"hello \", \"world\")" = box "hello world" @>
