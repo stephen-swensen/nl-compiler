@@ -72,16 +72,17 @@ let dmFromAst (ast:exp) =
     il.Emit(OpCodes.Ret)
     dm
 
-let dmFromString code =
-    (parseFromString>>dmFromAst) code
+let dmFromString = parseFromString>>dmFromAst
 
 let eval code = (dmFromString code).Invoke(null,null)
 
 open System.Reflection
 
-let compile ast asmName asmFileName =
+///ast -> assemblyName -> unit
+let compileFromAst ast asmName =
+    let asmFileName = asmName + ".exe"
     let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
-    let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".netmodule")
+    let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".netmodule", asmFileName, false) //need to specify asmFileName here!
     let tyBuilder = modBuilder.DefineType(asmName + ".Application", TypeAttributes.Public)
     let methBuilder = tyBuilder.DefineMethod("Run", MethodAttributes.Public ||| MethodAttributes.Static, typeof<System.Void>, null)
     
@@ -89,5 +90,16 @@ let compile ast asmName asmFileName =
     emitOpCodes il ast
     il.Emit(OpCodes.Ret)
 
-    asmBuilder.SetEntryPoint(methBuilder)
+    tyBuilder.CreateType() |> ignore
+    asmBuilder.SetEntryPoint(methBuilder, PEFileKinds.ConsoleApplication)
     asmBuilder.Save(asmFileName)
+
+///code -> assemblyName -> unit
+let compileFromString = parseFromString>>compileFromAst
+
+///fileNames -> assemblyName -> unit
+let compileFromFiles fileNames =
+    fileNames
+    |> Seq.map System.IO.File.ReadAllText
+    |> String.concat System.Environment.NewLine
+    |> compileFromString
