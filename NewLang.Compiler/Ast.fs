@@ -105,7 +105,7 @@ let rec tycheck venv exp =
                 typeof<int>
             else
                 failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
-        NumericBinop(op, coerceIfNeeded ty x, coerceIfNeeded ty x, ty)
+        NumericBinop(op, coerceIfNeeded ty x, coerceIfNeeded ty y, ty)
     | UT.IdCall(longId, args) ->
         let idLead, methodName =
             let split = longId.Split('.')
