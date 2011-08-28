@@ -9,7 +9,7 @@ let rec loop() =
         try
             printfn "%A" (Compiler.eval str)
         with ex ->
-            printfn "%A" ex
+            printfn "%s" ex.Message
 
         //printfn "%A" (Compiler.eval str)
         loop()
