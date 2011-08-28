@@ -11,8 +11,15 @@ open  System.Reflection.Emit
 
 let parseFromString code =
     let lexbuff = LexBuffer<char>.FromString(code)
-    let ast = Parser.start Lexer.tokenize lexbuff
-    ast
+    try 
+        let ast = Parser.start Lexer.tokenize lexbuff
+        ast
+    with e ->
+        let pos = lexbuff.EndPos
+        let line = pos.Line
+        let column = pos.Column
+        let message = e.Message  // "parse error"
+        failwithf "Error at line %i, column %i: %s" line column message
 
 let emitOpCodes (il:ILGenerator) ast =
     let rec emit lenv ast =

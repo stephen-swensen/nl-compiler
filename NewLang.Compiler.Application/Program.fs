@@ -12,6 +12,6 @@ let main args =
         Compiler.compileFromFiles fileNames asmName
         0
     with e ->
-        printfn "%A" e
+        printfn "%s" e.Message
         1
 
