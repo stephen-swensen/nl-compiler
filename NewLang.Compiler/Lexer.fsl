@@ -46,6 +46,7 @@ rule tokenize = parse
 // More misc
 | "." { DOT }
 | "," { COMMA }
+| ";" { SEMICOLON }
 
 // EOF
 | eof   { EOF }

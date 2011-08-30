@@ -12,9 +12,7 @@ open Swensen.NewLang.Ast
 %token IN EQ
 %token LPAREN RPAREN
 %token EOF
-%token COMMA
-%token INVOKE
-%token DOT
+%token COMMA DOT SEMICOLON
 
 %left PLUS MINUS
 %left TIMES DIV
@@ -59,3 +57,4 @@ exp:
 	| longId EQ exp IN exp   				{ UT.Let($1.ToLower(),$3,$5) }
 	| longId LPAREN expList RPAREN			{ UT.IdCall($1.ToLower(),$3) }
 	| exp DOT ID LPAREN expList RPAREN		{ UT.ExpCall($1,$3.ToLower(),$5) }
+	| exp SEMICOLON exp						{ UT.Sequential($1,$3) }

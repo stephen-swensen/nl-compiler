@@ -19,6 +19,7 @@ module UT =
         | Var              of string
         | IdCall           of string * exp list
         | ExpCall          of exp * string * exp list
+        | Sequential       of exp * exp
 
 ///Symantically check expressions generated from UT.exp
 type exp =
@@ -32,6 +33,7 @@ type exp =
     | Coerce        of exp * Type
     | StaticCall    of System.Reflection.MethodInfo * exp list * Type
     | InstanceCall  of exp * System.Reflection.MethodInfo * exp list * Type
+    | Sequential    of exp * exp * Type
 
     with 
         member this.Type =
@@ -45,7 +47,9 @@ type exp =
             | Var(_,ty) 
             | Coerce(_,ty)
             | StaticCall(_,_,ty)
+            | Sequential(_,_,ty)
             | InstanceCall(_,_,_,ty) -> ty
+            
 
 type CoreOps =
     static member Factorial(n:int) =
@@ -146,3 +150,6 @@ let rec tycheck venv exp =
         match Map.tryFind idLead venv with
         | Some(ty) -> Var(idLead,ty)
         | None -> failwithf "Var not found in environment: %s" idLead
+    | UT.Sequential(x,y) ->
+        let x, y = tycheck venv x, tycheck venv y
+        Sequential(x,y,y.Type)
