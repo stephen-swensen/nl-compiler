@@ -14,6 +14,7 @@ open Swensen.NewLang.Ast
 %token EOF
 %token COMMA DOT SEMICOLON
 
+%right SEMICOLON
 %left PLUS MINUS
 %left TIMES DIV
 %right POW
@@ -29,7 +30,7 @@ open Swensen.NewLang.Ast
 %%
 
 start:
-    | exp EOF				 { $1 |> tycheck Map.empty }
+    | exp EOF { $1 |> tycheck Map.empty }
 
 expList:
 	| exp { [$1] }

@@ -146,5 +146,9 @@ let ``multiple sequential expressions`` () =
     test <@ C.eval "3;4;5" = box 5 @>
 
 [<Fact>]
+let ``sequential expressions have weak right associativity`` () =
+    test <@ C.eval "2 + 3 ; 3 + 5" = box 8 @>
+
+[<Fact>]
 let ``sequential expression with rhs void (result does not need to be popped from the stack)`` () =
     test <@ C.eval "system.console.writeline(\"3\"); 4" = box 4 @>
