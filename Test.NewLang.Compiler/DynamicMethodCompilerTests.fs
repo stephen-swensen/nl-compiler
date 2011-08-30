@@ -144,3 +144,7 @@ let ``sequential expression`` () =
 [<Fact>]
 let ``multiple sequential expressions`` () =
     test <@ C.eval "3;4;5" = box 5 @>
+
+[<Fact>]
+let ``sequential expression with rhs void (result does not need to be popped from the stack)`` () =
+    test <@ C.eval "system.console.writeline(\"3\"); 4" = box 4 @>
