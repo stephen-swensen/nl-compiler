@@ -9,6 +9,7 @@ let rec loop() =
         try
             printfn "%A" (Compiler.eval str)
         with ex ->
+            let ex = if ex.InnerException <> null then ex.InnerException else ex
             printfn "%s" ex.Message
 
         //printfn "%A" (Compiler.eval str)

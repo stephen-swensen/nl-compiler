@@ -70,6 +70,11 @@ let emitOpCodes (il:ILGenerator) ast =
                 il.Emit(OpCodes.Call, meth)
             else
                 il.Emit(OpCodes.Callvirt, meth)
+        | Sequential(x,y,_) ->
+            emit lenv x
+            il.Emit(OpCodes.Pop)
+            emit lenv y
+
     emit Map.empty ast |> ignore
 
 let dmFromAst (ast:exp) =

@@ -136,3 +136,11 @@ let ``static call`` () =
 [<Fact>]
 let ``static call is case insensitive`` () =
     test <@ C.eval "System.STRING.Concat(\"hello \", \"world\")" = box "hello world" @>
+
+[<Fact>]
+let ``sequential expression`` () =
+    test <@ C.eval "3;4" = box 4 @>
+
+[<Fact>]
+let ``multiple sequential expressions`` () =
+    test <@ C.eval "3;4;5" = box 5 @>
