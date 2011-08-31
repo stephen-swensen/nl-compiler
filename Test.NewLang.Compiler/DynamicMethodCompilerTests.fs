@@ -156,3 +156,7 @@ let ``sequential expression with rhs void (result does not need to be popped fro
 [<Fact>]
 let ``constructor`` () =
     test <@ C.eval "system.collections.arraylist()" :? System.Collections.ArrayList @>
+
+[<Fact>]
+let ``char literal`` () =
+    test <@ C.eval "'c'" = box 'c' @>

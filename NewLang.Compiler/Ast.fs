@@ -20,6 +20,7 @@ module UT =
         | IdCall           of string * exp list
         | ExpCall          of exp * string * exp list
         | Sequential       of exp * exp
+        | Char             of char
 
 ///Symantically check expressions generated from UT.exp
 type exp =
@@ -35,12 +36,14 @@ type exp =
     | InstanceCall  of exp * System.Reflection.MethodInfo * exp list * Type
     | Sequential    of exp * exp * Type
     | Ctor          of System.Reflection.ConstructorInfo * exp list * Type
+    | Char          of char
     with 
         member this.Type =
             match this with
             | Double(_)              -> typeof<float>
             | Int32(_)               -> typeof<int>
             | String(_)              -> typeof<string>
+            | Char(_)              -> typeof<char>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
@@ -75,10 +78,11 @@ let coerceIfNeeded  (expectedTy:Type) (targetExp:exp) =
 ///Symantic analysis (type checking)
 let rec tycheck venv exp =
     match exp with
-    | UT.Double(x) -> Double x
-    | UT.Int32(x)  -> Int32 x
-    | UT.String(x) -> String x
-    | UT.UMinus(x) ->
+    | UT.Double x -> Double x
+    | UT.Int32 x  -> Int32 x
+    | UT.String x -> String x
+    | UT.Char x   -> Char x
+    | UT.UMinus x ->
         let x = tycheck venv x
         UMinus(x,x.Type)
     | UT.Fact(x) ->
