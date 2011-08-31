@@ -34,7 +34,7 @@ type exp =
     | StaticCall    of System.Reflection.MethodInfo * exp list * Type
     | InstanceCall  of exp * System.Reflection.MethodInfo * exp list * Type
     | Sequential    of exp * exp * Type
-
+    | Ctor          of System.Reflection.ConstructorInfo * exp list * Type
     with 
         member this.Type =
             match this with
@@ -47,11 +47,12 @@ type exp =
             | Var(_,ty) 
             | Coerce(_,ty)
             | StaticCall(_,_,ty)
+            | InstanceCall(_,_,_,ty) 
             | Sequential(_,_,ty)
-            | InstanceCall(_,_,_,ty) -> ty
-            
-
+            | Ctor(_,_,ty)
+                -> ty
 type CoreOps =
+    //todo: make non-recursive
     static member Factorial(n:int) =
         let rec fact n = 
             match n with 
@@ -120,19 +121,24 @@ let rec tycheck venv exp =
         | Some(instanceTy:Type) -> 
             let meth = instanceTy.GetMethod(methodName, instanceFlags, null, argTys, null)
             if meth = null then
-                failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instanceTy.Name methodName argTys
+                failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys
         
             InstanceCall(Var(idLead,instanceTy), meth, args, meth.ReturnType)
-        | None ->        
-            let ty = Type.GetType(idLead,true,true)
+        | None ->
+            let ty = Type.GetType(idLead,false,true)
             if ty = null then
-                failwithf "not a valid type: %s" idLead
+                let ty = Type.GetType(longId,false,true)
+                if ty = null then
+                    failwithf "could not resolve method call type %s or constructor type %s" idLead longId
+                else
+                    let ctor = ty.GetConstructor(argTys)
+                    Ctor(ctor, args, ty)
+            else        
+                let meth = ty.GetMethod(methodName, staticFlags, null, argTys, null)
+                if meth = null then
+                    failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" idLead methodName argTys
         
-            let meth = ty.GetMethod(methodName, staticFlags, null, argTys, null)
-            if meth = null then
-                failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" idLead methodName argTys
-        
-            StaticCall(meth, args, meth.ReturnType)
+                StaticCall(meth, args, meth.ReturnType)
     | UT.ExpCall(instance,methodName, args) ->
         let instance = tycheck venv instance
         let args = args |> List.map (tycheck venv)
