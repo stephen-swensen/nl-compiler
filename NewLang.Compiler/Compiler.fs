@@ -31,7 +31,7 @@ let emitOpCodes (il:ILGenerator) ast =
             emit lenv x
             il.Emit(OpCodes.Neg)
         | NumericBinop(op,x,y,_) -> 
-            emit lenv x ; emit lenv y
+            emitAll lenv [x;y]
             match op with
             | Plus  -> il.Emit(OpCodes.Add)
             | Minus -> il.Emit(OpCodes.Sub)
@@ -63,8 +63,7 @@ let emitOpCodes (il:ILGenerator) ast =
                 il.Emit(OpCodes.Stloc, loc)
                 il.Emit(OpCodes.Ldloca, loc)
             
-            for arg in args do 
-                emit lenv arg
+            emitAll lenv args
             
             if instance.Type.IsValueType then
                 il.Emit(OpCodes.Call, meth)
@@ -74,11 +73,12 @@ let emitOpCodes (il:ILGenerator) ast =
             emit lenv x
             if x.Type <> typeof<System.Void> then il.Emit(OpCodes.Pop)
             emit lenv y
-        | Ctor(ctor, args, _) ->
-            for arg in args do 
-                emit lenv arg
-            
-            il.Emit(OpCodes.Newobj, ctor)            
+        | Ctor(ctor, args, _) -> 
+            emitAll lenv args
+            il.Emit(OpCodes.Newobj, ctor)
+    and emitAll lenv exps =
+        for arg in exps do 
+            emit lenv arg
 
     emit Map.empty ast |> ignore
 
