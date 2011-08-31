@@ -74,6 +74,11 @@ let emitOpCodes (il:ILGenerator) ast =
             emit lenv x
             if x.Type <> typeof<System.Void> then il.Emit(OpCodes.Pop)
             emit lenv y
+        | Ctor(ctor, args, _) ->
+            for arg in args do 
+                emit lenv arg
+            
+            il.Emit(OpCodes.Newobj, ctor)            
 
     emit Map.empty ast |> ignore
 

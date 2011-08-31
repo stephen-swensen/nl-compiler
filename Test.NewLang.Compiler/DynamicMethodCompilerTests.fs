@@ -152,3 +152,7 @@ let ``sequential expressions have weak right associativity`` () =
 [<Fact>]
 let ``sequential expression with rhs void (result does not need to be popped from the stack)`` () =
     test <@ C.eval "system.console.writeline(\"3\"); 4" = box 4 @>
+
+[<Fact>]
+let ``constructor`` () =
+    test <@ C.eval "system.collections.arraylist()" :? System.Collections.ArrayList @>
