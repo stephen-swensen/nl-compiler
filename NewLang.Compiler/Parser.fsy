@@ -7,6 +7,7 @@ open Swensen.NewLang.Ast
 %token <int> INT32
 %token <float> DOUBLE
 %token <string> STRING
+%token <char> CHAR
 %token PLUS MINUS TIMES DIV POW FACT CONCAT
 %token <string> ID
 %token IN EQ
@@ -53,6 +54,7 @@ exp:
 	| INT32					 				{ UT.Int32($1) }
 	| DOUBLE				 				{ UT.Double($1) }
 	| STRING				 				{ UT.String($1) }
+	| CHAR					 				{ UT.Char($1) }
 	| longId				 				{ UT.Var($1.ToLower())}
 	| LPAREN exp RPAREN		 				{ $2 }
 	| longId EQ exp IN exp   				{ UT.Let($1.ToLower(),$3,$5) }
