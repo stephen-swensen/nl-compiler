@@ -92,7 +92,7 @@ let dmFromAst (ast:exp) =
 
 let dmFromString = parseFromString>>dmFromAst
 
-let eval code = (dmFromString code).Invoke(null,null)
+let eval<'a> code : 'a = (dmFromString code).Invoke(null,null) |> unbox
 
 open System.Reflection
 
