@@ -10,13 +10,20 @@ module SA = SemanticAnalysis
 
 open  System.Reflection.Emit
 
+let setInitialPos (lexbuf:LexBuffer<char>) filename = 
+    lexbuf.EndPos <- { pos_bol = 0;
+                       pos_fname=filename; 
+                       pos_cnum=0;
+                       pos_lnum=1 }
+
 let parseFromString code =
-    let lexbuff = LexBuffer<char>.FromString(code)
+    let lexbuf = LexBuffer<char>.FromString(code)
+    setInitialPos lexbuf ""
     try 
-        Parser.start Lexer.tokenize lexbuff 
+        Parser.start Lexer.tokenize lexbuf
         |> SA.tycheck Map.empty
     with e ->
-        let pos = lexbuff.EndPos
+        let pos = lexbuf.EndPos
         let line = pos.Line
         let column = pos.Column
         let message = e.Message  // "parse error"
