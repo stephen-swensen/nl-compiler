@@ -3,17 +3,18 @@
 open Microsoft.FSharp.Text.Lexing
 open System
 
-open Ast
 open Lexer
 open Parser
+
+module SA = SemanticAnalysis
 
 open  System.Reflection.Emit
 
 let parseFromString code =
     let lexbuff = LexBuffer<char>.FromString(code)
     try 
-        let ast = Parser.start Lexer.tokenize lexbuff
-        ast
+        Parser.start Lexer.tokenize lexbuff 
+        |> SA.tycheck Map.empty
     with e ->
         let pos = lexbuff.EndPos
         let line = pos.Line
@@ -83,7 +84,7 @@ let emitOpCodes (il:ILGenerator) ast =
 
     emit Map.empty ast |> ignore
 
-let dmFromAst (ast:exp) =
+let dmFromAst (ast:texp) =
     let dm = System.Reflection.Emit.DynamicMethod("NewLang", ast.Type, null)
     let il = dm.GetILGenerator()
     emitOpCodes il ast
