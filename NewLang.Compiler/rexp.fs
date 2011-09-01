@@ -17,7 +17,7 @@ type rexp =
     | Fact             of rexp
     | Let              of string * rexp * rexp
     | Var              of string
-    | IdCall           of string * rexp list
+    | NameCall         of string * rexp list
     | ExpCall          of rexp * string * rexp list
     | Sequential       of rexp * rexp
     | Char             of char

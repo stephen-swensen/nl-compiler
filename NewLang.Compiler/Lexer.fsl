@@ -44,7 +44,7 @@ rule tokenize = parse
 //assignment
 | "=" { EQ }
 | "in" { IN }
-| (alpha | '_')+(digit | alpha | '_')* { ID (lexeme lexbuf |> string) }
+| (alpha | '_')+(digit | alpha | '_')* { NAME (lexeme lexbuf |> string) }
 
 // More misc
 | "." { DOT }
