@@ -53,32 +53,32 @@ let rec tycheck venv rawExpression =
             else
                 failwithf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type 
         texp.NumericBinop(op, coerceIfNeeded ty x, coerceIfNeeded ty y, ty)
-    | rexp.IdCall(longId, args) ->
-        let idLead, methodName =
-            let split = longId.Split('.')
+    | rexp.NameCall(longName, args) ->
+        let namePrefix, methodName =
+            let split = longName.Split('.')
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
         let args = args |> List.map (tycheck venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        match Map.tryFind idLead venv with
+        match Map.tryFind namePrefix venv with
         | Some(instanceTy:Type) -> 
             let meth = instanceTy.GetMethod(methodName, instanceFlags, null, argTys, null)
             if meth = null then
                 failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys
         
-            texp.InstanceCall(Var(idLead,instanceTy), meth, args, meth.ReturnType)
+            texp.InstanceCall(Var(namePrefix,instanceTy), meth, args, meth.ReturnType)
         | None ->
-            let ty = Type.GetType(idLead,false,true)
+            let ty = Type.GetType(namePrefix,false,true)
             if ty = null then
-                let ty = Type.GetType(longId,false,true)
+                let ty = Type.GetType(longName,false,true)
                 if ty = null then
-                    failwithf "could not resolve method call type %s or constructor type %s" idLead longId
+                    failwithf "could not resolve method call type %s or constructor type %s" namePrefix longName
                 else
                     let ctor = ty.GetConstructor(argTys)
                     texp.Ctor(ctor, args, ty)
             else        
                 let meth = ty.GetMethod(methodName, staticFlags, null, argTys, null)
                 if meth = null then
-                    failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" idLead methodName argTys
+                    failwithf "not a valid method: %s, for the given class type: %s, and arg types: %A" namePrefix methodName argTys
         
                 texp.StaticCall(meth, args, meth.ReturnType)
     | rexp.ExpCall(instance,methodName, args) ->
@@ -90,14 +90,14 @@ let rec tycheck venv rawExpression =
             failwithf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys
         
         InstanceCall(instance, meth, args, meth.ReturnType)
-    | rexp.Let(idLead, assign, body) ->
+    | rexp.Let(namePrefix, assign, body) ->
         let assign = tycheck venv assign
-        let body = tycheck (venv |> Map.add idLead assign.Type) body
-        texp.Let(idLead,assign, body, body.Type)
-    | rexp.Var(idLead) ->
-        match Map.tryFind idLead venv with
-        | Some(ty) -> texp.Var(idLead,ty)
-        | None -> failwithf "Var not found in environment: %s" idLead
+        let body = tycheck (venv |> Map.add namePrefix assign.Type) body
+        texp.Let(namePrefix,assign, body, body.Type)
+    | rexp.Var(namePrefix) ->
+        match Map.tryFind namePrefix venv with
+        | Some(ty) -> texp.Var(namePrefix,ty)
+        | None -> failwithf "Var not found in environment: %s" namePrefix
     | rexp.Sequential(x,y) ->
         let x, y = tycheck venv x, tycheck venv y
         texp.Sequential(x,y,y.Type)
