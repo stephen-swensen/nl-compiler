@@ -42,7 +42,7 @@
     <FsYaccOutputFolder>$(IntermediateOutputPath)</FsYaccOutputFolder>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Ast.fs" />
+    <Compile Include="rexp.fs" />
     <Compile Include="$(IntermediateOutputPath)\Parser.fs">
       <Visible>false</Visible>
       <Link>Parser.fs</Link>
@@ -57,6 +57,9 @@
     <FsYacc Include="Parser.fsy">
       <OtherFlags>--module Swensen.NewLang.Parser</OtherFlags>
     </FsYacc>
+    <Compile Include="texp.fs" />
+    <Compile Include="CoreOps.fs" />
+    <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="Compiler.fs" />
   </ItemGroup>
   <ItemGroup>
