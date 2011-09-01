@@ -16,7 +16,7 @@ let newline = ('\n' | '\r' '\n')
 
 rule tokenize = parse
 | whitespace	{ tokenize lexbuf }
-| newline       { tokenize lexbuf }
+| newline       { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
 
 // Operators
 | "+"			{ PLUS }
