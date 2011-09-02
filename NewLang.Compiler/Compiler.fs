@@ -22,7 +22,7 @@ let parseFromString code =
     setInitialPos lexbuf ""
     try 
         Parser.start Lexer.tokenize lexbuf
-        |> SA.tycheck ["system"; "system.console"] Map.empty
+        |> SA.tycheck ["system"] Map.empty
     with e ->
         if e.Message = "parse error" then //fragil hack check
             raise <| SyntaxErrorException(lexbuf.StartPos)
