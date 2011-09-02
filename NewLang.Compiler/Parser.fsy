@@ -2,6 +2,9 @@
 
 open Swensen.NewLang
 
+//let parse_error msg =
+//    failwithf "%A" msg
+
 %}
 
 %token <int> INT32
