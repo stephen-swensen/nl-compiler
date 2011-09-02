@@ -2,6 +2,7 @@
 
 open Microsoft.FSharp.Text.Lexing
 open System
+open Swensen.NewLang
 
 open Lexer
 open Parser
@@ -23,11 +24,10 @@ let parseFromString code =
         Parser.start Lexer.tokenize lexbuf
         |> SA.tycheck Map.empty
     with e ->
-        let pos = lexbuf.EndPos
-        let line = pos.Line
-        let column = pos.Column
-        let message = e.Message  // "parse error"
-        failwithf "Error at line %i, column %i: %s" line column message
+        if e.Message = "parse error" then //fragil hack check
+            raise <| SyntaxErrorException(lexbuf.StartPos)
+        else
+            reraise()
 
 let emitOpCodes (il:ILGenerator) ast =
     let rec emit lenv ast =
