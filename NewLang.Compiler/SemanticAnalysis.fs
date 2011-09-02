@@ -18,24 +18,24 @@ let coerceIfNeeded  (expectedTy:Type) (targetExp:texp) =
     if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
 
 ///Symantic analysis (type checking)
-let rec tycheck venv rawExpression =
+let rec tycheck openNames venv rawExpression =
     match rawExpression with
     | rexp.Double x -> texp.Double x
     | rexp.Int32 x  -> texp.Int32 x
     | rexp.String x -> texp.String x
     | rexp.Char x   -> texp.Char x
     | rexp.UMinus(x,pos) ->
-        let x = tycheck venv x
+        let x = tycheck openNames venv x
         texp.UMinus(x,x.Type)
     | rexp.Fact(x,pos) ->
-        let x = tycheck venv x
+        let x = tycheck openNames venv x
         if x.Type <> typeof<int> then
             semError pos (sprintf "factorial expects int but got: %A" x.Type)
         else
             let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
             texp.StaticCall(meth, [x], meth.ReturnType)
     | rexp.Concat(x,y,pos) ->
-        let x, y = tycheck venv x, tycheck venv y
+        let x, y = tycheck openNames venv x, tycheck openNames venv y
         if x.Type = typeof<string> || y.Type = typeof<string> then
             let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
             checkMeth meth pos "Concat" [x;y]
@@ -43,12 +43,12 @@ let rec tycheck venv rawExpression =
         else
             semError pos (sprintf "invalid types for Concat: %A" [x;y])
     | rexp.Pow(x,y,pos) ->
-        let x, y = tycheck venv x, tycheck venv y
+        let x, y = tycheck openNames venv x, tycheck openNames venv y
         let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
         checkMeth meth pos "Pow" [x;y]
         texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
     | rexp.NumericBinop(op,x,y,pos) ->
-        let x, y = tycheck venv x, tycheck venv y
+        let x, y = tycheck openNames venv x, tycheck openNames venv y
         let ty =
             if x.Type = typeof<float> || y.Type = typeof<float> then
                 typeof<float>
@@ -61,7 +61,7 @@ let rec tycheck venv rawExpression =
         let namePrefix, methodName =
             let split = longName.Split('.')
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
-        let args = args |> List.map (tycheck venv)
+        let args = args |> List.map (tycheck openNames venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         match Map.tryFind namePrefix venv with
         | Some(instanceTy:Type) -> 
@@ -80,20 +80,22 @@ let rec tycheck venv rawExpression =
                 checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given class type: %s, and arg types: %A" namePrefix methodName argTys))
                 texp.StaticCall(meth, args, meth.ReturnType)
     | rexp.ExpCall(instance,methodName, args, pos) ->
-        let instance = tycheck venv instance
-        let args = args |> List.map (tycheck venv)
+        let instance = tycheck openNames venv instance
+        let args = args |> List.map (tycheck openNames venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         let meth = instance.Type.GetMethod(methodName, instanceFlags, null, argTys, null)
         checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys))
         InstanceCall(instance, meth, args, meth.ReturnType)
-    | rexp.Let(namePrefix, assign, body, pos) ->
-        let assign = tycheck venv assign
-        let body = tycheck (venv |> Map.add namePrefix assign.Type) body
-        texp.Let(namePrefix,assign, body, body.Type)
-    | rexp.Var(namePrefix, pos) ->
-        match Map.tryFind namePrefix venv with
-        | Some(ty) -> texp.Var(namePrefix,ty)
-        | None -> semError pos (sprintf "Var not found in environment: %s" namePrefix)
+    | rexp.Let(name, assign, body, pos) ->
+        let assign = tycheck openNames venv assign
+        let body = tycheck openNames (venv |> Map.add name assign.Type) body
+        texp.Let(name,assign, body, body.Type)
+    | rexp.Var(name, pos) ->
+        match Map.tryFind name venv with
+        | Some(ty) -> texp.Var(name,ty)
+        | None -> semError pos (sprintf "Var not found in environment: %s" name)
     | rexp.Sequential(x,y, pos) ->
-        let x, y = tycheck venv x, tycheck venv y
+        let x, y = tycheck openNames venv x, tycheck openNames venv y
         texp.Sequential(x,y,y.Type)
+    | rexp.Open(name, x, _) ->
+        tycheck (name::openNames) venv x

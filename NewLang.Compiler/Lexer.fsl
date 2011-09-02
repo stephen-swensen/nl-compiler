@@ -15,21 +15,27 @@ let whitespace = [' ' '\t' ]
 let newline = ('\n' | '\r' '\n')
 
 rule tokenize = parse
-| whitespace	{ tokenize lexbuf }
-| newline       { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
+| whitespace { tokenize lexbuf }
+| newline    { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
 
 // Operators
-| "+"			{ PLUS }
-| "-"			{ MINUS }
-| "*"			{ TIMES }
-| "/"			{ DIV }
-| "^"			{ POW }
-| "!"			{ FACT }
-| "++"			{ CONCAT }
+| "+"  { PLUS }
+| "-"  { MINUS }
+| "*"  { TIMES }
+| "/"  { DIV }
+| "^"  { POW }
+| "!"  { FACT }
+| "++" { CONCAT }
 
-// Misc
-| "("			{ LPAREN }
-| ")"			{ RPAREN }
+//various symbols and keywords
+| "(" { LPAREN }
+| ")" { RPAREN }
+| "." { DOT }
+| "," { COMMA }
+| ";" { SEMICOLON }
+| "open" { OPEN }
+| "="  { EQ }
+| "in" { IN }
 
 //string literal
 | '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
@@ -38,18 +44,11 @@ rule tokenize = parse
 | ''' _ ''' { CHAR (let s = lexeme lexbuf in s.[1]) }
 
 // Numeric constants
-| digit+									{ INT32 (lexeme lexbuf |> int) }
-| digit+('.'digit+)?(['e''E']digit+)?		{ DOUBLE (lexeme lexbuf |> float) }
+| digit+							  { INT32 (lexeme lexbuf |> int) }
+| digit+('.'digit+)?(['e''E']digit+)? { DOUBLE (lexeme lexbuf |> float) }
 
-//assignment
-| "=" { EQ }
-| "in" { IN }
+// Names
 | (alpha | '_')+(digit | alpha | '_')* { NAME (lexeme lexbuf |> string) }
 
-// More misc
-| "." { DOT }
-| "," { COMMA }
-| ";" { SEMICOLON }
-
 // EOF
-| eof   { EOF }
+| eof { EOF }

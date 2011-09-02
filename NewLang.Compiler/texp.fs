@@ -7,6 +7,7 @@ type texp =
     | Double        of float
     | Int32         of int
     | String        of string
+    | Char          of char
     | NumericBinop  of numericBinop * texp * texp * Type
     | UMinus        of texp * Type
     | Let           of string * texp * texp * Type
@@ -16,7 +17,6 @@ type texp =
     | InstanceCall  of texp * System.Reflection.MethodInfo * texp list * Type
     | Sequential    of texp * texp * Type
     | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
-    | Char          of char
     with 
         member this.Type =
             match this with

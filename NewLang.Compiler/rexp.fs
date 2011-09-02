@@ -22,3 +22,4 @@ type rexp =
     | NameCall         of string * rexp list * Position
     | ExpCall          of rexp * string * rexp list * Position
     | Sequential       of rexp * rexp * Position
+    | Open             of string * rexp * Position

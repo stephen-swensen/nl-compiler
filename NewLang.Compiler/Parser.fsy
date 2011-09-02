@@ -15,8 +15,9 @@ open Swensen.NewLang
 %token <string> NAME
 %token IN EQ
 %token LPAREN RPAREN
-%token EOF
 %token COMMA DOT SEMICOLON
+%token OPEN
+%token EOF
 
 %right SEMICOLON
 %left PLUS MINUS
@@ -46,21 +47,22 @@ longName:
 	| NAME DOT longName { $1 + "." + $3 }
 
 rexp: 
-    | rexp PLUS  rexp			 				{ rexp.NumericBinop(Plus, $1, $3, parseState.InputStartPosition 1) }
-    | rexp MINUS rexp			 				{ rexp.NumericBinop(Minus, $1, $3, parseState.InputStartPosition 1) }
-	| rexp TIMES rexp			 				{ rexp.NumericBinop(Times, $1, $3, parseState.InputStartPosition 1) }
-	| rexp DIV rexp			 					{ rexp.NumericBinop(Div, $1, $3, parseState.InputStartPosition 1) }
-	| rexp POW rexp			 					{ rexp.Pow($1, $3, parseState.InputStartPosition 1) }
-	| rexp CONCAT rexp		 					{ rexp.Concat($1, $3, parseState.InputStartPosition 1) }
-	| rexp FACT				 					{ rexp.Fact($1, parseState.InputStartPosition 1) }
+    | rexp PLUS  rexp			 				{ rexp.NumericBinop(Plus, $1, $3, parseState.InputStartPosition 2) }
+    | rexp MINUS rexp			 				{ rexp.NumericBinop(Minus, $1, $3, parseState.InputStartPosition 2) }
+	| rexp TIMES rexp			 				{ rexp.NumericBinop(Times, $1, $3, parseState.InputStartPosition 2) }
+	| rexp DIV rexp			 					{ rexp.NumericBinop(Div, $1, $3, parseState.InputStartPosition 2) }
+	| rexp POW rexp			 					{ rexp.Pow($1, $3, parseState.InputStartPosition 2) }
+	| rexp CONCAT rexp		 					{ rexp.Concat($1, $3, parseState.InputStartPosition 2) }
+	| rexp FACT				 					{ rexp.Fact($1, parseState.InputStartPosition 2) }
 	| MINUS rexp %prec UMINUS 					{ rexp.UMinus($2, parseState.InputStartPosition 1) }
 	| INT32					 					{ rexp.Int32($1) }
 	| DOUBLE				 					{ rexp.Double($1) }
 	| STRING				 					{ rexp.String($1) }
 	| CHAR					 					{ rexp.Char($1) }
-	| longName				 					{ rexp.Var($1.ToLower(), parseState.InputStartPosition 2)}
+	| longName				 					{ rexp.Var($1.ToLower(), parseState.InputStartPosition 1)}
 	| LPAREN rexp RPAREN		 				{ $2 }
 	| longName EQ rexp IN rexp   				{ rexp.Let($1.ToLower(),$3,$5, parseState.InputStartPosition 1) }
 	| longName LPAREN rexpList RPAREN			{ rexp.NameCall($1.ToLower(),$3, parseState.InputStartPosition 1) }
 	| rexp DOT NAME LPAREN rexpList RPAREN		{ rexp.ExpCall($1,$3.ToLower(),$5, parseState.InputStartPosition 1) }
-	| rexp SEMICOLON rexp						{ rexp.Sequential($1,$3, parseState.InputStartPosition 1) }
+	| rexp SEMICOLON rexp						{ rexp.Sequential($1,$3, parseState.InputStartPosition 2) }
+	| OPEN longName IN rexp						{ rexp.Open($2.ToLower(),$4, parseState.InputStartPosition 1) }

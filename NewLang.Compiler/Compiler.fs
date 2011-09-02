@@ -12,9 +12,9 @@ module SA = SemanticAnalysis
 open  System.Reflection.Emit
 
 let setInitialPos (lexbuf:LexBuffer<char>) filename = 
-    lexbuf.EndPos <- { pos_bol = 0;
-                       pos_fname=filename; 
-                       pos_cnum=0;
+    lexbuf.EndPos <- { pos_bol = 0
+                       pos_fname=filename
+                       pos_cnum=1
                        pos_lnum=1 }
 
 let parseFromString code =
@@ -22,7 +22,7 @@ let parseFromString code =
     setInitialPos lexbuf ""
     try 
         Parser.start Lexer.tokenize lexbuf
-        |> SA.tycheck Map.empty
+        |> SA.tycheck ["system"; "system.console"] Map.empty
     with e ->
         if e.Message = "parse error" then //fragil hack check
             raise <| SyntaxErrorException(lexbuf.StartPos)
