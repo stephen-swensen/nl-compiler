@@ -63,15 +63,25 @@ let rec tycheck openNames venv rawExpression =
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
         let args = args |> List.map (tycheck openNames venv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        match Map.tryFind namePrefix venv with
+        match Map.tryFind namePrefix venv with //N.B. vars always supercede open names
         | Some(instanceTy:Type) -> 
             let meth = instanceTy.GetMethod(methodName, instanceFlags, null, argTys, null)
             checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys))
             texp.InstanceCall(Var(namePrefix,instanceTy), meth, args, meth.ReturnType)
         | None ->
-            let ty = Type.GetType(namePrefix,false,true)
+            let getTypeFromOpenNames name =
+                let rec loop names =
+                    match names with
+                    | [] -> null
+                    | hd::tl -> 
+                        let ty = Type.GetType(hd,false,true)
+                        if ty = null then loop tl
+                        else ty
+                loop (name::(openNames |> List.map (fun n -> n + "." + name)))
+                
+            let ty = getTypeFromOpenNames namePrefix
             if ty = null then
-                let ty = Type.GetType(longName,false,true)
+                let ty = getTypeFromOpenNames longName
                 checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type %s or constructor type %s" namePrefix longName))
                 let ctor = ty.GetConstructor(argTys)
                 texp.Ctor(ctor, args, ty)
