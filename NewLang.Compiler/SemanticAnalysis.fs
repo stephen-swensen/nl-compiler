@@ -111,12 +111,14 @@ let rec tycheck refAsms openNames varEnv rawExpression =
     | rexp.Open(name, x, _) ->
         tycheck refAsms (name::openNames) varEnv x
     | rexp.Ref(name, x, pos) ->
-        try
-            Assembly.Load(name) |> ignore
-        with _ ->
-            try 
-                //are we sure we don't want to use LoadFile so that we can use reference in different scopes?
-                Assembly.LoadFrom(name) |> ignore
+        let name =
+            try
+                Assembly.Load(name) |> ignore
+                name
             with _ ->
-                semError pos (sprintf "Unable to resolve assembly reference: %s" name)
+                try 
+                    //are we sure we don't want to use LoadFile so that we can use reference in different scopes?
+                    Assembly.LoadFrom(name).FullName
+                with _ ->
+                    semError pos (sprintf "Unable to resolve assembly reference: %s" name)
         tycheck (name::refAsms) openNames varEnv x
