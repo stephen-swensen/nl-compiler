@@ -4,7 +4,8 @@ open System
 open Microsoft.FSharp.Text.Lexing
 
 type numericBinop = Plus | Minus | Times | Div
-type logicBinop = And | Or | ExOr
+type logicBinop = And | Or | XOr
+type comparisonOps = Eq | NotEq | Lt | Gt | LtEq | GtEq
 
 ///Raw (untyped) parsed expression
 type rexp =
@@ -12,6 +13,9 @@ type rexp =
     | Int32            of int
     | String           of string
     | Char             of char
+    | Bool             of bool
+//    | LogicBinop       of logicBinop * rexp * rexp * Position
+//    | Not              of rexp * Position
     | NumericBinop     of numericBinop * rexp * rexp * Position
     | Concat           of rexp * rexp * Position
     | Pow              of rexp * rexp * Position
