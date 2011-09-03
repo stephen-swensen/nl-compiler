@@ -43,8 +43,9 @@ let emitOpCodes (il:ILGenerator) ast =
         | Int32 x  -> il.Emit(OpCodes.Ldc_I4, x)
         | Double x -> il.Emit(OpCodes.Ldc_R8, x)
         | String x -> il.Emit(OpCodes.Ldstr, x)
-        | Char x ->   il.Emit(OpCodes.Ldc_I4_S, byte x)
-        | Bool x ->   il.Emit(OpCodes.Ldc_I4_S, if x then 1uy else 0uy)
+        | Char x   -> il.Emit(OpCodes.Ldc_I4_S, byte x)
+        | Bool x   -> il.Emit(OpCodes.Ldc_I4_S, if x then 1uy else 0uy)
+        | Null ty  -> il.Emit(OpCodes.Ldnull)
         | UMinus(x,_) -> 
             emit lenv x
             il.Emit(OpCodes.Neg)

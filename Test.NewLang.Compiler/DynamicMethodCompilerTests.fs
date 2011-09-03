@@ -193,3 +193,13 @@ let ``literal false`` () =
 let ``implicit downcast ref type and value type static call args`` () =
     //resolves to String.concat(obj,obj)
     test <@ C.eval "\"asdf\" + 3" = "asdf3" @>
+
+[<Fact>]
+let ``null literal`` () =
+    //resolves to String.concat(obj,obj)
+    test <@ C.eval "null(string)" = (null:string) @>
+
+[<Fact>]
+let ``null literal of value type is invalid`` () =
+    //resolves to String.concat(obj,obj)
+    raises<SemanticErrorException> <@ C.eval "null(int32)" @>
