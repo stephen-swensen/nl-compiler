@@ -110,3 +110,12 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         texp.Sequential(x,y,y.Type)
     | rexp.Open(name, x, _) ->
         tycheck refAsms (name::openNames) varEnv x
+    | rexp.Ref(name, x, pos) ->
+        try
+            Assembly.Load(name) |> ignore
+        with _ ->
+            try 
+                Assembly.LoadFrom(name) |> ignore
+            with _ ->
+                semError pos (sprintf "Unable to resolve assembly reference: %s" name)
+        tycheck (name::refAsms) openNames varEnv x
