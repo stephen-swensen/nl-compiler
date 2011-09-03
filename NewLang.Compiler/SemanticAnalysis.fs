@@ -24,6 +24,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
     | rexp.Int32 x  -> texp.Int32 x
     | rexp.String x -> texp.String x
     | rexp.Char x   -> texp.Char x
+    | rexp.Bool x   -> texp.Bool x
     | rexp.UMinus(x,pos) ->
         let x = tycheck refAsms openNames varEnv x
         texp.UMinus(x,x.Type)

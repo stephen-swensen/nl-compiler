@@ -11,6 +11,7 @@ open Swensen.NewLang
 %token <float> DOUBLE
 %token <string> STRING
 %token <char> CHAR
+%token <bool> BOOL
 %token PLUS MINUS TIMES DIV POW BANG CONCAT
 %token <string> NAME
 %token IN EQ
@@ -59,6 +60,7 @@ rexp:
 	| DOUBLE				 					{ rexp.Double($1) }
 	| STRING				 					{ rexp.String($1) }
 	| CHAR					 					{ rexp.Char($1) }
+	| BOOL					 					{ rexp.Bool($1) }
 	| longName				 					{ rexp.Var($1.ToLower(), parseState.InputStartPosition 1)}
 	| LPAREN rexp RPAREN		 				{ $2 }
 	| longName EQ rexp IN rexp   				{ rexp.Let($1.ToLower(),$3,$5, parseState.InputStartPosition 1) }

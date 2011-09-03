@@ -44,6 +44,10 @@ rule tokenize = parse
 | "="  { EQ }
 | "in" { IN }
 
+//bool literals
+| "true"  { BOOL (true) }
+| "false" { BOOL (false) } 
+
 //string literal
 | '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
 
