@@ -8,6 +8,7 @@ type texp =
     | Int32         of int
     | String        of string
     | Char          of char
+    | Bool          of bool
     | NumericBinop  of numericBinop * texp * texp * Type
     | UMinus        of texp * Type
     | Let           of string * texp * texp * Type
@@ -24,6 +25,7 @@ type texp =
             | Int32(_)               -> typeof<int>
             | String(_)              -> typeof<string>
             | Char(_)                -> typeof<char>
+            | Bool(_)                -> typeof<bool>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
