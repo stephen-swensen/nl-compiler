@@ -115,6 +115,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             Assembly.Load(name) |> ignore
         with _ ->
             try 
+                //are we sure we don't want to use LoadFile so that we can use reference in different scopes?
                 Assembly.LoadFrom(name) |> ignore
             with _ ->
                 semError pos (sprintf "Unable to resolve assembly reference: %s" name)
