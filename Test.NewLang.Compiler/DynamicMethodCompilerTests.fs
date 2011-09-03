@@ -190,6 +190,6 @@ let ``literal false`` () =
     test <@ C.eval "false" = false @>
 
 [<Fact>]
-let ``implicit downcast ref type and value type`` () =
+let ``implicit downcast ref type and value type static call args`` () =
     //resolves to String.concat(obj,obj)
     test <@ C.eval "\"asdf\" + 3" = "asdf3" @>
