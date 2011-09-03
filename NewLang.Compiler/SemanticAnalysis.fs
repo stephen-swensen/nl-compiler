@@ -33,12 +33,29 @@ let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
 
 ///Symantic analysis (type checking)
 let rec tycheck refAsms openNames varEnv rawExpression =
+    let resolveType name =
+        if name = "" then null
+        else
+            seq {
+                for possibleName in (name::(openNames |> List.map (fun n -> n + "." + name))) do
+                    for possibleAsm in refAsms do
+                        let possibleFullName = possibleName + ", " + possibleAsm
+                        let ty = Type.GetType(possibleFullName,false, true)
+                        yield ty
+            } |> Seq.tryFind (fun ty -> ty <> null) |> function Some(ty) -> ty | None -> null
+
     match rawExpression with
     | rexp.Double x -> texp.Double x
     | rexp.Int32 x  -> texp.Int32 x
     | rexp.String x -> texp.String x
     | rexp.Char x   -> texp.Char x
     | rexp.Bool x   -> texp.Bool x
+    | rexp.Null(name, pos)   -> 
+        let ty = resolveType name
+        checkNull ty (fun () -> semError pos (sprintf "could not resolve type of null: %s" name))
+        if ty.IsValueType then
+            semError pos (sprintf "null is not a valid value for the value type %s" name)
+        texp.Null(ty)
     | rexp.UMinus(x,pos) ->
         let x = tycheck refAsms openNames varEnv x
         texp.UMinus(x,x.Type)
@@ -84,17 +101,6 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys))
             texp.InstanceCall(Var(namePrefix,instanceTy), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | None ->
-            let resolveType name =
-                if name = "" then null
-                else
-                    seq {
-                        for possibleName in (name::(openNames |> List.map (fun n -> n + "." + name))) do
-                            for possibleAsm in refAsms do
-                                let possibleFullName = possibleName + ", " + possibleAsm
-                                let ty = Type.GetType(possibleFullName,false, true)
-                                yield ty
-                    } |> Seq.tryFind (fun ty -> ty <> null) |> function Some(ty) -> ty | None -> null
-                
             let ty = resolveType namePrefix
             if ty = null then
                 let ty = resolveType longName

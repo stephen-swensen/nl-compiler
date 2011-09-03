@@ -27,8 +27,8 @@ rule tokenize = parse
 | "!"  { BANG }
 // | "!=" { NOTEQ }
 // | "==" { EQ }
-// | ">"  { GT }
-// | "<"  { LT }
+//| ">"  { GT }
+//| "<"  { LT }
 // | ">=" { GTEQ }
 // | "<=" { LTEQ }
 
@@ -46,6 +46,9 @@ rule tokenize = parse
 //bool literals
 | "true"  { BOOL (true) }
 | "false" { BOOL (false) } 
+
+//null literal
+| "null" { NULL }
 
 //string literal
 | '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }

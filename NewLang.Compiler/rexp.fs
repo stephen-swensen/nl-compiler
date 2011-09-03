@@ -14,6 +14,7 @@ type rexp =
     | String           of string
     | Char             of char
     | Bool             of bool
+    | Null             of string * Position
 //    | LogicBinop       of logicBinop * rexp * rexp * Position
 //    | Not              of rexp * Position
     | NumericBinop     of numericBinop * rexp * rexp * Position

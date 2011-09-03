@@ -9,6 +9,7 @@ type texp =
     | String        of string
     | Char          of char
     | Bool          of bool
+    | Null          of Type
     | NumericBinop  of numericBinop * texp * texp * Type
     | UMinus        of texp * Type
     | Let           of string * texp * texp * Type
@@ -39,4 +40,5 @@ type texp =
             | InstanceCall(_,_,_,ty) 
             | Sequential(_,_,ty)
             | Ctor(_,_,ty)
+            | Null(ty)
                 -> ty
