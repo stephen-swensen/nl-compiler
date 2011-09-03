@@ -4,6 +4,9 @@ open System
 open System.Reflection
 open Swensen.NewLang
 
+let ra = ResizeArray.create 1 0
+//let x = System.Collections.Generic.List.
+
 let semError pos msg = raise <| SemanticErrorException(pos, msg)
 let checkNull x f = if x = null then f()
 
@@ -35,14 +38,6 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         else
             let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
             texp.StaticCall(meth, [x], meth.ReturnType)
-    | rexp.Concat(x,y,pos) ->
-        let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
-        if x.Type = typeof<string> || y.Type = typeof<string> then
-            let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
-            checkMeth meth pos "Concat" [x;y]
-            texp.StaticCall(meth, [x;y], meth.ReturnType)
-        else
-            semError pos (sprintf "invalid types for Concat: %A" [x;y])
     | rexp.Pow(x,y,pos) ->
         let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
         let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
@@ -50,14 +45,22 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
     | rexp.NumericBinop(op,x,y,pos) ->
         let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
-        let ty =
+        let retTy =
             if x.Type = typeof<float> || y.Type = typeof<float> then
-                typeof<float>
+                Some(typeof<float>)
             elif x.Type = typeof<int> && y.Type = typeof<int> then
-                typeof<int>
+                Some(typeof<int>)
             else
-                semError pos (sprintf "numeric binop expects float or int args but got lhs=%A, rhs=%A" x.Type y.Type)
-        texp.NumericBinop(op, coerceIfNeeded ty x, coerceIfNeeded ty y, ty)
+                None
+        match retTy with
+        | Some(retTy) ->
+            texp.NumericBinop(op, coerceIfNeeded retTy x, coerceIfNeeded retTy y, retTy)
+        | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) ->
+            let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
+            checkMeth meth pos "Concat" [x;y]
+            texp.StaticCall(meth, [x;y], meth.ReturnType)
+        | None ->
+            semError pos (sprintf "No overloads found for binary operator %A with light-hand type %A and right-hand type %A" op x.Type y.Type)
     | rexp.NameCall(longName, args, pos) ->
         let namePrefix, methodName =
             let split = longName.Split('.')

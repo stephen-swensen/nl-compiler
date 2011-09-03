@@ -17,7 +17,6 @@ type rexp =
 //    | LogicBinop       of logicBinop * rexp * rexp * Position
 //    | Not              of rexp * Position
     | NumericBinop     of numericBinop * rexp * rexp * Position
-    | Concat           of rexp * rexp * Position
     | Pow              of rexp * rexp * Position
     | UMinus           of rexp * Position
     | Fact             of rexp * Position

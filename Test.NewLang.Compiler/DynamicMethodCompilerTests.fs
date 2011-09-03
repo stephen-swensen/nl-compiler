@@ -91,7 +91,7 @@ let ``parenthesis to overcome precedence`` () =
 
 [<Fact>]
 let ``String concat`` () =
-    test <@ C.eval "\"hello \" ++ \"world\"" = "hello world" @>
+    test <@ C.eval "\"hello \" + \"world\"" = "hello world" @>
 
 [<Fact>]
 let ``var binding to literal value`` () =
