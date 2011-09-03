@@ -16,7 +16,7 @@ open Swensen.NewLang
 %token IN EQ
 %token LPAREN RPAREN
 %token COMMA DOT SEMICOLON
-%token OPEN
+%token OPEN REF
 %token EOF
 
 %right SEMICOLON
@@ -64,5 +64,6 @@ rexp:
 	| longName EQ rexp IN rexp   				{ rexp.Let($1.ToLower(),$3,$5, parseState.InputStartPosition 1) }
 	| longName LPAREN rexpList RPAREN			{ rexp.NameCall($1.ToLower(),$3, parseState.InputStartPosition 1) }
 	| rexp DOT NAME LPAREN rexpList RPAREN		{ rexp.ExpCall($1,$3.ToLower(),$5, parseState.InputStartPosition 1) }
-	| rexp SEMICOLON rexp						{ rexp.Sequential($1,$3, parseState.InputStartPosition 2) }
-	| OPEN longName IN rexp						{ rexp.Open($2.ToLower(),$4, parseState.InputStartPosition 1) }
+	| rexp SEMICOLON rexp						{ rexp.Sequential($1,$3, parseState.InputStartPosition 3) }
+	| OPEN longName IN rexp						{ rexp.Open($2.ToLower(),$4, parseState.InputStartPosition 2) }
+	| REF STRING IN rexp						{ rexp.Ref($2, $4, parseState.InputStartPosition 2) }

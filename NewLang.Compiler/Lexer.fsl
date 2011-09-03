@@ -34,6 +34,7 @@ rule tokenize = parse
 | "," { COMMA }
 | ";" { SEMICOLON }
 | "open" { OPEN }
+| "ref" { REF }
 | "="  { EQ }
 | "in" { IN }
 
