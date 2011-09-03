@@ -24,7 +24,13 @@ rule tokenize = parse
 | "*"  { TIMES }
 | "/"  { DIV }
 | "^"  { POW }
-| "!"  { FACT }
+| "!"  { BANG }
+// | "!=" { NOTEQ }
+// | "==" { EQ }
+// | ">"  { GT }
+// | "<"  { LT }
+// | ">=" { GTEQ }
+// | "<=" { LTEQ }
 | "++" { CONCAT }
 
 //various symbols and keywords
