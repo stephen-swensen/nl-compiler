@@ -31,7 +31,6 @@ rule tokenize = parse
 // | "<"  { LT }
 // | ">=" { GTEQ }
 // | "<=" { LTEQ }
-| "++" { CONCAT }
 
 //various symbols and keywords
 | "(" { LPAREN }
