@@ -172,3 +172,7 @@ let ``system.collections open by default`` () =
 [<Fact>]
 let ``open expression`` () =
     test <@ C.eval<obj> "open System.Diagnostics in Stopwatch()" :? System.Diagnostics.Stopwatch @>
+
+[<Fact>]
+let ``ref relative path dll`` () =
+    test <@ C.eval<obj> "ref \"xunit.dll\" in Xunit.Record()" :? Xunit.Record @>
