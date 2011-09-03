@@ -160,3 +160,15 @@ let ``constructor`` () =
 [<Fact>]
 let ``char literal`` () =
     test <@ C.eval "'c'" = 'c' @>
+
+[<Fact>]
+let ``system open by default`` () =
+    test <@ C.eval "string('c',3)" = "ccc" @>
+
+[<Fact>]
+let ``system.collections open by default`` () =
+    test <@ C.eval<obj> "arraylist()" :? System.Collections.ArrayList @>
+
+[<Fact>]
+let ``open expression`` () =
+    test <@ C.eval<obj> "open System.Diagnostics in Stopwatch()" :? System.Diagnostics.Stopwatch @>
