@@ -13,7 +13,10 @@ type texp =
     | UMinus        of texp * Type
     | Let           of string * texp * texp * Type
     | Var           of string * Type
+    //primitive coersion
     | Coerce        of texp * Type
+    //downcast or box type
+    | Cast          of texp * Type
     | StaticCall    of System.Reflection.MethodInfo * texp list * Type
     | InstanceCall  of texp * System.Reflection.MethodInfo * texp list * Type
     | Sequential    of texp * texp * Type
@@ -31,6 +34,7 @@ type texp =
             | Let(_,_,_,ty)
             | Var(_,ty) 
             | Coerce(_,ty)
+            | Cast(_,ty)
             | StaticCall(_,_,ty)
             | InstanceCall(_,_,_,ty) 
             | Sequential(_,_,ty)
