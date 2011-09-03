@@ -188,3 +188,8 @@ let ``literal true`` () =
 [<Fact>]
 let ``literal false`` () =
     test <@ C.eval "false" = false @>
+
+[<Fact>]
+let ``implicit downcast ref type and value type`` () =
+    //resolves to String.concat(obj,obj)
+    test <@ C.eval "\"asdf\" + 3" = "asdf3" @>

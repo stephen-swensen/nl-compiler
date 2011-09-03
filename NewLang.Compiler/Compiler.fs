@@ -71,6 +71,14 @@ let emitOpCodes (il:ILGenerator) ast =
                 il.Emit(OpCodes.Conv_I4)
             else
                 failwithf "unsupported coersion: %A" ty //shouldn't be possible since already ty checked
+        | Cast(x,ty) ->
+            emit lenv x
+            if x.Type.IsValueType then
+                il.Emit(OpCodes.Box,x.Type)
+                if ty <> typeof<obj> then //box value type to an interface
+                    il.Emit(OpCodes.Castclass, ty)
+            else
+                il.Emit(OpCodes.Castclass, ty)
         | StaticCall(meth,args,_) ->
             args |> List.iter (emit lenv)
             il.Emit(OpCodes.Call, meth)

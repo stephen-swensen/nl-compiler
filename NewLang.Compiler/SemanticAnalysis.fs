@@ -17,8 +17,19 @@ let staticFlags = BindingFlags.Static ||| BindingFlags.Public ||| BindingFlags.I
 let checkMeth (meth:MethodInfo) pos name tys =
     checkNull meth (fun () -> semError pos (sprintf "method %s not found for parameter types %A" name tys))
 
-let coerceIfNeeded  (expectedTy:Type) (targetExp:texp) =
+let coerceIfNeeded expectedTy (targetExp:texp) =
     if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
+
+let castIfNeeded expectedTy (targetExp:texp) =
+    if targetExp.Type <> expectedTy then Cast(targetExp,expectedTy) else targetExp
+
+let castEachIfNeeded expectedTys targetExps =
+    List.zip expectedTys targetExps
+    |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
+
+let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
+    List.zip (expectedParameters |> Seq.map (fun p -> p.ParameterType) |> Seq.toList)  targetExps
+    |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
 
 ///Symantic analysis (type checking)
 let rec tycheck refAsms openNames varEnv rawExpression =
@@ -58,7 +69,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) ->
             let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
             checkMeth meth pos "Concat" [x;y]
-            texp.StaticCall(meth, [x;y], meth.ReturnType)
+            texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
         | None ->
             semError pos (sprintf "No overloads found for binary operator %A with light-hand type %A and right-hand type %A" op x.Type y.Type)
     | rexp.NameCall(longName, args, pos) ->
@@ -71,7 +82,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         | Some(instanceTy:Type) -> 
             let meth = instanceTy.GetMethod(methodName, instanceFlags, null, argTys, null)
             checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys))
-            texp.InstanceCall(Var(namePrefix,instanceTy), meth, args, meth.ReturnType)
+            texp.InstanceCall(Var(namePrefix,instanceTy), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | None ->
             let resolveType name =
                 if name = "" then null
@@ -89,18 +100,18 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 let ty = resolveType longName
                 checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type %s or constructor type %s" namePrefix longName))
                 let ctor = ty.GetConstructor(argTys)
-                texp.Ctor(ctor, args, ty)
+                texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
             else        
                 let meth = ty.GetMethod(methodName, staticFlags, null, argTys, null)
                 checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given class type: %s, and arg types: %A" namePrefix methodName argTys))
-                texp.StaticCall(meth, args, meth.ReturnType)
+                texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.ExpCall(instance,methodName, args, pos) ->
         let instance = tycheck refAsms openNames varEnv instance
         let args = args |> List.map (tycheck refAsms openNames varEnv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         let meth = instance.Type.GetMethod(methodName, instanceFlags, null, argTys, null)
         checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys))
-        InstanceCall(instance, meth, args, meth.ReturnType)
+        InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.Let(name, assign, body, pos) ->
         let assign = tycheck refAsms openNames varEnv assign
         let body = tycheck refAsms openNames (varEnv |> Map.add name assign.Type) body
