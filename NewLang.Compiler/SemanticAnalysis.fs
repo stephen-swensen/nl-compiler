@@ -81,14 +81,27 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             else
                 None
         match retTy with
-        | Some(retTy) ->
+        | Some(retTy) -> //primitive
             texp.NumericBinop(op, coerceIfNeeded retTy x, coerceIfNeeded retTy y, retTy)
-        | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) ->
+        | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string concat
             let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
             checkMeth meth pos "Concat" [x;y]
             texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
-        | None ->
-            semError pos (sprintf "No overloads found for binary operator %A with light-hand type %A and right-hand type %A" op x.Type y.Type)
+        | None -> //static "op_*" overloads
+            let opName =
+                match op with
+                | Plus -> "op_Addition"
+                | Minus -> "op_Subtraction"
+                | Div -> "op_Division"
+                | Times -> "op_Multiply"
+            let meth = 
+                match x.Type.GetMethod(opName, [|x.Type; y.Type|]) with
+                | null -> y.Type.GetMethod(opName, [|x.Type; y.Type|])
+                | meth -> meth
+            if meth = null then
+                semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
+            else
+                texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
     | rexp.NameCall(longName, args, pos) ->
         let namePrefix, methodName =
             let split = longName.Split('.')
