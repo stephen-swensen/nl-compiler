@@ -203,3 +203,19 @@ let ``null literal`` () =
 let ``null literal of value type is invalid`` () =
     //resolves to String.concat(obj,obj)
     raises<SemanticErrorException> <@ C.eval "null(int32)" @>
+
+[<Fact>]
+let ``+ method overload`` () =
+    test <@ C.eval "biginteger(1) + biginteger(2)" = 3I @>
+
+[<Fact>]
+let ``- method overload`` () =
+    test <@ C.eval "biginteger(1) - biginteger(2)" = -1I @>
+
+[<Fact>]
+let ``* method overload`` () =
+    test <@ C.eval "biginteger(1) * biginteger(2)" = 2I @>
+
+[<Fact>]
+let ``/ method overload`` () =
+    test <@ C.eval "biginteger(1) / biginteger(2)" = 0I @>
