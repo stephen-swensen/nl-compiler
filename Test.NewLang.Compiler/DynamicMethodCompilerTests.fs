@@ -202,7 +202,7 @@ let ``null literal`` () =
 [<Fact>]
 let ``null literal of value type is invalid`` () =
     //resolves to String.concat(obj,obj)
-    raises<SemanticErrorException> <@ C.eval "null(int32)" @>
+    raises<SemanticErrorException> <@ C.eval "int32#type" @>
 
 [<Fact>]
 let ``+ method overload`` () =

@@ -31,11 +31,9 @@ let parseFromString code =
              "system.collections"
              "system.numerics"] 
             Map.empty
-    with e ->
-        if e.Message = "parse error" then //fragil hack check
-            raise <| SyntaxErrorException(lexbuf.StartPos)
-        else
-            reraise()
+    with
+    | e when e.Message = "parse error" -> //fragil hack check
+        raise <| SyntaxErrorException(lexbuf.StartPos)
 
 let emitOpCodes (il:ILGenerator) ast =
     let rec emit lenv ast =
