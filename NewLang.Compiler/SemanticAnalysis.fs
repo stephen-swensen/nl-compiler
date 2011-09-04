@@ -111,7 +111,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         match Map.tryFind namePrefix varEnv with //N.B. vars always supercede open names
         | Some(instanceTy:Type) -> 
             let meth = instanceTy.GetMethod(methodName, instanceFlags, null, argTys, null)
-            checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys))
+            checkNull meth (fun () -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys))
             texp.InstanceCall(Var(namePrefix,instanceTy), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | None ->
             let ty = resolveType namePrefix
@@ -119,17 +119,18 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 let ty = resolveType longName
                 checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type %s or constructor type %s" namePrefix longName))
                 let ctor = ty.GetConstructor(argTys)
+                checkNull ctor (fun () -> semError pos (sprintf "could not resolve constructor for type %s with arg types %A" ty.Name (args |> List.map(fun arg -> arg.Type))))
                 texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
             else        
                 let meth = ty.GetMethod(methodName, staticFlags, null, argTys, null)
-                checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given class type: %s, and arg types: %A" namePrefix methodName argTys))
+                checkNull meth (fun () -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName namePrefix argTys))
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.ExpCall(instance,methodName, args, pos) ->
         let instance = tycheck refAsms openNames varEnv instance
         let args = args |> List.map (tycheck refAsms openNames varEnv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         let meth = instance.Type.GetMethod(methodName, instanceFlags, null, argTys, null)
-        checkNull meth (fun () -> semError pos (sprintf "not a valid method: %s, for the given instance type: %s, and arg types: %A" instance.Type.Name methodName argTys))
+        checkNull meth (fun () -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName  instance.Type.Name argTys))
         InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.Let(name, assign, body, pos) ->
         let assign = tycheck refAsms openNames varEnv assign

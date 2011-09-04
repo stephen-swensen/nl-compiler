@@ -8,16 +8,16 @@ let rec loop() =
     | str ->
         try
             printfn "%A" (Compiler.eval str)
-        with ex ->
-            let ex = if ex.InnerException <> null then ex.InnerException else ex
-            printfn "%s" ex.Message
+        with
+        | :? SemanticErrorException as e -> printfn "%s" e.Message
+        | :? SyntaxErrorException as e -> printfn "%s" e.Message
+        | e -> printfn "%A" e
 
-        //printfn "%A" (Compiler.eval str)
+        printfn "%A" (Compiler.eval str)
         loop()
 
 [<EntryPoint>]
 let main(args:string[]) =
-    printfn "===NewLangulator==="
-    printfn @"Enter an equation and press ENTER, or enter ""exit"" and press ENTER to exit."
+    printfn "NL Interactive"
     loop()
     0
