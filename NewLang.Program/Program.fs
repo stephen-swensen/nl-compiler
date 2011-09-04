@@ -13,7 +13,6 @@ let rec loop() =
         | :? SyntaxErrorException as e -> printfn "%s" e.Message
         | e -> printfn "%A" e
 
-        printfn "%A" (Compiler.eval str)
         loop()
 
 [<EntryPoint>]
