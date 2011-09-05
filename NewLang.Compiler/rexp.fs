@@ -7,6 +7,10 @@ type numericBinop = Plus | Minus | Times | Div
 type logicBinop = And | Or | XOr
 type comparisonOps = Eq | NotEq | Lt | Gt | LtEq | GtEq
 
+type genericSig =
+    | NonGeneric of string
+    | Generic of string * genericSig list
+
 ///Raw (untyped) parsed expression
 type rexp =
     | Double           of float
@@ -26,7 +30,7 @@ type rexp =
     ///reference a variable
     | Var              of string * Position
     ///call instance method on a variable or call a static method or call a constructor
-    | NameCall         of string * rexp list * Position
+    | NameCall         of string * (genericSig list) option * rexp list * Position
     ///call instance method on an expression
     | ExpCall          of rexp * string * rexp list * Position
     ///discard left hand side, return right hand side
