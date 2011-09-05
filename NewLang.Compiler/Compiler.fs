@@ -32,7 +32,7 @@ let parseFromString code =
              "system.numerics"] 
             Map.empty
     with
-    | e when e.Message = "parse error" -> //fragil hack check
+    | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
         raise <| SyntaxErrorException(lexbuf.StartPos)
 
 let emitOpCodes (il:ILGenerator) ast =
