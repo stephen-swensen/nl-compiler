@@ -30,6 +30,7 @@ let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
 
 ///Symantic analysis (type checking)
 let rec tycheck refAsms openNames varEnv rawExpression =
+    ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
     let rec resolveType gsig =
         let name,args =
             match gsig with
@@ -47,13 +48,16 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                             yield ty
                         else
                             let argTys = List.map resolveType args
-                            let possibleFullName = 
-                                sprintf "%s`%i[%s]" 
-                                    possibleName 
-                                    args.Length 
-                                    (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) argTys))
-                            let ty = Type.GetType(possibleFullName,false, true)
-                            yield ty
+                            if List.exists ((=)null) argTys then
+                                yield null
+                            else
+                                let possibleFullName = 
+                                    sprintf "%s`%i[%s]" 
+                                        possibleName 
+                                        args.Length 
+                                        (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) argTys))
+                                let ty = Type.GetType(possibleFullName,false, true)
+                                yield ty
             } |> Seq.tryFind (fun ty -> ty <> null) |> function Some(ty) -> ty | None -> null
 
     match rawExpression with
@@ -138,9 +142,9 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
             else        
                 let ty = resolveType (withGenericArgs longName genericArgs)
-                checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type %s or constructor type %s" namePrefix longName))
+                checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName))
                 let ctor = ty.GetConstructor(argTys)
-                checkNull ctor (fun () -> semError pos (sprintf "could not resolve constructor for type %s with arg types %A" ty.Name (args |> List.map(fun arg -> arg.Type))))
+                checkNull ctor (fun () -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type))))
                 texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
                 
     | rexp.ExpCall(instance,methodName, args, pos) ->
