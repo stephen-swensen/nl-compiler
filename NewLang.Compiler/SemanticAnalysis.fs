@@ -102,7 +102,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
             else
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
-    | rexp.NameCall(longName, args, pos) ->
+    | rexp.NameCall(longName, _, args, pos) ->
         let namePrefix, methodName =
             let split = longName.Split('.')
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]

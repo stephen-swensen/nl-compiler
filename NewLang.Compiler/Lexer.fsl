@@ -27,12 +27,14 @@ rule tokenize = parse
 | "!"  { BANG }
 // | "!=" { NOTEQ }
 // | "==" { EQ }
-//| ">"  { GT }
-//| "<"  { LT }
+// | ">"  { GT }
+// | "<"  { LT }
 // | ">=" { GTEQ }
 // | "<=" { LTEQ }
 
 //various symbols and keywords
+| "[" { LBRACKET }
+| "]" { RBRACKET }
 | "(" { LPAREN }
 | ")" { RPAREN }
 | "." { DOT }

@@ -19,6 +19,7 @@ open Swensen.NewLang
 %token LPAREN RPAREN
 %token COMMA DOT SEMICOLON
 %token OPEN REF
+%token LBRACKET RBRACKET
 %token EOF
 
 %right SEMICOLON
@@ -34,6 +35,9 @@ open Swensen.NewLang
 %type <rexp> rexp
 %type <rexp list> rexpList
 
+%type <genericSig> genericSig
+%type <genericSig list> genericSigList
+
 %%
 
 start:
@@ -47,6 +51,15 @@ rexpList:
 longName:
 	| NAME { $1 }
 	| NAME DOT longName { $1 + "." + $3 }
+
+genericSigList:
+	| genericSig { [$1] }
+	| genericSig COMMA genericSigList { $1::$3 }
+
+genericSig:
+	| longName LBRACKET genericSigList RBRACKET { Generic($1.ToLower(),$3) }
+	| longName { NonGeneric($1.ToLower()) } 
+	
 
 rexp: 
     | rexp PLUS  rexp			 				{ rexp.NumericBinop(Plus, $1, $3, parseState.InputStartPosition 2) }
@@ -65,7 +78,8 @@ rexp:
 	| longName				 					{ rexp.Var($1.ToLower(), parseState.InputStartPosition 1)}
 	| LPAREN rexp RPAREN		 				{ $2 }
 	| longName EQ rexp IN rexp   				{ rexp.Let($1.ToLower(),$3,$5, parseState.InputStartPosition 1) }
-	| longName LPAREN rexpList RPAREN			{ rexp.NameCall($1.ToLower(),$3, parseState.InputStartPosition 1) }
+	| longName LPAREN rexpList RPAREN			{ rexp.NameCall($1.ToLower(), None, $3, parseState.InputStartPosition 1) }
+	| longName LBRACKET genericSigList RBRACKET LPAREN rexpList RPAREN { rexp.NameCall($1.ToLower(), Some($3), $6, parseState.InputStartPosition 1) }
 	| rexp DOT NAME LPAREN rexpList RPAREN		{ rexp.ExpCall($1,$3.ToLower(),$5, parseState.InputStartPosition 1) }
 	| rexp SEMICOLON rexp						{ rexp.Sequential($1,$3, parseState.InputStartPosition 3) }
 	| OPEN longName IN rexp						{ rexp.Open($2.ToLower(),$4, parseState.InputStartPosition 2) }
