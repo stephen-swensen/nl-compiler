@@ -243,3 +243,15 @@ let ``resolve constructor with list of generic args`` () =
 [<Fact>]
 let ``resolve complex generic signature in constructor`` () =
     test <@ C.eval<obj> "dictionary[list[int32],dictionary[string,list[int32]]]()" :? Dictionary<ResizeArray<int>,Dictionary<string,ResizeArray<int>>> @>
+
+[<Fact>]
+let ``literal typeof value type`` () =
+    test <@ C.eval "type[int32]" = typeof<int> @>
+
+[<Fact>]
+let ``literal typeof ref type`` () =
+    test <@ C.eval "type[string]" = typeof<string> @>
+
+[<Fact>]
+let ``literal typeof generic type`` () =
+    test <@ C.eval "type[dictionary[string,int32]]" = typeof<Dictionary<string,int>> @>
