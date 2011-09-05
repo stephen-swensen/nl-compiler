@@ -219,3 +219,16 @@ let ``* method overload`` () =
 [<Fact>]
 let ``/ method overload`` () =
     test <@ C.eval "biginteger(1) / biginteger(2)" = 0I @>
+
+[<Fact>]
+let ``resolve simple fully qualified generic signature in null expression`` () =
+    test <@ C.eval "null(system.collections.generic.list[system.int32])" = null @>
+
+[<Fact>]
+let ``resolve simple fully qualified generic signature in constructor`` () =
+    test <@ C.eval<obj> "system.collections.generic.list[system.int32]()" :? System.Collections.Generic.List<int> @>
+
+[<Fact>]
+let ``resolve simple non qualified generic signature in constructor`` () =
+    test <@ C.eval<obj> "list[int32]()" :? System.Collections.Generic.List<int> @>
+

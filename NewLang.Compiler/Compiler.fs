@@ -29,6 +29,7 @@ let parseFromString code =
              "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"]
             ["system"
              "system.collections"
+             "system.collections.generic"
              "system.numerics"] 
             Map.empty
     with
