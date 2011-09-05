@@ -19,6 +19,7 @@ type rexp =
     | Char             of char
     | Bool             of bool
     | Null             of genericSig * Position
+    | Typeof           of genericSig * Position
 //    | LogicBinop       of logicBinop * rexp * rexp * Position
 //    | Not              of rexp * Position
     | NumericBinop     of numericBinop * rexp * rexp * Position

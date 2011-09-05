@@ -12,7 +12,7 @@ open Swensen.NewLang
 %token <string> STRING
 %token <char> CHAR
 %token <bool> BOOL
-%token NULL
+%token NULL TYPE
 %token PLUS MINUS TIMES DIV POW BANG
 %token <string> NAME
 %token IN EQ
@@ -74,7 +74,8 @@ rexp:
 	| STRING				 					{ rexp.String($1) }
 	| CHAR					 					{ rexp.Char($1) }
 	| BOOL					 					{ rexp.Bool($1) }
-	| NULL LPAREN genericSig RPAREN				{ rexp.Null($3, parseState.InputStartPosition 3) }
+	| NULL LBRACKET genericSig RBRACKET  		{ rexp.Null($3, parseState.InputStartPosition 3) }
+	| TYPE LBRACKET genericSig RBRACKET  		{ rexp.Typeof($3, parseState.InputStartPosition 3) }
 	| longName				 					{ rexp.Var($1.ToLower(), parseState.InputStartPosition 1)}
 	| LPAREN rexp RPAREN		 				{ $2 }
 	| longName EQ rexp IN rexp   				{ rexp.Let($1.ToLower(),$3,$5, parseState.InputStartPosition 1) }
