@@ -196,13 +196,11 @@ let ``implicit downcast ref type and value type static call args`` () =
 
 [<Fact>]
 let ``null literal`` () =
-    //resolves to String.concat(obj,obj)
     test <@ C.eval "null(string)" = (null:string) @>
 
 [<Fact>]
 let ``null literal of value type is invalid`` () =
-    //resolves to String.concat(obj,obj)
-    raises<SemanticErrorException> <@ C.eval "int32#type" @>
+    raises<SemanticErrorException> <@ C.eval "null(int32)" @>
 
 [<Fact>]
 let ``+ method overload`` () =
@@ -232,3 +230,16 @@ let ``resolve simple fully qualified generic signature in constructor`` () =
 let ``resolve simple non qualified generic signature in constructor`` () =
     test <@ C.eval<obj> "list[int32]()" :? System.Collections.Generic.List<int> @>
 
+[<Fact>]
+let ``resolve nested non qualified generic signature in constructor`` () =
+    test <@ C.eval<obj> "list[list[int32]]()" :? ResizeArray<ResizeArray<int>> @>
+
+open System.Collections.Generic
+
+[<Fact>]
+let ``resolve constructor with list of generic args`` () =
+    test <@ C.eval<obj> "dictionary[string,string]()" :? Dictionary<string,string> @>
+
+[<Fact>]
+let ``resolve complex generic signature in constructor`` () =
+    test <@ C.eval<obj> "dictionary[list[int32],dictionary[string,list[int32]]]()" :? Dictionary<ResizeArray<int>,Dictionary<string,ResizeArray<int>>> @>
