@@ -106,6 +106,10 @@ let emitOpCodes (il:ILGenerator) ast =
         | Ctor(ctor, args, _) -> 
             emitAll lenv args
             il.Emit(OpCodes.Newobj, ctor)
+        | Typeof(ty) ->
+            //technique used by c#
+            il.Emit(OpCodes.Ldtoken, ty)
+            il.Emit(OpCodes.Call, typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|]))
     and emitAll lenv exps =
         for arg in exps do 
             emit lenv arg
