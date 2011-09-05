@@ -52,6 +52,9 @@ rule tokenize = parse
 //null literal
 | "null" { NULL }
 
+//type literal
+| "type" { TYPE }
+
 //string literal
 | '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
 

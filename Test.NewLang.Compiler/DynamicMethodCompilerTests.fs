@@ -196,11 +196,11 @@ let ``implicit downcast ref type and value type static call args`` () =
 
 [<Fact>]
 let ``null literal`` () =
-    test <@ C.eval "null(string)" = (null:string) @>
+    test <@ C.eval "null[string]" = (null:string) @>
 
 [<Fact>]
 let ``null literal of value type is invalid`` () =
-    raises<SemanticErrorException> <@ C.eval "null(int32)" @>
+    raises<SemanticErrorException> <@ C.eval "null[int32]" @>
 
 [<Fact>]
 let ``+ method overload`` () =
@@ -220,7 +220,7 @@ let ``/ method overload`` () =
 
 [<Fact>]
 let ``resolve simple fully qualified generic signature in null expression`` () =
-    test <@ C.eval "null(system.collections.generic.list[system.int32])" = null @>
+    test <@ C.eval "null[system.collections.generic.list[system.int32]]" = null @>
 
 [<Fact>]
 let ``resolve simple fully qualified generic signature in constructor`` () =

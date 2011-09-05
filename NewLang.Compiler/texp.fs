@@ -10,6 +10,7 @@ type texp =
     | Char          of char
     | Bool          of bool
     | Null          of Type
+    | Typeof        of Type
     | NumericBinop  of numericBinop * texp * texp * Type
     | UMinus        of texp * Type
     | Let           of string * texp * texp * Type
@@ -30,6 +31,7 @@ type texp =
             | String(_)              -> typeof<string>
             | Char(_)                -> typeof<char>
             | Bool(_)                -> typeof<bool>
+            | Typeof(_)              -> typeof<Type>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
