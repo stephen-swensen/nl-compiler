@@ -72,6 +72,10 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         if ty.IsValueType then
             semError pos (sprintf "null is not a valid value for the value type %s" ty.Name)
         texp.Null(ty)
+    | rexp.Typeof(name, pos)   -> 
+        let ty = resolveType name
+        checkNull ty (fun () -> semError pos (sprintf "could not resolve type in type literal expression: %A" name))
+        texp.Typeof(ty)
     | rexp.UMinus(x,pos) ->
         let x = tycheck refAsms openNames varEnv x
         texp.UMinus(x,x.Type)
