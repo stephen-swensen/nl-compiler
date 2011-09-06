@@ -12,8 +12,6 @@ module SA = SemanticAnalysis
 open  System.Reflection.Emit
 
 //todo: cast language syntax
-//constructor for value types: OpCodes.Initobj Field
-//OpCodes.Isinst
 
 let setInitialPos (lexbuf:LexBuffer<char>) filename = 
     lexbuf.EndPos <- { pos_bol = 0
