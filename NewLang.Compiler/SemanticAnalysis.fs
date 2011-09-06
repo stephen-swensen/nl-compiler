@@ -148,7 +148,17 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 let ty = resolveType (withGenericArgs longName genericArgs)
                 checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName))
                 if ty.IsValueType && args.Length = 0 then
-                    texp.DefaultCtor(ty)
+                    ///these optimization maybe should go in the Compiler emit
+                    if ty = typeof<int32> then
+                        texp.Int32(Unchecked.defaultof<int32>)
+                    elif ty = typeof<double> then
+                        texp.Double(Unchecked.defaultof<double>)
+                    elif ty = typeof<bool> then
+                        texp.Bool(Unchecked.defaultof<bool>)
+                    elif ty = typeof<char> then
+                        texp.Char(Unchecked.defaultof<char>)
+                    else
+                        texp.DefaultCtor(ty)
                 else
                     let ctor = ty.GetConstructor(argTys)
                     checkNull ctor (fun () -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type))))

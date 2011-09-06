@@ -257,5 +257,21 @@ let ``literal typeof generic type`` () =
     test <@ C.eval "type[dictionary[string,int32]]" = typeof<Dictionary<string,int>> @>
 
 [<Fact>]
-let ``default value`` () =
+let ``default value of non-primitive value type`` () =
     test <@ C.eval "biginteger()" = bigint() @>
+
+[<Fact>]
+let ``default value of bool`` () =
+    test <@ C.eval "boolean()" = Unchecked.defaultof<bool> @>
+
+[<Fact>]
+let ``default value of int32`` () =
+    test <@ C.eval "int32()" = Unchecked.defaultof<int32> @>
+
+[<Fact>]
+let ``default value of double`` () =
+    test <@ C.eval "double()" = Unchecked.defaultof<double> @>
+
+[<Fact>]
+let ``default value of char`` () =
+    test <@ C.eval "char()" = Unchecked.defaultof<char> @>
