@@ -107,9 +107,16 @@ let emitOpCodes (il:ILGenerator) ast =
             emitAll lenv args
             il.Emit(OpCodes.Newobj, ctor)
         | Typeof(ty) ->
-            //technique used by c#
+            //learned through C# ildasm
             il.Emit(OpCodes.Ldtoken, ty)
             il.Emit(OpCodes.Call, typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|]))
+        | DefaultCtor(ty) ->
+            //http://source.db4o.com/db4o/trunk/db4o.net/Libs/compact-3.5/System.Linq.Expressions/System.Linq.Expressions/EmitContext.cs
+            let loc = il.DeclareLocal(ty)
+            il.Emit(OpCodes.Ldloca, loc)
+            il.Emit(OpCodes.Initobj, ty)
+            il.Emit(OpCodes.Ldloc, loc)
+
     and emitAll lenv exps =
         for arg in exps do 
             emit lenv arg

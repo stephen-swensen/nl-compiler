@@ -147,10 +147,12 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             else        
                 let ty = resolveType (withGenericArgs longName genericArgs)
                 checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName))
-                let ctor = ty.GetConstructor(argTys)
-                checkNull ctor (fun () -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type))))
-                texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
-                
+                if ty.IsValueType && args.Length = 0 then
+                    texp.DefaultCtor(ty)
+                else
+                    let ctor = ty.GetConstructor(argTys)
+                    checkNull ctor (fun () -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type))))
+                    texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
     | rexp.ExpCall(instance,methodName, args, pos) ->
         let instance = tycheck refAsms openNames varEnv instance
         let args = args |> List.map (tycheck refAsms openNames varEnv)
