@@ -255,3 +255,7 @@ let ``literal typeof ref type`` () =
 [<Fact>]
 let ``literal typeof generic type`` () =
     test <@ C.eval "type[dictionary[string,int32]]" = typeof<Dictionary<string,int>> @>
+
+[<Fact>]
+let ``default value`` () =
+    test <@ C.eval "biginteger()" = bigint() @>

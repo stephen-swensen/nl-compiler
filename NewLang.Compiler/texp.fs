@@ -23,6 +23,8 @@ type texp =
     | InstanceCall  of texp * System.Reflection.MethodInfo * texp list * Type
     | Sequential    of texp * texp * Type
     | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
+    //initialize a value type ("zeroed-out" fields)
+    | DefaultCtor  of Type
     with 
         member this.Type =
             match this with
@@ -42,5 +44,6 @@ type texp =
             | InstanceCall(_,_,_,ty) 
             | Sequential(_,_,ty)
             | Ctor(_,_,ty)
+            | DefaultCtor(ty)
             | Null(ty)
                 -> ty
