@@ -79,8 +79,14 @@ rexp:
 	| longName				 					{ rexp.Var($1.ToLower(), parseState.InputStartPosition 1)}
 	| LPAREN rexp RPAREN		 				{ $2 }
 	| longName EQ rexp IN rexp   				{ rexp.Let($1.ToLower(),$3,$5, parseState.InputStartPosition 1) }
-	| longName LPAREN rexpList RPAREN			{ rexp.NameCall($1.ToLower(), None, $3, parseState.InputStartPosition 1) }
-	| longName LBRACKET genericSigList RBRACKET LPAREN rexpList RPAREN { rexp.NameCall($1.ToLower(), Some($3), $6, parseState.InputStartPosition 1) }
+	| longName LPAREN rexpList RPAREN											
+		{ rexp.NameCall($1.ToLower(), None, $3, parseState.InputStartPosition 1) }
+	| longName LBRACKET genericSigList RBRACKET LPAREN rexpList RPAREN			
+		{ rexp.NameCall($1.ToLower(), Some($3), $6, parseState.InputStartPosition 1) }
+	| longName LBRACKET genericSigList RBRACKET NAME LPAREN rexpList RPAREN		
+		{ rexp.GenericTypeStaticCall($1.ToLower(), $3, $5.ToLower(), None, $7, parseState.InputStartPosition 1) }
+	| longName LBRACKET genericSigList RBRACKET NAME LBRACKET genericSigList RBRACKET LPAREN rexpList RPAREN	
+		{ rexp.GenericTypeStaticCall($1.ToLower(), $3, $5.ToLower(), Some($7), $10, parseState.InputStartPosition 1) }
 	| rexp DOT NAME LPAREN rexpList RPAREN		{ rexp.ExpCall($1,$3.ToLower(),$5, parseState.InputStartPosition 1) }
 	| rexp SEMICOLON rexp						{ rexp.Sequential($1,$3, parseState.InputStartPosition 3) }
 	| OPEN longName IN rexp						{ rexp.Open($2.ToLower(),$4, parseState.InputStartPosition 2) }
