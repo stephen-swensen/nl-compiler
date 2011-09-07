@@ -36,6 +36,7 @@
   <ItemGroup>
     <Compile Include="DynamicMethodCompilerTests.fs" />
     <None Include="packages.config" />
+    <Compile Include="HelperTypes.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

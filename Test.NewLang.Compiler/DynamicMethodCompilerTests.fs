@@ -1,4 +1,4 @@
-﻿module DynamicMethodCompilerTests
+﻿module Tests.DynamicMethodCompilerTests
 
 open Xunit
 open Swensen.Unquote
@@ -280,6 +280,13 @@ let ``default value of char`` () =
 let ``call static method on generic type`` () =
     test <@ C.eval<obj> "HashSet[string].CreateSetComparer()" :? IEqualityComparer<HashSet<string>> @>
 
-[<Fact>]
+[<Fact(Skip="todo")>]
 let ``call generic static method on static type`` () = //these could be inferable
-    test <@ C.eval<obj> "tuple.create[int,datetime](3, datetime())" :? IEqualityComparer<HashSet<string>> @>
+    test <@ C.eval<obj> "tuple.create[int32,datetime](3, datetime())" :? IEqualityComparer<HashSet<string>> @>
+
+let openCurAsm = sprintf "ref \"%s\" in " (System.Reflection.Assembly.GetExecutingAssembly().Location)
+let openCurNamespace = "open Tests in "
+
+[<Fact>]
+let ``call generic instance method on var`` () =
+    test <@ C.eval (openCurAsm + openCurNamespace + "x = Test1() in x.DoIt[int32](1)") = 1 @>
