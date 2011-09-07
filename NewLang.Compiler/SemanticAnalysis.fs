@@ -37,6 +37,9 @@ let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
 //todo: infer generic type arguments from type parameters (reflection not friendly for this)
 //todo: file bug: name should not need a type constraint
 let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[] option) (argTys: Type[]) =
+    //todo: sophisticated overload resolution used both in generic and non-generic methods; note that
+    //currently using reflection default overload resolution for non-generic methods and no overload resolution for non-generic methods when
+    //types don't match exactly, we don't like this since it is asymetric
     match genericTyArgs with
     | Some(genericTyArgs) -> 
         let possibleMeths =
@@ -53,7 +56,7 @@ let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[] 
         match possibleMeths.Length with
         | 1 -> Some(possibleMeths.[0])
         | _ -> None
-    | None ->
+    | None -> //todo: handle type inference
         match ty.GetMethod(name, bindingFlags, null, argTys, null) with
         | null -> None
         | meth -> Some(meth)
@@ -67,8 +70,9 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             | Generic(name, args) -> name,args
             | NonGeneric(name) -> name,[]
 
-        if name = "" then None
-        else
+        match name with
+        | "" -> None
+        | _ ->
             seq {
                 for possibleName in (name::(openNames |> List.map (fun n -> n + "." + name))) do
                     for possibleAsm in refAsms do
