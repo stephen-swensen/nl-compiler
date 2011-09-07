@@ -276,8 +276,8 @@ let ``default value of double`` () =
 let ``default value of char`` () =
     test <@ C.eval "char()" = Unchecked.defaultof<char> @>
 
-[<Fact(Skip="todo")>]
-let ``call static method on generic type`` () =
+[<Fact>]
+let ``call non-generic static method on generic type`` () =
     test <@ C.eval<obj> "HashSet[string].CreateSetComparer()" :? IEqualityComparer<HashSet<string>> @>
 
 [<Fact>]
