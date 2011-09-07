@@ -90,7 +90,6 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                                         args.Length 
                                         (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) (List.choose id argTys)))
                                         possibleAsm
-                                printfn "%s" possibleFullName
                                 let ty = Type.GetType(possibleFullName,false, true)
                                 yield Option.fromNullable ty
             } |> Seq.tryPick id
