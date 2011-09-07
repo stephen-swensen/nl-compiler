@@ -284,9 +284,6 @@ let ``call static method on generic type`` () =
 let ``call generic static method on static type`` () = //these could be inferable
     test <@ C.eval<obj> "tuple.create[int32,datetime](3, datetime())" :? IEqualityComparer<HashSet<string>> @>
 
-let openCurAsm = sprintf "ref \"%s\" in " (System.Reflection.Assembly.GetExecutingAssembly().Location)
-let openCurNamespace = "open Tests in "
-
 [<Fact>]
 let ``call generic instance method on var`` () =
-    test <@ C.eval (openCurAsm + openCurNamespace + "x = Test1() in x.DoIt2[int32](1)") = 1 @>
+    test <@ C.eval (openPrefix + "x = Test1() in x.DoIt2[int32](1)") = 1 @>
