@@ -35,14 +35,15 @@ let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
     |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
 
 //todo: infer generic type arguments from type parameters (reflection not friendly for this)
-let tryResolveMethod (ty:Type) name bindingFlags (genericTyArgs:Type[] option) (argTys: Type[]) =
+//todo: file bug: name should not need a type constraint
+let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[] option) (argTys: Type[]) =
     match genericTyArgs with
     | Some(genericTyArgs) -> 
         let possibleMeths =
             ty.GetMethods(bindingFlags)
             |> Seq.filter 
                 (fun meth -> 
-                    meth.Name = name && 
+                    (meth.Name.ToLower() = name.ToLower()) && 
                     meth.IsGenericMethod &&
                     meth.GetGenericArguments().Length = genericTyArgs.Length &&
                     meth.GetParameters().Length = argTys.Length)
