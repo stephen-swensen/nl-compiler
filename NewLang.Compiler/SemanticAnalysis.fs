@@ -168,33 +168,35 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
         let args = args |> List.map (tycheck refAsms openNames varEnv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
+
+        //N.B. a lot of var capturing here
+        let tryResolveMethodWithGenericArgs ty bindingFlags =
+            match genericArgs with
+            | Some(genericArgs) -> 
+                match tryResolveGenericArgTys genericArgs with
+                | None -> semError pos (sprintf "could not resolve generic arg types: %A" genericArgs)
+                | genericArgTys -> tryResolveMethod ty methodName bindingFlags genericArgTys argTys
+            | None ->
+                tryResolveMethod ty methodName bindingFlags None argTys
+
         match Map.tryFind namePrefix varEnv with //N.B. vars always supercede open names
         | Some(instanceTy:Type) -> //instance method call on variable
-            let meth =
-                match genericArgs with
-                | Some(genericArgs) -> 
-                    match tryResolveGenericArgTys genericArgs with
-                    | None -> semError pos (sprintf "could not resolve generic arg types: %A" genericArgs)
-                    | genericArgTys -> tryResolveMethod instanceTy methodName instanceFlags genericArgTys argTys
-                | None ->
-                    tryResolveMethod instanceTy methodName instanceFlags None argTys
-            
-            match meth with
+            match tryResolveMethodWithGenericArgs instanceTy instanceFlags with
             | None -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys)
             | Some(meth) -> texp.InstanceCall(Var(namePrefix,instanceTy), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | None ->
-            let withGenericArgs name args =
-                match args with
-                | Some(args) -> Generic(name, args)
-                | None -> NonGeneric(name)
-
-            match tryResolveType (withGenericArgs namePrefix genericArgs) with
-            | Some(ty) -> //static method call (on a possibly generic type, but not )
-                match tryResolveMethod ty methodName staticFlags None argTys with
+            match tryResolveType (NonGeneric(namePrefix)) with
+            | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
+                match tryResolveMethodWithGenericArgs ty staticFlags with
                 | None -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName namePrefix argTys)
                 | Some(meth) -> texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
             | None -> //constructors
-                match tryResolveType (withGenericArgs longName genericArgs) with
+                let withGenericArgs name =
+                    match genericArgs with
+                    | Some(genericArgs) -> Generic(name, genericArgs)
+                    | None -> NonGeneric(name)
+
+                match tryResolveType (withGenericArgs longName) with
                 | None -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName)
                 | Some(ty) ->
                     if ty.IsValueType && args.Length = 0 then
