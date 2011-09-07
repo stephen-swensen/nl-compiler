@@ -289,4 +289,4 @@ let openCurNamespace = "open Tests in "
 
 [<Fact>]
 let ``call generic instance method on var`` () =
-    test <@ C.eval (openCurAsm + openCurNamespace + "x = Test1() in x.DoIt[int32](1)") = 1 @>
+    test <@ C.eval (openCurAsm + openCurNamespace + "x = Test1() in x.DoIt2[int32](1)") = 1 @>
