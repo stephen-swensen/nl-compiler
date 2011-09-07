@@ -280,9 +280,9 @@ let ``default value of char`` () =
 let ``call static method on generic type`` () =
     test <@ C.eval<obj> "HashSet[string].CreateSetComparer()" :? IEqualityComparer<HashSet<string>> @>
 
-[<Fact(Skip="todo")>]
-let ``call generic static method on static type`` () = //these could be inferable
-    test <@ C.eval<obj> "tuple.create[int32,datetime](3, datetime())" :? IEqualityComparer<HashSet<string>> @>
+[<Fact>]
+let ``call generic static method with explicit generic args and no type-wise overloads on non-generic static type`` () = //these could be inferable
+    test <@ C.eval "tuple.create[int32,datetime](3, datetime())" = (3, System.DateTime()) @>
 
 [<Fact>]
 let ``call generic instance method with explicit generic args and no overloads on var`` () =
