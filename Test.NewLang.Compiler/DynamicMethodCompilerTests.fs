@@ -281,6 +281,10 @@ let ``call non-generic static method on generic type`` () =
     test <@ C.eval<obj> "HashSet[string].CreateSetComparer()" :? IEqualityComparer<HashSet<string>> @>
 
 [<Fact>]
+let ``call generic static method on generic type`` () =
+    test <@ C.eval (openPrefix + "Test2[string].DoIt1[int32]()") = 0 @>
+
+[<Fact>]
 let ``call generic static method with explicit generic args and no type-wise overloads on non-generic static type`` () = //these could be inferable
     test <@ C.eval "tuple.create[int32,datetime](3, datetime())" = (3, System.DateTime()) @>
 

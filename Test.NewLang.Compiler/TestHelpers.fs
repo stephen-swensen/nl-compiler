@@ -12,3 +12,6 @@ type Test1() =
     member __.DoIt1<'a>() = Unchecked.defaultof<'a>
     member __.DoIt2<'a>(x:'a) = x
 
+type Test2<'a> =
+    static member DoIt1<'b>() = Unchecked.defaultof<'b>
+
