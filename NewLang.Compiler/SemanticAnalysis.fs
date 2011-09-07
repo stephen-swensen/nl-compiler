@@ -12,13 +12,12 @@ module Option =
 
 let semError pos msg = raise <| SemanticErrorException(pos, msg)
 let checkNull x f = if x = null then f()
+let checkMeth (meth:MethodInfo) pos name tys =
+    checkNull meth (fun () -> semError pos (sprintf "method %s not found for parameter types %A" name tys))
 
 ///Binding flags for our language
 let instanceFlags = BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
 let staticFlags = BindingFlags.Static ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
-
-let checkMeth (meth:MethodInfo) pos name tys =
-    checkNull meth (fun () -> semError pos (sprintf "method %s not found for parameter types %A" name tys))
 
 let coerceIfNeeded expectedTy (targetExp:texp) =
     if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
@@ -191,9 +190,9 @@ let rec tycheck refAsms openNames varEnv rawExpression =
 
             match tryResolveType (withGenericArgs namePrefix genericArgs) with
             | Some(ty) -> //static method call (on a possibly generic type, but not )
-                let meth = ty.GetMethod(methodName, staticFlags, null, argTys, null)
-                checkNull meth (fun () -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName namePrefix argTys))
-                texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                match tryResolveMethod ty methodName staticFlags None argTys with
+                | None -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName namePrefix argTys)
+                | Some(meth) -> texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
             | None -> //constructors
                 match tryResolveType (withGenericArgs longName genericArgs) with
                 | None -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName)
