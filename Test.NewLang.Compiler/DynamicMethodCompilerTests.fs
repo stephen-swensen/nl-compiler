@@ -275,3 +275,11 @@ let ``default value of double`` () =
 [<Fact>]
 let ``default value of char`` () =
     test <@ C.eval "char()" = Unchecked.defaultof<char> @>
+
+[<Fact(Skip="todo")>]
+let ``call static method on generic type`` () =
+    test <@ C.eval<obj> "HashSet[string].CreateSetComparer()" :? IEqualityComparer<HashSet<string>> @>
+
+[<Fact>]
+let ``call generic static method on static type`` () = //these could be inferable
+    test <@ C.eval<obj> "tuple.create[int,datetime](3, datetime())" :? IEqualityComparer<HashSet<string>> @>

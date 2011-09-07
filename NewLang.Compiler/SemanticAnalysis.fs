@@ -4,6 +4,12 @@ open System
 open System.Reflection
 open Swensen.NewLang
 
+module Option =
+    let fromNullable nullable =
+        match nullable with
+        | null -> None
+        | _ -> Some(nullable)
+
 let semError pos msg = raise <| SemanticErrorException(pos, msg)
 let checkNull x f = if x = null then f()
 
@@ -28,16 +34,39 @@ let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
     List.zip (expectedParameters |> Seq.map (fun p -> p.ParameterType) |> Seq.toList)  targetExps
     |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
 
+//todo: infer generic type arguments from type parameters (reflection not friendly for this)
+let tryResolveMethod (ty:Type) name bindingFlags (genericTyArgs:Type[] option) (argTys: Type[]) =
+    match genericTyArgs with
+    | Some(genericTyArgs) -> 
+        let possibleMeths =
+            ty.GetMethods(bindingFlags)
+            |> Seq.filter 
+                (fun meth -> 
+                    meth.Name = name && 
+                    meth.IsGenericMethod &&
+                    meth.GetGenericArguments().Length = genericTyArgs.Length &&
+                    meth.GetParameters().Length = argTys.Length)
+            |> Seq.map (fun meth -> meth.MakeGenericMethod(genericTyArgs))
+            |> Seq.filter (fun meth -> (meth.GetParameters() |> Array.map (fun meth -> meth.ParameterType)) = argTys)
+            |> Seq.toArray
+        match possibleMeths.Length with
+        | 1 -> Some(possibleMeths.[0])
+        | _ -> None
+    | None ->
+        match ty.GetMethod(name, bindingFlags, null, argTys, null) with
+        | null -> None
+        | meth -> Some(meth)
+
 ///Symantic analysis (type checking)
 let rec tycheck refAsms openNames varEnv rawExpression =
     ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
-    let rec resolveType gsig =
+    let rec tryResolveType gsig =
         let name,args =
             match gsig with
             | Generic(name, args) -> name,args
             | NonGeneric(name) -> name,[]
 
-        if name = "" then null
+        if name = "" then None
         else
             seq {
                 for possibleName in (name::(openNames |> List.map (fun n -> n + "." + name))) do
@@ -45,20 +74,26 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                         if args = [] then
                             let possibleFullName = possibleName + ", " + possibleAsm
                             let ty = Type.GetType(possibleFullName,false, true)
-                            yield ty
+                            yield Option.fromNullable ty
                         else
-                            let argTys = List.map resolveType args
-                            if List.exists ((=)null) argTys then
-                                yield null
+                            let argTys = List.map tryResolveType args
+                            if List.exists ((=)None) argTys then
+                                yield None //todo: would like to convey exactly which sub types failed to resolve
                             else
                                 let possibleFullName = 
                                     sprintf "%s`%i[%s]" 
                                         possibleName 
                                         args.Length 
-                                        (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) argTys))
+                                        (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) (List.choose id argTys)))
                                 let ty = Type.GetType(possibleFullName,false, true)
-                                yield ty
-            } |> Seq.tryFind (fun ty -> ty <> null) |> function Some(ty) -> ty | None -> null
+                                yield Option.fromNullable ty
+            } |> Seq.tryPick id
+
+    //todo: make cleaner, either wait to convert to reflection friendly arrays till last moment, or convert to arrays up front
+    let tryResolveGenericArgTys genericArgs =        
+        let genericArgTys = genericArgs |> Seq.map tryResolveType
+        if Seq.exists ((=)None) genericArgTys then None
+        else Some(genericArgTys |> Seq.choose id |> Seq.toArray)
 
     match rawExpression with
     | rexp.Double x -> texp.Double x
@@ -67,15 +102,16 @@ let rec tycheck refAsms openNames varEnv rawExpression =
     | rexp.Char x   -> texp.Char x
     | rexp.Bool x   -> texp.Bool x
     | rexp.Null(name, pos)   -> 
-        let ty = resolveType name
-        checkNull ty (fun () -> semError pos (sprintf "could not resolve type of null: %A" name))
-        if ty.IsValueType then
-            semError pos (sprintf "null is not a valid value for the value type %s" ty.Name)
-        texp.Null(ty)
+        match tryResolveType name with
+        | None -> semError pos (sprintf "could not resolve type of null: %A" name)
+        | Some(ty) ->
+            if ty.IsValueType then
+                semError pos (sprintf "null is not a valid value for the value type %s" ty.Name)
+            texp.Null(ty)
     | rexp.Typeof(name, pos)   -> 
-        let ty = resolveType name
-        checkNull ty (fun () -> semError pos (sprintf "could not resolve type in type literal expression: %A" name))
-        texp.Typeof(ty)
+        match tryResolveType name with
+        | None -> semError pos (sprintf "could not resolve type in type literal expression: %A" name)
+        | Some(ty) -> texp.Typeof(ty)
     | rexp.UMinus(x,pos) ->
         let x = tycheck refAsms openNames varEnv x
         texp.UMinus(x,x.Type)
@@ -122,48 +158,58 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
             else
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
-    | rexp.NameCall(longName, genericArgs, args, pos) ->
+    | rexp.NameCall(longName, genericArgs, args, pos) -> //todo: need more position info for different tokens
         let namePrefix, methodName =
             let split = longName.Split('.')
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
         let args = args |> List.map (tycheck refAsms openNames varEnv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         match Map.tryFind namePrefix varEnv with //N.B. vars always supercede open names
-        | Some(instanceTy:Type) -> 
-            let meth = instanceTy.GetMethod(methodName, instanceFlags, null, argTys, null)
-            checkNull meth (fun () -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys))
-            texp.InstanceCall(Var(namePrefix,instanceTy), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+        | Some(instanceTy:Type) -> //instance method call on variable
+            let meth =
+                match genericArgs with
+                | Some(genericArgs) -> 
+                    match tryResolveGenericArgTys genericArgs with
+                    | None -> semError pos (sprintf "could not resolve generic arg types: %A" genericArgs)
+                    | genericArgTys -> tryResolveMethod instanceTy methodName instanceFlags genericArgTys argTys
+                | None ->
+                    tryResolveMethod instanceTy methodName instanceFlags None argTys
+            
+            match meth with
+            | None -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName instanceTy.Name argTys)
+            | Some(meth) -> texp.InstanceCall(Var(namePrefix,instanceTy), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | None ->
             let withGenericArgs name args =
                 match args with
                 | Some(args) -> Generic(name, args)
                 | None -> NonGeneric(name)
 
-            let ty = resolveType (withGenericArgs namePrefix genericArgs)
-            if ty <> null then
+            match tryResolveType (withGenericArgs namePrefix genericArgs) with
+            | Some(ty) -> //static method call (on a possibly generic type, but not )
                 let meth = ty.GetMethod(methodName, staticFlags, null, argTys, null)
                 checkNull meth (fun () -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName namePrefix argTys))
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-            else        
-                let ty = resolveType (withGenericArgs longName genericArgs)
-                checkNull ty (fun () -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName))
-                if ty.IsValueType && args.Length = 0 then
-                    ///these optimization maybe should go in the Compiler emit
-                    if ty = typeof<int32> then
-                        texp.Int32(Unchecked.defaultof<int32>)
-                    elif ty = typeof<double> then
-                        texp.Double(Unchecked.defaultof<double>)
-                    elif ty = typeof<bool> then
-                        texp.Bool(Unchecked.defaultof<bool>)
-                    elif ty = typeof<char> then
-                        texp.Char(Unchecked.defaultof<char>)
+            | None -> //constructors
+                match tryResolveType (withGenericArgs longName genericArgs) with
+                | None -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName)
+                | Some(ty) ->
+                    if ty.IsValueType && args.Length = 0 then
+                        ///these optimization maybe should go in the Compiler emit
+                        if ty = typeof<int32> then
+                            texp.Int32(Unchecked.defaultof<int32>)
+                        elif ty = typeof<double> then
+                            texp.Double(Unchecked.defaultof<double>)
+                        elif ty = typeof<bool> then
+                            texp.Bool(Unchecked.defaultof<bool>)
+                        elif ty = typeof<char> then
+                            texp.Char(Unchecked.defaultof<char>)
+                        else
+                            texp.DefaultCtor(ty)
                     else
-                        texp.DefaultCtor(ty)
-                else
-                    let ctor = ty.GetConstructor(argTys)
-                    checkNull ctor (fun () -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type))))
-                    texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
-    | rexp.ExpCall(instance,methodName, args, pos) ->
+                        match ty.GetConstructor(argTys) with
+                        | null -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type)))
+                        | ctor -> texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
+    | rexp.ExpCall(instance, methodName, args, pos) ->
         let instance = tycheck refAsms openNames varEnv instance
         let args = args |> List.map (tycheck refAsms openNames varEnv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
