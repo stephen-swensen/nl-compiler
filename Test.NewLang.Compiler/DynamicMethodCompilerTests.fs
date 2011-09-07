@@ -285,5 +285,5 @@ let ``call generic static method on static type`` () = //these could be inferabl
     test <@ C.eval<obj> "tuple.create[int32,datetime](3, datetime())" :? IEqualityComparer<HashSet<string>> @>
 
 [<Fact>]
-let ``call generic instance method on var`` () =
+let ``call generic instance method with explicit generic args and no overloads on var`` () =
     test <@ C.eval (openPrefix + "x = Test1() in x.DoIt2[int32](1)") = 1 @>
