@@ -25,6 +25,7 @@ rule tokenize = parse
 | "/"  { DIV }
 | "^"  { POW }
 | "!"  { BANG }
+| "~"  { NOT }
 // | "!=" { NOTEQ }
 // | "==" { EQ }
 // | ">"  { GT }

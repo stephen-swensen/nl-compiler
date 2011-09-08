@@ -43,3 +43,4 @@ type rexp =
     | Open             of string * rexp * Position
     ///reference an assembly by name or dll path
     | Ref              of string * rexp * Position
+    | Not              of rexp * Position
