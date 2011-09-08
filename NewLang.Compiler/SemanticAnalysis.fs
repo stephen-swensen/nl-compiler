@@ -226,13 +226,14 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             | None -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName ty.Name argTys)
             | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-    | rexp.ExpCall(instance, methodName, args, pos) ->
+    | rexp.ExpCall(instance, methodName, methodGenericArgs, args, pos) ->
         let instance = tycheck refAsms openNames varEnv instance
         let args = args |> List.map (tycheck refAsms openNames varEnv)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        let meth = instance.Type.GetMethod(methodName, instanceFlags, null, argTys, null)
-        checkNull meth (fun () -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName  instance.Type.Name argTys))
-        InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+        match tryResolveMethodWithGenericArgs instance.Type methodName instanceFlags methodGenericArgs argTys pos with
+        | None -> semError pos (sprintf "not a valid instace method: %s, for the given expression type: %s, and arg types: %A" methodName instance.Type.Name argTys)
+        | Some(meth) ->
+            texp.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.Let(name, assign, body, pos) ->
         let assign = tycheck refAsms openNames varEnv assign
         let body = tycheck refAsms openNames (varEnv |> Map.add name assign.Type) body
