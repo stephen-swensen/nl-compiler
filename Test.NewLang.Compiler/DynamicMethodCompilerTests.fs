@@ -295,3 +295,20 @@ let ``call generic instance method with explicit generic args and no overloads o
 [<Fact>]
 let ``call generic instance method with explicit generic args and no overloads on expression`` () =
     test <@ C.eval (openPrefix + "Test1().DoIt2[int32](1)") = 1 @>
+
+[<Fact>]
+let ``not true`` () =
+    test <@ C.eval "~true" = false @>
+
+[<Fact>]
+let ``not not true`` () =
+    test <@ C.eval "~~true" = true @>
+
+[<Fact>]
+let ``not false`` () =
+    test <@ C.eval "~false" = true @>
+
+[<Fact>]
+let ``not not false`` () =
+    test <@ C.eval "~~false" = false @>
+

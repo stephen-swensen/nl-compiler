@@ -45,7 +45,7 @@ let emitOpCodes (il:ILGenerator) ast =
         | Double x -> il.Emit(OpCodes.Ldc_R8, x)
         | String x -> il.Emit(OpCodes.Ldstr, x)
         | Char x   -> il.Emit(OpCodes.Ldc_I4_S, byte x)
-        | Bool x   -> il.Emit(OpCodes.Ldc_I4_S, if x then 1uy else 0uy)
+        | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
         | Null ty  -> il.Emit(OpCodes.Ldnull)
         | UMinus(x,_) -> 
             emit lenv x
@@ -114,6 +114,10 @@ let emitOpCodes (il:ILGenerator) ast =
             il.Emit(OpCodes.Ldloca, loc)
             il.Emit(OpCodes.Initobj, ty)
             il.Emit(OpCodes.Ldloc, loc)
+        | Not(x,_) ->
+            emit lenv x
+            il.Emit(OpCodes.Ldc_I4_0)
+            il.Emit(OpCodes.Ceq)
 
     and emitAll lenv exps =
         for arg in exps do 

@@ -25,6 +25,7 @@ type texp =
     | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
     //initialize a value type ("zeroed-out" fields)
     | DefaultCtor  of Type
+    | Not          of texp * Type
     with 
         member this.Type =
             match this with
@@ -46,4 +47,5 @@ type texp =
             | Ctor(_,_,ty)
             | DefaultCtor(ty)
             | Null(ty)
+            | Not(_,ty)
                 -> ty

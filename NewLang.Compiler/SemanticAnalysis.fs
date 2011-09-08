@@ -259,3 +259,9 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 with _ ->
                     semError pos (sprintf "Unable to resolve assembly reference: %s" name)
         tycheck (name::refAsms) openNames varEnv x
+    | rexp.Not(x,pos) ->
+        let x = tycheck refAsms openNames varEnv x
+        if x.Type <> typeof<bool> then
+            semError pos "Not expression must be bool"
+        else
+            texp.Not(x, x.Type)
