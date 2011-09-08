@@ -291,3 +291,7 @@ let ``call generic static method with explicit generic args and no type-wise ove
 [<Fact>]
 let ``call generic instance method with explicit generic args and no overloads on var`` () =
     test <@ C.eval (openPrefix + "x = Test1() in x.DoIt2[int32](1)") = 1 @>
+
+[<Fact>]
+let ``call generic instance method with explicit generic args and no overloads on expression`` () =
+    test <@ C.eval (openPrefix + "Test1().DoIt2[int32](1)") = 1 @>
