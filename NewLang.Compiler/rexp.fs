@@ -35,8 +35,8 @@ type rexp =
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
     | GenericTypeStaticCall of string * genericSig list * string * (genericSig list) option * rexp list * Position
     ///call instance method on an expression
-    //todo: add optional method generic args
-    | ExpCall          of rexp * string * rexp list * Position
+    ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
+    | ExpCall          of rexp * string * (genericSig list) option * rexp list * Position
     ///discard left hand side, return right hand side
     | Sequential       of rexp * rexp * Position
     ///open a namespace
