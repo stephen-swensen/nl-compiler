@@ -312,3 +312,35 @@ let ``not false`` () =
 let ``not not false`` () =
     test <@ C.eval "~~false" = false @>
 
+[<Fact>]
+let ``box primitive value type`` () =
+    test <@ C.eval "32[object]" = box 32 @>
+
+[<Fact>]
+let ``box and ubox value type`` () =
+    test <@ C.eval "32[object][int32]" = 32 @>
+
+[<Fact>]
+let ``down cast ref type`` () =
+    test <@ C.eval "'c'[object]" = box 'c' @>
+
+[<Fact>]
+let ``downcast and updown cast ref type`` () =
+    test <@ C.eval "'c'[object][char]" = 'c' @>
+
+[<Fact>]
+let ``downcast and upcast ref type to and from interface`` () =
+    test <@ C.eval<obj> "arraylist()[ienumerable][arraylist]" |> ignore; true @>
+
+[<Fact>]
+let ``downcast and upcast value type to and from interface`` () =
+    test <@ C.eval<obj> "biginteger()[IComparable][biginteger]" |> ignore; true @>
+
+[<Fact>]
+let ``semantic error trying to cast sealed value type to anything other than object or implemented interface `` () =
+    raises<SemanticErrorException> <@ C.eval "32[string]" @>
+
+[<Fact>]
+let ``semantic error trying to cast sealed ref type to anything other than object or implemented interface `` () =
+    raises<SemanticErrorException> <@ C.eval "\"asdf\"[char]" @>
+

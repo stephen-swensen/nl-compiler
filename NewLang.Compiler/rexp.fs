@@ -44,3 +44,4 @@ type rexp =
     ///reference an assembly by name or dll path
     | Ref              of string * rexp * Position
     | Not              of rexp * Position
+    | Cast             of rexp * genericSig * Position
