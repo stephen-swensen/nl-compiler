@@ -265,3 +265,12 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             semError pos "Not expression must be bool"
         else
             texp.Not(x, x.Type)
+    | rexp.Cast(x,ty,pos) ->
+        let x = tycheck refAsms openNames varEnv x
+        match tryResolveType ty with
+        | None -> semError pos (sprintf "could not resolve cast type: %A" ty)
+        | Some(ty) ->
+            if ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
+                texp.Cast(x,ty)
+            else
+                semError pos (sprintf "a cast from type %s to the type %A will always fail" x.Type.Name ty)
