@@ -100,4 +100,4 @@ rexp:
 	| OPEN longName IN rexp						{ rexp.Open($2.ToLower(),$4, parseState.InputStartPosition 2) }
 	| REF STRING IN rexp						{ rexp.Ref($2, $4, parseState.InputStartPosition 2) }
 	| rexp LBRACKET genericSig RBRACKET			{ rexp.Cast($1, $3, parseState.InputStartPosition 3) }
-	//for some reason var expressions not work on above cast
+	//var expressions must be surrounded by parens in order to be cast in our language... :(

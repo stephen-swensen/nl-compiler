@@ -344,3 +344,6 @@ let ``semantic error trying to cast sealed value type to anything other than obj
 let ``semantic error trying to cast sealed ref type to anything other than object or implemented interface `` () =
     raises<SemanticErrorException> <@ C.eval "\"asdf\"[char]" @>
 
+[<Fact>]
+let ``cast var - needs to be surrounded with parens - this sucks`` () =
+    test <@ C.eval "x = 3 in (x)[object][int32]" = 3 @>
