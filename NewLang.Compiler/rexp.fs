@@ -7,9 +7,8 @@ type numericBinop = Plus | Minus | Times | Div
 type logicBinop = And | Or | XOr
 type comparisonOps = Eq | NotEq | Lt | Gt | LtEq | GtEq
 
-type genericSig =
-    | NonGeneric of string
-    | Generic of string * genericSig list
+type tySig =
+    | TySig of string * tySig list
 
 ///Raw (untyped) parsed expression
 type rexp =
@@ -18,8 +17,8 @@ type rexp =
     | String           of string
     | Char             of char
     | Bool             of bool
-    | Null             of genericSig * Position
-    | Typeof           of genericSig * Position
+    | Null             of tySig * Position
+    | Typeof           of tySig * Position
 //    | LogicBinop       of logicBinop * rexp * rexp * Position
 //    | Not              of rexp * Position
     | NumericBinop     of numericBinop * rexp * rexp * Position
@@ -31,12 +30,12 @@ type rexp =
     ///reference a variable
     | Var              of string * Position
     ///call instance method on a variable or call a static method or call a constructor
-    | NameCall         of string * (genericSig list) option * rexp list * Position
+    | NameCall         of string * tySig list * rexp list * Position
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
-    | GenericTypeStaticCall of string * genericSig list * string * (genericSig list) option * rexp list * Position
+    | GenericTypeStaticCall of string * tySig list * string * tySig list * rexp list * Position
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
-    | ExpCall          of rexp * string * (genericSig list) option * rexp list * Position
+    | ExpCall          of rexp * string * tySig list * rexp list * Position
     ///discard left hand side, return right hand side
     | Sequential       of rexp * rexp * Position
     ///open a namespace
@@ -44,4 +43,4 @@ type rexp =
     ///reference an assembly by name or dll path
     | Ref              of string * rexp * Position
     | Not              of rexp * Position
-    | Cast             of rexp * genericSig * Position
+    | Cast             of rexp * tySig * Position
