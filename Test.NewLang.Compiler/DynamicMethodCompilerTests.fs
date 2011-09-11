@@ -351,3 +351,7 @@ let ``cast var - does not needs to be surrounded with parens`` () =
 [<Fact>]
 let ``cast var has more than one generic ty arg`` () =
     raises<SyntaxErrorException> <@ C.eval "x = 3 in x[object,int32]" @>
+
+[<Fact>]
+let ``cannot cast value to its own type`` () =
+    raises<SemanticErrorException> <@ C.eval "3[int32]" @>

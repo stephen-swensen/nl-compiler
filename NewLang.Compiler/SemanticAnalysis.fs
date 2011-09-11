@@ -260,7 +260,9 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         match tryResolveType ty with
         | None -> semError pos (sprintf "could not resolve cast type: %A" ty)
         | Some(ty) ->
-            if ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
+            if ty = x.Type then
+                semError pos (sprintf "casting a value to itself own type (%s) is a no-op" x.Type.Name)
+            elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
                 texp.Cast(x,ty)
             else
-                semError pos (sprintf "a cast from type %s to the type %A will always fail" x.Type.Name ty)
+                semError pos (sprintf "a cast from type %s to the type %s will always fail" x.Type.Name ty.Name)
