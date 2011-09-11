@@ -73,18 +73,16 @@ let emitOpCodes (il:ILGenerator) ast =
                 il.Emit(OpCodes.Conv_I4)
             else
                 failwithf "unsupported coersion: %A" ty //shouldn't be possible since already ty checked
-        | Cast(x,ty) ->
+        | Cast(x,ty) -> //precondition: x.Type <> ty
             emit lenv x
-            if x.Type <> ty then
-                if x.Type.IsValueType then
-                    il.Emit(OpCodes.Box,x.Type)
-                    if ty <> typeof<obj> then //box value type to an interface
-                        il.Emit(OpCodes.Castclass, ty)
-                elif ty.IsValueType then
-                    il.Emit(OpCodes.Unbox_Any, ty)
-                else
+            if x.Type.IsValueType then
+                il.Emit(OpCodes.Box,x.Type)
+                if ty <> typeof<obj> then //box value type to an interface
                     il.Emit(OpCodes.Castclass, ty)
-            else () //maybe should not be possible (cut branch out in semant phase)
+            elif ty.IsValueType then
+                il.Emit(OpCodes.Unbox_Any, ty)
+            else
+                il.Emit(OpCodes.Castclass, ty)
         | StaticCall(meth,args,_) ->
             args |> List.iter (emit lenv)
             il.Emit(OpCodes.Call, meth)
