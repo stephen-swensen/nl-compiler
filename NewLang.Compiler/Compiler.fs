@@ -84,7 +84,7 @@ let emitOpCodes (il:ILGenerator) ast =
                     il.Emit(OpCodes.Unbox_Any, ty)
                 else
                     il.Emit(OpCodes.Castclass, ty)
-            else ()
+            else () //maybe should not be possible (cut branch out in semant phase)
         | StaticCall(meth,args,_) ->
             args |> List.iter (emit lenv)
             il.Emit(OpCodes.Call, meth)
