@@ -7,8 +7,6 @@ open Swensen.NewLang
 open Lexer
 open Parser
 
-module SA = SemanticAnalysis
-
 open  System.Reflection.Emit
 
 //todo: cast language syntax
@@ -24,7 +22,7 @@ let parseFromString code =
     setInitialPos lexbuf ""
     try 
         Parser.start Lexer.tokenize lexbuf
-        |> SA.tycheck 
+        |> Semant.tycheck 
             ["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
              "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
              "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
