@@ -355,3 +355,19 @@ let ``cast var has more than one generic ty arg`` () =
 [<Fact>]
 let ``cannot cast value to its own type`` () =
     raises<SemanticErrorException> <@ C.eval "3[int32]" @>
+
+[<Fact>]
+let ``cast int to double, a widening coersion`` () =
+    test <@ C.eval "3[double]" = 3.0 @>
+
+[<Fact>]
+let ``cast double to int, a narrowing coersion`` () =
+    test <@ C.eval "3.0[int32]" = 3 @>
+
+[<Fact>]
+let ``cast int32 to biginteger, a biginteger.op_implicit `` () =
+    test <@ C.eval "3[biginteger]" = 3I @>
+
+[<Fact>]
+let ``cast biginteger to int32, a biginteger.op_explicit `` () =
+    test <@ C.eval "biginteger()[int32]" = 0 @>
