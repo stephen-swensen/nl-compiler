@@ -60,6 +60,11 @@ let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[])
         | 1 -> Some(possibleMeths.[0])
         | _ -> None
 
+let tryResolveBinaryOp opName (xty:Type) (yty:Type) =
+    match xty.GetMethod(opName, [|xty;yty|]) with
+    | null -> yty.GetMethod(opName, [|xty;yty|]) |> Option.fromNullable
+    | meth -> Some(meth)
+
 ///Symantic analysis (type checking)
 let rec tycheck refAsms openNames varEnv rawExpression =
     ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
@@ -260,9 +265,26 @@ let rec tycheck refAsms openNames varEnv rawExpression =
         match tryResolveType ty with
         | None -> semError pos (sprintf "could not resolve cast type: %A" ty)
         | Some(ty) ->
-            if ty = x.Type then
+            if x.Type = ty then
                 semError pos (sprintf "casting a value to itself own type (%s) is a no-op" x.Type.Name)
             elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
                 texp.Cast(x,ty)
+            elif (x.Type = typeof<int> && ty = typeof<float>) || (x.Type = typeof<float> && ty = typeof<int>) then
+                texp.Coerce(x,ty) 
             else
-                semError pos (sprintf "a cast from type %s to the type %s will always fail" x.Type.Name ty.Name)
+                //name must be is op_Explicit or op_Implicit; could make this Type extension method
+                let tryResolveConversionOp name (onty:Type) fromty toty =
+                    onty.GetMethods(staticFlags)
+                    |> Array.tryFind 
+                        (fun (meth:MethodInfo) -> 
+                            meth.Name = name &&
+                            meth.ReturnType = toty &&
+                            (meth.GetParameters() |> Array.map (fun p -> p.ParameterType)) = [|fromty|])
+
+                let meth = seq {
+                    yield tryResolveConversionOp "op_Explicit" x.Type x.Type ty
+                    yield tryResolveConversionOp "op_Implicit" ty x.Type ty } |> Seq.tryPick id
+
+                match meth with
+                | Some(meth) -> texp.StaticCall(meth, [x], meth.ReturnType)    
+                | None -> semError pos (sprintf "a cast from type %s to the type %s will always fail" x.Type.Name ty.Name)

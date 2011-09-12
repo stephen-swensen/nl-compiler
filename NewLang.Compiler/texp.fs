@@ -17,7 +17,7 @@ type texp =
     | Var           of string * Type
     //primitive coersion
     | Coerce        of texp * Type
-    //downcast or box type
+    ///box / box value type or down / up cast ref type
     | Cast          of texp * Type
     | StaticCall    of System.Reflection.MethodInfo * texp list * Type
     | InstanceCall  of texp * System.Reflection.MethodInfo * texp list * Type

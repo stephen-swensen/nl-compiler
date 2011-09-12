@@ -62,6 +62,7 @@
     <Compile Include="CoreOps.fs" />
     <Compile Include="Semant.fs" />
     <Compile Include="Compiler.fs" />
+    <Compile Include="MaybeMonad.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
