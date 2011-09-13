@@ -165,13 +165,15 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 | Minus -> "op_Subtraction"
                 | Div -> "op_Division"
                 | Times -> "op_Multiply"
-            let meth = 
-                match x.Type.GetMethod(opName, [|x.Type; y.Type|]) with
-                | null -> y.Type.GetMethod(opName, [|x.Type; y.Type|])
-                | meth -> meth
-            if meth = null then
+            
+            let meth = seq {
+                yield x.Type.GetMethod(opName, [|x.Type; y.Type|])
+                yield y.Type.GetMethod(opName, [|x.Type; y.Type|]) } |> Seq.tryFind ((<>)null)
+
+            match meth with
+            | None ->
                 semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
-            else
+            | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
     | rexp.NameCall(longName, genericArgs, args, pos) -> //todo: need more position info for different tokens
         let namePrefix, methodName =
