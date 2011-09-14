@@ -379,3 +379,7 @@ let ``Void not valid in let binding`` () =
 [<Fact>]
 let ``Void cannot be instantiated`` () =
     raises<SemanticErrorException> <@ C.eval "System.Void()" @>
+
+[<Fact>]
+let ``casting to Void will always fail`` () =
+    raises<SemanticErrorException> <@ C.eval "3[object][System.Void]" @>
