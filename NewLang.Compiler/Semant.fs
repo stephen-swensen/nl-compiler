@@ -78,7 +78,7 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
     (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
 ///Symantic analysis (type checking)
-let rec tycheck refAsms openNames varEnv rawExpression =
+let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
     ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
     let rec tryResolveType gsig =
         match gsig with
@@ -88,7 +88,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 for possibleName in (name::(openNames |> List.map (fun n -> n + "." + name))) do
                     for possibleAsm in refAsms do
                         if args = [] then
-                            let possibleFullName = possibleName + ", " + possibleAsm
+                            let possibleFullName = possibleName + ", " + possibleAsm.FullName
                             let ty = Type.GetType(possibleFullName,false, true)
                             yield Option.fromNullable ty
                         else
@@ -101,7 +101,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                                         possibleName 
                                         args.Length 
                                         (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) (List.choose id argTys)))
-                                        possibleAsm
+                                        possibleAsm.FullName
                                 let ty = Type.GetType(possibleFullName,false, true)
                                 yield Option.fromNullable ty
             } |> Seq.tryPick id
@@ -261,17 +261,16 @@ let rec tycheck refAsms openNames varEnv rawExpression =
     | rexp.Open(name, x, _) ->
         tycheck refAsms (name::openNames) varEnv x
     | rexp.Ref(name, x, pos) ->
-        let name =
+        let asm =
             try
-                Assembly.Load(name) |> ignore
-                name
+                Assembly.Load(name)
             with _ ->
                 try 
                     //are we sure we don't want to use LoadFile so that we can use reference in different scopes?
-                    Assembly.LoadFrom(name).FullName
+                    Assembly.LoadFrom(name)
                 with _ ->
                     semError pos (sprintf "Unable to resolve assembly reference: %s" name)
-        tycheck (name::refAsms) openNames varEnv x
+        tycheck (asm::refAsms) openNames varEnv x
     | rexp.Not(x,pos) ->
         let x = tycheck refAsms openNames varEnv x
         if x.Type <> typeof<bool> then
