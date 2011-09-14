@@ -233,7 +233,7 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             match tryResolveMethodWithGenericArgs ty methodName staticFlags (methodGenericArgs |> List.toArray) argTys pos with
             | None -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName ty.Name argTys)
-            | Some(meth) ->
+            | Some(meth) -> 
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.ExpCall(instance, methodName, methodGenericArgs, args, pos) ->
         let instance = tycheck refAsms openNames varEnv instance
