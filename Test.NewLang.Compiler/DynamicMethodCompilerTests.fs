@@ -383,3 +383,7 @@ let ``Void cannot be instantiated`` () =
 [<Fact>]
 let ``casting to Void will always fail`` () =
     raises<SemanticErrorException> <@ C.eval "3[object][System.Void]" @>
+
+[<Fact>]
+let ``connot resolve namespace`` () =
+    raises<SemanticErrorException> <@ C.eval "open hello.world in 3" @>
