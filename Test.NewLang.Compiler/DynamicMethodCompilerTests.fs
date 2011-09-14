@@ -371,3 +371,7 @@ let ``cast int32 to biginteger, a biginteger.op_implicit `` () =
 [<Fact>]
 let ``cast biginteger to int32, a biginteger.op_explicit `` () =
     test <@ C.eval "biginteger()[int32]" = 0 @>
+
+[<Fact>]
+let ``Void not valid in let binding`` () =
+    raises<SemanticErrorException> <@ C.eval "x = console.writeline(\"asdf\") in x" @>

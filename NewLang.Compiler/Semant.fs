@@ -245,6 +245,8 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             texp.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.Let(name, assign, body, pos) ->
         let assign = tycheck refAsms openNames varEnv assign
+        if assign.Type = typeof<Void> then
+            semError pos (sprintf "System.Void is not a valid value in a let binding")
         let body = tycheck refAsms openNames (varEnv |> Map.add name assign.Type) body
         texp.Let(name,assign, body, body.Type)
     | rexp.Var(name, pos) ->
