@@ -258,7 +258,15 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
     | rexp.Sequential(x,y, pos) ->
         let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
         texp.Sequential(x,y,y.Type)
-    | rexp.Open(name, x, _) ->
+    | rexp.Open(name, x, pos) ->
+        let exists =
+            refAsms
+            |> Seq.collect (fun asm -> asm.GetTypes() |> Seq.map (fun ty -> let ns = ty.Namespace in if ns = null then "" else ns.ToLower()))
+            |> Seq.exists ((=)name)
+
+        if not exists then
+            semError pos (sprintf "namespace %s does not exist in any currently open assemblies: %A" name refAsms)
+
         tycheck refAsms (name::openNames) varEnv x
     | rexp.Ref(name, x, pos) ->
         let asm =
