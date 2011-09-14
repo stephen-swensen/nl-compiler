@@ -210,8 +210,10 @@ let rec tycheck refAsms openNames varEnv rawExpression =
                 | None -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName)
                 | Some(ty) ->
                     if ty.IsValueType && args.Length = 0 then
+                        if ty = typeof<System.Void> then
+                            semError pos (sprintf "System.Void cannot be instantiated")
                         ///these optimization maybe should go in the Compiler emit
-                        if ty = typeof<int32> then
+                        elif ty = typeof<int32> then
                             texp.Int32(Unchecked.defaultof<int32>)
                         elif ty = typeof<double> then
                             texp.Double(Unchecked.defaultof<double>)

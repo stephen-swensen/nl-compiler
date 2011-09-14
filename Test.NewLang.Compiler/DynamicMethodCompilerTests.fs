@@ -375,3 +375,7 @@ let ``cast biginteger to int32, a biginteger.op_explicit `` () =
 [<Fact>]
 let ``Void not valid in let binding`` () =
     raises<SemanticErrorException> <@ C.eval "x = console.writeline(\"asdf\") in x" @>
+
+[<Fact>]
+let ``Void cannot be instantiated`` () =
+    raises<SemanticErrorException> <@ C.eval "System.Void()" @>
