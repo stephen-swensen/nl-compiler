@@ -160,5 +160,3 @@ rexp:
     //open assembly reference (by assembly name or file name)
     | REF STRING IN rexp                     
         { rexp.Ref($2, $4, parseState.InputStartPosition 2) }
-    
-    //var expressions must be surrounded by parens in order to be cast in our language... :(
