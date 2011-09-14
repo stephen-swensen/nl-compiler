@@ -23,10 +23,10 @@ let parseFromString code =
     try 
         Parser.start Lexer.tokenize lexbuf
         |> Semant.tycheck 
-            ["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+           (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
              "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
              "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-             "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"]
+             "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
             ["system"
              "system.collections"
              "system.collections.generic"
