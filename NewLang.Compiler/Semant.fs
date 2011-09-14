@@ -60,10 +60,22 @@ let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[])
         | 1 -> Some(possibleMeths.[0])
         | _ -> None
 
-let tryResolveBinaryOp opName (xty:Type) (yty:Type) =
-    match xty.GetMethod(opName, [|xty;yty|]) with
-    | null -> yty.GetMethod(opName, [|xty;yty|]) |> Option.fromNullable
-    | meth -> Some(meth)
+
+let tryResolveBinaryOp opName (xty:Type) (yty:Type) = 
+    seq { yield xty.GetMethod(opName, [|xty;yty|])
+          yield yty.GetMethod(opName, [|xty;yty|]) } |> Seq.tryFind ((<>)null)
+
+let tryResolveOpImplicit, tryResolveOpExplicit =
+    let tryResolveConversionOp name (onty:Type) fromty toty =
+        onty.GetMethods(staticFlags)
+        |> Array.tryFind 
+            (fun (meth:MethodInfo) -> 
+                meth.Name = name &&
+                meth.ReturnType = toty &&
+                (meth.GetParameters() |> Array.map (fun p -> p.ParameterType)) = [|fromty|])
+
+    (fun onty fromty toto -> tryResolveConversionOp "op_Implicit" onty fromty toto), 
+    (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
 ///Symantic analysis (type checking)
 let rec tycheck refAsms openNames varEnv rawExpression =
@@ -274,18 +286,12 @@ let rec tycheck refAsms openNames varEnv rawExpression =
             elif (x.Type = typeof<int> && ty = typeof<float>) || (x.Type = typeof<float> && ty = typeof<int>) then
                 texp.Coerce(x,ty) 
             else
-                //name must be is op_Explicit or op_Implicit; could make this Type extension method
-                let tryResolveConversionOp name (onty:Type) fromty toty =
-                    onty.GetMethods(staticFlags)
-                    |> Array.tryFind 
-                        (fun (meth:MethodInfo) -> 
-                            meth.Name = name &&
-                            meth.ReturnType = toty &&
-                            (meth.GetParameters() |> Array.map (fun p -> p.ParameterType)) = [|fromty|])
-
                 let meth = seq {
-                    yield tryResolveConversionOp "op_Explicit" x.Type x.Type ty
-                    yield tryResolveConversionOp "op_Implicit" ty x.Type ty } |> Seq.tryPick id
+                    //giver implicit conversion op from either type over explicit ops; next prefer conversion op defined on lhs type over rhs type
+                    yield tryResolveOpImplicit ty x.Type ty
+                    yield tryResolveOpImplicit x.Type x.Type ty
+                    yield tryResolveOpExplicit ty x.Type ty
+                    yield tryResolveOpExplicit x.Type x.Type ty } |> Seq.tryPick id
 
                 match meth with
                 | Some(meth) -> texp.StaticCall(meth, [x], meth.ReturnType)    
