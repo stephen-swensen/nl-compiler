@@ -309,3 +309,13 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                 match meth with
                 | Some(meth) -> texp.StaticCall(meth, [x], meth.ReturnType)    
                 | None -> semError pos (sprintf "a cast from type %s to the type %s will always fail" x.Type.Name ty.Name)
+    | rexp.IfThenElse(x,y,z,pos) ->
+        let x = tycheck refAsms openNames varEnv x
+        if x.Type <> typeof<bool> then
+            semError pos (sprintf "test expresion must be boolean not %s" x.Type.Name)
+        
+        let y,z = tycheck refAsms openNames varEnv y, tycheck refAsms openNames varEnv z
+        if y.Type <> z.Type then
+            semError pos (sprintf "then and else branches must be of same type but instead are %s and %s" y.Type.Name z.Type.Name)
+
+        texp.IfThenElse(x,y,z,y.Type (*or z.Type*))
