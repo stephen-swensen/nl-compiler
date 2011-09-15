@@ -118,6 +118,17 @@ let emitOpCodes (il:ILGenerator) ast =
             emit lenv x
             il.Emit(OpCodes.Ldc_I4_0)
             il.Emit(OpCodes.Ceq)
+        | IfThenElse(x,y,z,_) ->
+            let endIfLabel = il.DefineLabel()
+            let beginElseLabel = il.DefineLabel()
+
+            emit lenv x
+            il.Emit(OpCodes.Brfalse_S, beginElseLabel)
+            emit lenv y
+            il.Emit(OpCodes.Br, endIfLabel)
+            il.MarkLabel(beginElseLabel)
+            emit lenv z
+            il.MarkLabel(endIfLabel)
 
     and emitAll lenv exps =
         for arg in exps do 
