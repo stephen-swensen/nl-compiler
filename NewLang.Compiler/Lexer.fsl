@@ -33,7 +33,7 @@ rule tokenize = parse
 // | ">=" { GTEQ }
 // | "<=" { LTEQ }
 
-//various symbols and keywords
+//various symbols and keywords (todo: make all word symbols case insensitive)
 | "[" { LBRACKET }
 | "]" { RBRACKET }
 | "(" { LPAREN }
@@ -42,9 +42,12 @@ rule tokenize = parse
 | "," { COMMA }
 | ";" { SEMICOLON }
 | "open" { OPEN }
-| "ref" { REF }
+| "ref" { REF } //spell out? "reference" or "open assembly" and "open namespace"
 | "="  { EQ }
 | "in" { IN }
+| "if" { IF }
+| "then" { THEN }
+| "else" { ELSE }
 
 //bool literals
 | "true"  { BOOL (true) }

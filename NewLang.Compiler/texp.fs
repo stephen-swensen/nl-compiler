@@ -26,6 +26,7 @@ type texp =
     //initialize a value type ("zeroed-out" fields)
     | DefaultCtor  of Type
     | Not          of texp * Type
+    | IfThenElse   of texp * texp * texp * Type
     with 
         member this.Type =
             match this with
@@ -48,4 +49,5 @@ type texp =
             | DefaultCtor(ty)
             | Null(ty)
             | Not(_,ty)
+            | IfThenElse(_,_,_,ty)
                 -> ty
