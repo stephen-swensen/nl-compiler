@@ -26,6 +26,9 @@ open Swensen.NewLang
 
 %right SEMICOLON
 
+%left OR
+%left AND
+
 %left PLUS MINUS
 %left TIMES DIV
 %right POW
@@ -66,9 +69,16 @@ tySig:
     
 
 rexp: 
-    //-- binary operators --
+    //-- logical binary operators --
 
-    | rexp PLUS  rexp                             
+    | rexp OR rexp                             
+        { rexp.IfThenElse($1, rexp.Bool(true), Some($3), parseState.InputStartPosition 2) }
+    | rexp AND rexp                             
+        { rexp.IfThenElse($1, $3, Some(rexp.Bool(false)), parseState.InputStartPosition 2) }
+
+    //-- numeric binary operators --
+
+    | rexp PLUS rexp                             
         { rexp.NumericBinop(Plus, $1, $3, parseState.InputStartPosition 2) }
     | rexp MINUS rexp                             
         { rexp.NumericBinop(Minus, $1, $3, parseState.InputStartPosition 2) }
