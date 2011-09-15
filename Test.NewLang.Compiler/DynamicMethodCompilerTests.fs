@@ -416,3 +416,27 @@ let ``ifthen default valuetype`` () =
 let ``ifthen default reftype`` () =
     test <@ C.eval "if false then \"asdf\"" = null @>
 
+[<Fact>]
+let ``lhs of and  must be bool`` () =
+    raises<SemanticErrorException> <@ C.eval "3 and true" @>
+
+[<Fact>]
+let ``rhs of and  must be bool`` () =
+    raises<SemanticErrorException> <@ C.eval "true and 3" @>
+
+[<Fact>]
+let ``true and true`` () =
+    test <@ C.eval "true and true" = true @>
+
+[<Fact>]
+let ``true and false`` () =
+    test <@ C.eval "true and false" = false @>
+
+[<Fact>]
+let ``false and true`` () =
+    test <@ C.eval "false and true" = false @>
+
+[<Fact>]
+let ``false and false`` () =
+    test <@ C.eval "false and false" = false @>
+
