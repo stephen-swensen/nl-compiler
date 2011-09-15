@@ -28,6 +28,7 @@ rule tokenize = parse
 | "~"  { NOT }
 | "and"  { AND }
 | "or"  { OR }
+| "xor"  { XOR }
 // | "!=" { NOTEQ }
 // | "==" { EQ }
 // | ">"  { GT }

@@ -13,7 +13,7 @@ open Swensen.NewLang
 %token <char> CHAR
 %token <bool> BOOL
 %token NULL TYPE
-%token AND OR
+%token AND OR XOR
 %token PLUS MINUS TIMES DIV POW BANG NOT
 %token <string> NAME
 %token IN EQ
@@ -26,7 +26,7 @@ open Swensen.NewLang
 
 %right SEMICOLON
 
-%left OR
+%left OR XOR
 %left AND
 
 %left PLUS MINUS
@@ -71,6 +71,8 @@ tySig:
 rexp: 
     //-- logical binary operators --
 
+    | rexp XOR rexp                             
+        { rexp.IfThenElse($1, rexp.Not($3, parseState.InputStartPosition 2), Some($3), parseState.InputStartPosition 2) }
     | rexp OR rexp                             
         { rexp.IfThenElse($1, rexp.Bool(true), Some($3), parseState.InputStartPosition 2) }
     | rexp AND rexp                             
