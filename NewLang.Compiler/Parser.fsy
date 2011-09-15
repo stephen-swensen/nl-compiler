@@ -20,6 +20,7 @@ open Swensen.NewLang
 %token COMMA DOT SEMICOLON
 %token OPEN REF
 %token LBRACKET RBRACKET
+%token IF THEN ELSE
 %token EOF
 
 %right SEMICOLON
@@ -160,3 +161,7 @@ rexp:
     //open assembly reference (by assembly name or file name)
     | REF STRING IN rexp                     
         { rexp.Ref($2, $4, parseState.InputStartPosition 2) }
+
+    //if then else expressions
+    | IF rexp THEN rexp ELSE rexp
+        { rexp.IfThenElse($2,$4,$6, parseState.InputStartPosition 1) }

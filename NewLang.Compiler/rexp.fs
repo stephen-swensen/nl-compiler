@@ -44,3 +44,4 @@ type rexp =
     | Ref              of string * rexp * Position
     | Not              of rexp * Position
     | Cast             of rexp * tySig * Position
+    | IfThenElse       of rexp * rexp * rexp * Position //should be pos for each!
