@@ -163,5 +163,7 @@ rexp:
         { rexp.Ref($2, $4, parseState.InputStartPosition 2) }
 
     //if then else expressions
+    | IF rexp THEN rexp
+        { rexp.IfThenElse($2,$4,None, parseState.InputStartPosition 1) }
     | IF rexp THEN rexp ELSE rexp
-        { rexp.IfThenElse($2,$4,$6, parseState.InputStartPosition 1) }
+        { rexp.IfThenElse($2,$4,Some($6), parseState.InputStartPosition 1) }
