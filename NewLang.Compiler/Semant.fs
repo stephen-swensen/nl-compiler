@@ -212,17 +212,8 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                     if ty.IsValueType && args.Length = 0 then
                         if ty = typeof<System.Void> then
                             semError pos (sprintf "System.Void cannot be instantiated")
-                        ///these optimization maybe should go in the Compiler emit
-                        elif ty = typeof<int32> then
-                            texp.Int32(Unchecked.defaultof<int32>)
-                        elif ty = typeof<double> then
-                            texp.Double(Unchecked.defaultof<double>)
-                        elif ty = typeof<bool> then
-                            texp.Bool(Unchecked.defaultof<bool>)
-                        elif ty = typeof<char> then
-                            texp.Char(Unchecked.defaultof<char>)
                         else
-                            texp.DefaultCtor(ty)
+                            texp.Default(ty)
                     else
                         match ty.GetConstructor(argTys) with
                         | null -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type)))
@@ -314,8 +305,16 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         if x.Type <> typeof<bool> then
             semError pos (sprintf "test expresion must be boolean not %s" x.Type.Name)
         
-        let y,z = tycheck refAsms openNames varEnv y, tycheck refAsms openNames varEnv z
-        if y.Type <> z.Type then
+        let y = tycheck refAsms openNames varEnv y
+        match z with
+        | Some(z) ->
+            let z = tycheck refAsms openNames varEnv z
             semError pos (sprintf "then and else branches must be of same type but instead are %s and %s" y.Type.Name z.Type.Name)
+            texp.IfThenElse(x,y,z,y.Type)
+        | None ->
+            if y.Type = typeof<Void> then
+                texp.IfThen(x,y)
+            else
+                texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)    
 
-        texp.IfThenElse(x,y,z,y.Type (*or z.Type*))
+        

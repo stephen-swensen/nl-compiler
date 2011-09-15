@@ -23,9 +23,10 @@ type texp =
     | InstanceCall  of texp * System.Reflection.MethodInfo * texp list * Type
     | Sequential    of texp * texp * Type
     | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
-    //initialize a value type ("zeroed-out" fields)
-    | DefaultCtor  of Type
+    ///Default value of ValueType ("zero") or Ref type (null)
+    | Default      of Type
     | Not          of texp * Type
+    | IfThen       of texp * texp
     | IfThenElse   of texp * texp * texp * Type
     with 
         member this.Type =
@@ -36,6 +37,7 @@ type texp =
             | Char(_)                -> typeof<char>
             | Bool(_)                -> typeof<bool>
             | Typeof(_)              -> typeof<Type>
+            | IfThen(_,_)            -> typeof<System.Void>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
@@ -46,7 +48,7 @@ type texp =
             | InstanceCall(_,_,_,ty) 
             | Sequential(_,_,ty)
             | Ctor(_,_,ty)
-            | DefaultCtor(ty)
+            | Default(ty)
             | Null(ty)
             | Not(_,ty)
             | IfThenElse(_,_,_,ty)

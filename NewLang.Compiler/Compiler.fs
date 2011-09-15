@@ -108,20 +108,34 @@ let emitOpCodes (il:ILGenerator) ast =
             //learned through C# ildasm
             il.Emit(OpCodes.Ldtoken, ty)
             il.Emit(OpCodes.Call, typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|]))
-        | DefaultCtor(ty) ->
-            //http://source.db4o.com/db4o/trunk/db4o.net/Libs/compact-3.5/System.Linq.Expressions/System.Linq.Expressions/EmitContext.cs
-            let loc = il.DeclareLocal(ty)
-            il.Emit(OpCodes.Ldloca, loc)
-            il.Emit(OpCodes.Initobj, ty)
-            il.Emit(OpCodes.Ldloc, loc)
+        | Default(ty) ->
+            //start with primitive optimizations
+            if ty = typeof<int32> then
+                emit lenv <| texp.Int32(Unchecked.defaultof<int32>)
+            elif ty = typeof<double> then
+                emit lenv <| texp.Double(Unchecked.defaultof<double>)
+            elif ty = typeof<bool> then
+                emit lenv <| texp.Bool(Unchecked.defaultof<bool>)
+            elif ty = typeof<char> then
+                emit lenv <| texp.Char(Unchecked.defaultof<char>)
+            else //http://source.db4o.com/db4o/trunk/db4o.net/Libs/compact-3.5/System.Linq.Expressions/System.Linq.Expressions/EmitContext.cs
+                let loc = il.DeclareLocal(ty)
+                il.Emit(OpCodes.Ldloca, loc)
+                il.Emit(OpCodes.Initobj, ty)
+                il.Emit(OpCodes.Ldloc, loc)
         | Not(x,_) ->
             emit lenv x
             il.Emit(OpCodes.Ldc_I4_0)
             il.Emit(OpCodes.Ceq)
+        | IfThen(x,y) ->
+            let endIfLabel = il.DefineLabel()
+            emit lenv x
+            il.Emit(OpCodes.Brfalse_S, endIfLabel)
+            emit lenv y
+            il.MarkLabel(endIfLabel)
         | IfThenElse(x,y,z,_) ->
             let endIfLabel = il.DefineLabel()
             let beginElseLabel = il.DefineLabel()
-
             emit lenv x
             il.Emit(OpCodes.Brfalse_S, beginElseLabel)
             emit lenv y
