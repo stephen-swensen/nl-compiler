@@ -13,6 +13,7 @@ open Swensen.NewLang
 %token <char> CHAR
 %token <bool> BOOL
 %token NULL TYPE
+%token AND OR
 %token PLUS MINUS TIMES DIV POW BANG NOT
 %token <string> NAME
 %token IN EQ
@@ -24,10 +25,11 @@ open Swensen.NewLang
 %token EOF
 
 %right SEMICOLON
+
 %left PLUS MINUS
 %left TIMES DIV
 %right POW
-%left CONCAT
+
 %nonassoc UMINUS
 %nonassoc BANG
 %nonassoc NOT
