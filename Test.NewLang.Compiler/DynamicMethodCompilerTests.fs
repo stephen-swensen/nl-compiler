@@ -389,17 +389,30 @@ let ``connot resolve namespace`` () =
     raises<SemanticErrorException> <@ C.eval "open hello.world in 3" @>
 
 [<Fact>]
-let ``if condition must be boolean`` () =
+let ``ifthenelse condition must be boolean`` () =
     raises<SemanticErrorException> <@ C.eval "if 0 then true else false" @>
 
 [<Fact>]
-let ``if type must be consistent`` () =
+let ``ifthenelse type must be consistent`` () =
     raises<SemanticErrorException> <@ C.eval "if true then true else 0" @>
 
 [<Fact>]
-let ``simple if exp condition is true`` () =
+let ``simple ifthenelse exp condition is true`` () =
     test <@ C.eval "if true then true else false" = true @>
 
 [<Fact>]
-let ``simple if exp condition is false`` () =
+let ``simple ifthenelse exp condition is false`` () =
     test <@ C.eval "if false then true else false" = false @>
+
+[<Fact>]
+let ``ifthen void`` () =
+    test <@ C.eval "if true then console.writeline(1)" = () @>
+
+[<Fact>]
+let ``ifthen default valuetype`` () =
+    test <@ C.eval "if false then true" = false @>
+
+[<Fact>]
+let ``ifthen default reftype`` () =
+    test <@ C.eval "if false then \"asdf\"" = null @>
+

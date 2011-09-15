@@ -309,7 +309,8 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         match z with
         | Some(z) ->
             let z = tycheck refAsms openNames varEnv z
-            semError pos (sprintf "then and else branches must be of same type but instead are %s and %s" y.Type.Name z.Type.Name)
+            if y.Type <> z.Type then
+                semError pos (sprintf "then and else branches must be of same type but instead are %s and %s" y.Type.Name z.Type.Name)
             texp.IfThenElse(x,y,z,y.Type)
         | None ->
             if y.Type = typeof<Void> then
