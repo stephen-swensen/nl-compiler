@@ -387,3 +387,19 @@ let ``casting to Void will always fail`` () =
 [<Fact>]
 let ``connot resolve namespace`` () =
     raises<SemanticErrorException> <@ C.eval "open hello.world in 3" @>
+
+[<Fact>]
+let ``if condition must be boolean`` () =
+    raises<SemanticErrorException> <@ C.eval "if 0 then true else false" @>
+
+[<Fact>]
+let ``if type must be consistent`` () =
+    raises<SemanticErrorException> <@ C.eval "if true then true else 0" @>
+
+[<Fact>]
+let ``simple if exp condition is true`` () =
+    test <@ C.eval "if true then true else false" = true @>
+
+[<Fact>]
+let ``simple if exp condition is false`` () =
+    test <@ C.eval "if false then true else false" = false @>
