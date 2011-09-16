@@ -5,7 +5,7 @@ open Microsoft.FSharp.Text.Lexing
 
 type numericBinop = Plus | Minus | Times | Div
 type logicBinop = And | Or | XOr
-type comparisonBinop = Eq | NotEq | Lt | Gt | LtEq | GtEq
+type comparisonBinop = Eq | Lt | Gt
 
 type tySig =
     | TySig of string * tySig list
@@ -44,3 +44,16 @@ type rexp =
     | Cast             of rexp * tySig * Position
     | IfThenElse       of rexp * rexp * rexp option * Position //should be pos for each!
     | ComparisonBinop  of comparisonBinop * rexp * rexp * Position
+    with
+        static member Or(lhs:rexp, rhs:rexp, pos:Position) =
+            rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)
+        static member NotEq(lhs:rexp, rhs:rexp, pos:Position) =
+            rexp.Not(rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
+        static member LtEq(lhs:rexp, rhs:rexp, pos:Position) =
+            rexp.Or(rexp.ComparisonBinop(Lt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
+        static member GtEq(lhs:rexp, rhs:rexp, pos:Position) =
+            rexp.Or(rexp.ComparisonBinop(Gt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
+
+
+
+            

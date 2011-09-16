@@ -55,6 +55,12 @@ let emitOpCodes (il:ILGenerator) ast =
             | Minus -> il.Emit(OpCodes.Sub)
             | Times -> il.Emit(OpCodes.Mul)
             | Div   -> il.Emit(OpCodes.Div)
+        | ComparisonBinop(op,x,y) -> 
+            emitAll lenv [x;y]
+            match op with
+            | Eq -> il.Emit(OpCodes.Ceq)
+            | Lt -> il.Emit(OpCodes.Clt)
+            | Gt -> il.Emit(OpCodes.Cgt)
         | Let(id, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit lenv assign

@@ -28,7 +28,7 @@ type texp =
     | Not          of texp * Type
     | IfThen       of texp * texp
     | IfThenElse   of texp * texp * texp * Type
-    | ComparisonBinop  of comparisonBinop * rexp * rexp
+    | ComparisonBinop  of comparisonBinop * texp * texp
     with 
         member this.Type =
             match this with
