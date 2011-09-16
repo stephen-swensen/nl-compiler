@@ -44,12 +44,12 @@ rule tokenize = parse
 | "!"  { BANG }
 | "~"  { NOT }
 
-// | "!=" { NOTEQ }
-// | "==" { EQ }
-// | ">"  { GT }
-// | "<"  { LT }
-// | ">=" { GTEQ }
-// | "<=" { LTEQ }
+| "~=" { NOTEQ }
+| "==" { EQEQ }
+| ">"  { GT }
+| "<"  { LT }
+| ">=" { GTEQ }
+| "<=" { LTEQ }
 
 //various symbols and keywords (todo: make all word symbols case insensitive)
 | "[" { LBRACKET }

@@ -14,6 +14,7 @@ open Swensen.NewLang
 %token <bool> BOOL
 %token NULL TYPE
 %token AND OR XOR
+%token EQEQ NOTEQ LT GT GTEQ LTEQ
 %token PLUS MINUS TIMES DIV POW BANG NOT
 %token <string> NAME
 %token IN EQ
@@ -28,6 +29,8 @@ open Swensen.NewLang
 
 %left OR XOR
 %left AND
+
+%left EQ NOTEQ LT GT GTEQ LTEQ
 
 %left PLUS MINUS
 %left TIMES DIV
