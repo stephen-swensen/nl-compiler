@@ -75,11 +75,11 @@ rexp:
     //-- logical binary operators --
 
     | rexp XOR rexp                             
-        { rexp.IfThenElse($1, rexp.Not($3, parseState.InputStartPosition 2), Some($3), parseState.InputStartPosition 2) }
+        { rexp.Xor($1, $3, parseState.InputStartPosition 2) }
     | rexp OR rexp                             
         { rexp.Or($1,$3, parseState.InputStartPosition 2) }
     | rexp AND rexp                             
-        { rexp.IfThenElse($1, $3, Some(rexp.Bool(false)), parseState.InputStartPosition 2) }
+        { rexp.And($1, $3, parseState.InputStartPosition 2) }
 
     //-- comparison operators --
 
