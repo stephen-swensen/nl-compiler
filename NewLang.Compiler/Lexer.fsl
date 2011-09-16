@@ -6,6 +6,23 @@ open Microsoft.FSharp.Text.Lexing
 
 let lexeme lexbuf =
     LexBuffer<char>.LexemeString lexbuf
+
+let keywords =
+    [
+        "and", AND
+        "or", OR
+        "xor", XOR
+        "open", OPEN
+        "ref", REF //spell out? "reference" or "open assembly" and "open namespace"
+        "in", IN
+        "if", IF
+        "then", THEN
+        "else", ELSE
+        "null", NULL
+        "type", TYPE
+        "true", BOOL(true)
+        "false", BOOL(false)
+    ] |> Map.ofList
 }
 
 // These are some regular expression definitions
@@ -26,9 +43,7 @@ rule tokenize = parse
 | "^"  { POW }
 | "!"  { BANG }
 | "~"  { NOT }
-| "and"  { AND }
-| "or"  { OR }
-| "xor"  { XOR }
+
 // | "!=" { NOTEQ }
 // | "==" { EQ }
 // | ">"  { GT }
@@ -44,23 +59,7 @@ rule tokenize = parse
 | "." { DOT }
 | "," { COMMA }
 | ";" { SEMICOLON }
-| "open" { OPEN }
-| "ref" { REF } //spell out? "reference" or "open assembly" and "open namespace"
 | "="  { EQ }
-| "in" { IN }
-| "if" { IF }
-| "then" { THEN }
-| "else" { ELSE }
-
-//bool literals
-| "true"  { BOOL (true) }
-| "false" { BOOL (false) } 
-
-//null literal
-| "null" { NULL }
-
-//type literal
-| "type" { TYPE }
 
 //string literal
 | '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
@@ -73,7 +72,13 @@ rule tokenize = parse
 | digit+('.'digit+)?(['e''E']digit+)? { DOUBLE (lexeme lexbuf |> float) }
 
 // Names
-| (alpha | '_')+(digit | alpha | '_')* { NAME (lexeme lexbuf |> string) }
+| (alpha | '_')+(digit | alpha | '_')* 
+    { 
+        let input = (lexeme lexbuf).ToLower()
+        match keywords |> Map.tryFind input with
+        | Some(token) -> token
+        | None -> NAME(input) 
+    }
 
 // EOF
 | eof { EOF }

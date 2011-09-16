@@ -488,3 +488,7 @@ let ``false xor true`` () =
 let ``false xor false`` () =
     test <@ C.eval "false xor false" = false @>
 
+[<Fact>]
+let ``case insensitive keywords`` () =
+    test <@ C.eval "fALse XOR False" = false @>
+
