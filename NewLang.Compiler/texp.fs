@@ -28,6 +28,7 @@ type texp =
     | Not          of texp * Type
     | IfThen       of texp * texp
     | IfThenElse   of texp * texp * texp * Type
+    | ComparisonBinop  of comparisonBinop * rexp * rexp
     with 
         member this.Type =
             match this with
@@ -38,6 +39,7 @@ type texp =
             | Bool(_)                -> typeof<bool>
             | Typeof(_)              -> typeof<Type>
             | IfThen(_,_)            -> typeof<System.Void>
+            | ComparisonBinop(_,_,_) -> typeof<bool>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)

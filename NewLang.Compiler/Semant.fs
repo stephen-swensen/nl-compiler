@@ -316,6 +316,8 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
             if y.Type = typeof<Void> then
                 texp.IfThen(x,y)
             else
-                texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)    
+                texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)
+    | rexp.ComparisonBinop(op, lhs, rhs, pos) ->
+        failwith "die"
 
         
