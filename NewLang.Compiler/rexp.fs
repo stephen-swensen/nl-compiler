@@ -53,7 +53,10 @@ type rexp =
             rexp.Or(rexp.ComparisonBinop(Lt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
         static member GtEq(lhs:rexp, rhs:rexp, pos:Position) =
             rexp.Or(rexp.ComparisonBinop(Gt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
-
+        static member Xor(lhs:rexp, rhs:rexp, pos:Position) =
+            rexp.IfThenElse(lhs, rexp.Not(rhs, pos), Some(rhs), pos)
+        static member And(lhs:rexp, rhs:rexp, pos:Position) =
+            rexp.IfThenElse(lhs, rhs, Some(rexp.Bool(false)), pos)
 
 
             
