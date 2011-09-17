@@ -9,17 +9,14 @@ open Parser
 
 open  System.Reflection.Emit
 
-//todo: cast language syntax
-
-let setInitialPos (lexbuf:LexBuffer<char>) filename = 
-    lexbuf.EndPos <- { pos_bol = 0
-                       pos_fname=filename
-                       pos_cnum=1
-                       pos_lnum=1 }
-
 let parseFromString code =
-    let lexbuf = LexBuffer<char>.FromString(code)
-    setInitialPos lexbuf ""
+    let lexbuf = 
+        let lexbuf = LexBuffer<char>.FromString(code)
+        lexbuf.EndPos <- { pos_bol = 0
+                           pos_fname=""
+                           pos_cnum=1
+                           pos_lnum=1 }
+        lexbuf
     try 
         Parser.start Lexer.tokenize lexbuf
         |> Semant.tycheck 
