@@ -211,7 +211,7 @@ rexp:
     //-- loops --
     | WHILE rexp DO rexp
         { rexp.WhileLoop($2,$4, parseState.InputStartPosition 1) }
-    | BREAK
+    | BREAK LPAREN RPAREN
         { rexp.Break(parseState.InputStartPosition 1) }
-    | CONTINUE
+    | CONTINUE LPAREN RPAREN
         { rexp.Continue(parseState.InputStartPosition 1) }

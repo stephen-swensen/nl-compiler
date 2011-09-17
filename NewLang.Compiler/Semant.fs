@@ -79,8 +79,8 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
     (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
 ///Symantic analysis (type checking)
-let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
-    let fastTycheck = tycheck refAsms openNames varEnv
+let rec tycheck isLoopBody (refAsms:Assembly list) openNames varEnv rawExpression =
+    let fastTycheck = tycheck isLoopBody refAsms openNames varEnv
     ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
     let rec tryResolveType gsig =
         match gsig with
@@ -242,7 +242,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         let assign = fastTycheck assign
         if assign.Type = typeof<Void> then
             semError pos (sprintf "System.Void is not a valid value in a let binding")
-        let body = tycheck refAsms openNames (varEnv |> Map.add name assign.Type) body
+        let body = tycheck isLoopBody refAsms openNames (varEnv |> Map.add name assign.Type) body
         texp.Let(name,assign, body, body.Type)
     | rexp.Var(name, pos) ->
         match Map.tryFind name varEnv with
@@ -260,7 +260,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         if not exists then
             semError pos (sprintf "namespace %s does not exist in any currently open assemblies: %A" name refAsms)
 
-        tycheck refAsms (name::openNames) varEnv x
+        tycheck isLoopBody refAsms (name::openNames) varEnv x
     | rexp.Ref(name, x, pos) ->
         let asm =
             try
@@ -271,7 +271,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                     Assembly.LoadFrom(name)
                 with _ ->
                     semError pos (sprintf "Unable to resolve assembly reference: %s" name)
-        tycheck (asm::refAsms) openNames varEnv x
+        tycheck isLoopBody (asm::refAsms) openNames varEnv x
     | rexp.Not(x,pos) ->
         let x = fastTycheck x
         if x.Type <> typeof<bool> then
@@ -355,6 +355,23 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
             else
                 texp.VarSet(name, x)
         | None -> semError pos (sprintf "Var not found in environment: %s" name)
+    | rexp.WhileLoop(condition, body, pos) ->
+        let condition = fastTycheck condition
+        if condition.Type <> typeof<bool> then
+            semError pos (sprintf "while loop condition must be of type 'bool' but instead is of type '%s'" condition.Type.Name)
+        else
+            let body = tycheck true refAsms openNames varEnv body
+            texp.WhileLoop(condition, body)
 
+    | rexp.Break(pos) ->
+        if not isLoopBody then
+            semError pos (sprintf "'break()' is only valid inside a loop body")
+        else
+            texp.Break
+    | rexp.Continue(pos) ->
+        if not isLoopBody then
+            semError pos (sprintf "'continue()' is only valid inside a loop body")
+        else
+            texp.Continue
 //
 //        
