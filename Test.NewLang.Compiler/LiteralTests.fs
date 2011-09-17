@@ -53,3 +53,7 @@ let ``literal typeof generic type`` () =
 [<Fact>]
 let ``resolve simple fully qualified generic signature in null expression`` () =
     test <@ C.eval "null[system.collections.generic.list[system.int32]]" = null @>
+
+[<Fact>]
+let ``literal nop`` () =
+    test <@ C.eval "()" = null @>

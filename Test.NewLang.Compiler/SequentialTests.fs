@@ -18,5 +18,9 @@ let ``sequential expressions have weak right associativity`` () =
     test <@ C.eval "2 + 3 ; 3 + 5" = 8 @>
 
 [<Fact>]
-let ``sequential expression with rhs void (result does not need to be popped from the stack)`` () =
-    test <@ C.eval "system.console.writeline(\"3\"); 4" = 4 @>
+let ``sequential expression with lhs void (result does not need to be popped from the stack)`` () =
+    test <@ C.eval "system.console.writeline(1); 4" = 4 @>
+
+[<Fact>]
+let ``sequential expression with lhs nop`` () =
+    test <@ C.eval "(); 4" = 4 @>
