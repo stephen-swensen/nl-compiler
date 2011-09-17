@@ -32,3 +32,15 @@ let ``var ids are case insensitive`` () =
 [<Fact>]
 let ``Void not valid in let binding`` () =
     raises<SemanticErrorException> <@ C.eval "x = console.writeline(\"asdf\") in x" @>
+
+[<Fact>]
+let ``Var set`` () =
+    test <@ C.eval "x = 3 in (x <- 2) ; x" = 2 @>
+
+[<Fact>]
+let ``Var set stronger precedence than semicolon`` () =
+    test <@ C.eval "x = 3 in x <- 2 ; x" = 2 @>
+
+[<Fact>]
+let ``Var set weaker precedence than fact`` () =
+    test <@ C.eval "x = 3 in x <- 2! ; x" = 2 @>

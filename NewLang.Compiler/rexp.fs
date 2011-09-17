@@ -45,6 +45,7 @@ type rexp =
     | IfThenElse       of rexp * rexp * rexp option * Position //should be pos for each!
     | ComparisonBinop  of comparisonBinop * rexp * rexp * Position
     | Nop              of Position
+    | VarSet           of string * rexp * Position
     with
         static member Or(lhs:rexp, rhs:rexp, pos:Position) =
             rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)

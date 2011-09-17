@@ -58,14 +58,18 @@ let emitOpCodes (il:ILGenerator) ast =
             | Eq -> il.Emit(OpCodes.Ceq)
             | Lt -> il.Emit(OpCodes.Clt)
             | Gt -> il.Emit(OpCodes.Cgt)
-        | Let(id, assign, body,_) ->
+        | Let(name, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit lenv assign
             il.Emit(OpCodes.Stloc, local)
-            emit (Map.add id local lenv) body
-        | Var(id, _) ->
-            let local = lenv |> Map.find id
+            emit (Map.add name local lenv) body
+        | Var(name, _) ->
+            let local = lenv |> Map.find name
             il.Emit(OpCodes.Ldloc, local)
+        | VarSet(name, x) ->
+            let local = lenv |> Map.find name
+            emit lenv x
+            il.Emit(OpCodes.Stloc, local)
         | Coerce(x,ty) ->
             emit lenv x
             if ty = typeof<float> then
