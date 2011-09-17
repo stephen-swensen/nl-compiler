@@ -35,6 +35,7 @@ let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
 
 //todo: infer generic type arguments from type parameters (reflection not friendly for this)
 //todo: file bug: name should not need a type constraint
+///(ty:Type) (name:string) bindingFlags (genericTyArgs:Type[]) (argTys: Type[]) -> MethodInfo option
 let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[]) (argTys: Type[]) =
     //todo: sophisticated overload resolution used both in generic and non-generic methods; note that
     //currently using reflection default overload resolution for non-generic methods and no overload resolution for non-generic methods when
@@ -317,7 +318,37 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                 texp.IfThen(x,y)
             else
                 texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)
-    | rexp.ComparisonBinop(op, lhs, rhs, pos) ->
-        failwith "die"
-
+    | rexp.ComparisonBinop(op, x, y, pos) ->
+        let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
+        match x, y with
+        | Null(_), _ when op = Eq && y.Type.IsValueType ->
+            semError pos (sprintf "Type value type '%s' will never equal null" y.Type.Name)
+        | _, Null(_) when op = Eq && x.Type.IsValueType ->
+            semError pos (sprintf "Type value type '%s' will never equal null" x.Type.Name)
+        | _ -> ()
         
+        if x.Type = typeof<int> && y.Type = typeof<float> then
+            texp.ComparisonBinop(op, texp.Coerce(x,typeof<float>), y)
+        elif x.Type = typeof<float> && y.Type = typeof<int> then
+            texp.ComparisonBinop(op, x, texp.Coerce(y,typeof<float>))
+        else
+            let opName =
+                match op with
+                | Eq -> "op_Equality"
+                | Lt -> "op_LessThan"
+                | Gt -> "op_GreaterThan"
+            
+            let meth = seq {
+                yield tryResolveMethod x.Type opName staticFlags [||] [|x.Type; y.Type|]
+                yield tryResolveMethod y.Type opName staticFlags [||] [|x.Type; y.Type|] } |> Seq.tryPick id
+
+            match meth with
+            | Some(meth) ->
+                texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
+            | None when op = Eq && x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type) -> //we know value types are not involved
+                texp.ComparisonBinop(op, x, y)    
+            | None ->
+                semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
+
+//
+//        
