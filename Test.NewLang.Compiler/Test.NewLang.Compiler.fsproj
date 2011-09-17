@@ -48,6 +48,7 @@
     <Compile Include="CastTests.fs" />
     <Compile Include="OpenNamespaceTests.fs" />
     <Compile Include="RefAssemblyTests.fs" />
+    <Compile Include="WhileLoopTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
