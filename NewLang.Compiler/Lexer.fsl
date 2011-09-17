@@ -60,6 +60,7 @@ rule tokenize = parse
 | "," { COMMA }
 | ";" { SEMICOLON }
 | "="  { EQ }
+| "<-" { SET }
 
 //string literal
 | '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }

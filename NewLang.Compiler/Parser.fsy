@@ -23,9 +23,11 @@ open Swensen.NewLang
 %token OPEN REF
 %token LBRACKET RBRACKET
 %token IF THEN ELSE
+%token SET
 %token EOF
 
 %right SEMICOLON
+%nonassoc SET
 
 %left OR XOR
 %left AND
@@ -150,6 +152,9 @@ rexp:
     //var expression
     | longName                                     
         { rexp.Var($1, parseState.InputStartPosition 1)}
+    //set var expression
+    | longName SET rexp
+        { rexp.VarSet($1, $3, parseState.InputStartPosition 1)}
 
     //cast on var
     | longName LBRACKET tySigList RBRACKET

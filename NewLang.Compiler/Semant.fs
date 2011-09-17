@@ -345,6 +345,15 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                 semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
     | rexp.Nop _ ->
         texp.Nop
+    | rexp.VarSet(name, x, pos) ->
+        let x = tycheck refAsms openNames varEnv x
+        match Map.tryFind name varEnv with
+        | Some(ty) -> 
+            if x.Type <> ty then
+                semError pos (sprintf "Var %s of type '%s' is not the same type as the expression being assigned, '%s'" name ty.Name x.Type.Name)
+            else
+                texp.VarSet(name, x)
+        | None -> semError pos (sprintf "Var not found in environment: %s" name)
 
 //
 //        

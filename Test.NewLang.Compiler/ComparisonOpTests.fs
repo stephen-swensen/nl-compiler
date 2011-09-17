@@ -101,3 +101,4 @@ let ``static operator <= true when ==`` () =
 let ``static operator <= true when <`` () =
     test <@ C.eval "biginteger(-1) <= biginteger(0)" = true @>
 
+//still got a bunch more cases to go

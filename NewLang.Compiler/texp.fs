@@ -30,6 +30,7 @@ type texp =
     | IfThenElse   of texp * texp * texp * Type
     | ComparisonBinop  of comparisonBinop * texp * texp
     | Nop
+    | VarSet       of string * texp
     with 
         member this.Type =
             match this with
@@ -42,6 +43,7 @@ type texp =
             | IfThen(_,_)            -> typeof<System.Void>
             | ComparisonBinop(_,_,_) -> typeof<bool>
             | Nop -> typeof<Void>
+            | VarSet(_,_)            -> typeof<Void>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
