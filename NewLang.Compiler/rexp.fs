@@ -46,6 +46,9 @@ type rexp =
     | ComparisonBinop  of comparisonBinop * rexp * rexp * Position
     | Nop              of Position
     | VarSet           of string * rexp * Position
+    | WhileLoop        of rexp * rexp * Position
+    | Break            of Position
+    | Continue         of Position
     with
         static member Or(lhs:rexp, rhs:rexp, pos:Position) =
             rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)

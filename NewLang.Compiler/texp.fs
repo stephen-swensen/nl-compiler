@@ -31,6 +31,9 @@ type texp =
     | ComparisonBinop  of comparisonBinop * texp * texp
     | Nop
     | VarSet       of string * texp
+    | WhileLoop    of texp * texp
+    | Break
+    | Continue
     with 
         member this.Type =
             match this with
@@ -42,8 +45,11 @@ type texp =
             | Typeof(_)              -> typeof<Type>
             | IfThen(_,_)            -> typeof<System.Void>
             | ComparisonBinop(_,_,_) -> typeof<bool>
-            | Nop -> typeof<Void>
+            | Nop                    -> typeof<Void>
             | VarSet(_,_)            -> typeof<Void>
+            | Break                  -> typeof<Void>
+            | Continue               -> typeof<Void>
+            | WhileLoop(_,_)         -> typeof<Void>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)

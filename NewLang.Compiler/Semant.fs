@@ -80,6 +80,7 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
 
 ///Symantic analysis (type checking)
 let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
+    let fastTycheck = tycheck refAsms openNames varEnv
     ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
     let rec tryResolveType gsig =
         match gsig with
@@ -141,22 +142,22 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         | None -> semError pos (sprintf "could not resolve type in type literal expression: %A" name)
         | Some(ty) -> texp.Typeof(ty)
     | rexp.UMinus(x,pos) ->
-        let x = tycheck refAsms openNames varEnv x
+        let x = fastTycheck x
         texp.UMinus(x,x.Type)
     | rexp.Fact(x,pos) ->
-        let x = tycheck refAsms openNames varEnv x
+        let x = fastTycheck x
         if x.Type <> typeof<int> then
             semError pos (sprintf "factorial expects int but got: %A" x.Type)
         else
             let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
             texp.StaticCall(meth, [x], meth.ReturnType)
     | rexp.Pow(x,y,pos) ->
-        let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
+        let x, y = fastTycheck x, fastTycheck y
         let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
         checkMeth meth pos "Pow" [x;y]
         texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
     | rexp.NumericBinop(op,x,y,pos) ->
-        let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
+        let x, y = fastTycheck x, fastTycheck y
         let retTy =
             if x.Type = typeof<float> || y.Type = typeof<float> then
                 Some(typeof<float>)
@@ -192,7 +193,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         let namePrefix, methodName =
             let split = longName.Split('.')
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
-        let args = args |> List.map (tycheck refAsms openNames varEnv)
+        let args = args |> List.map (fastTycheck)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
 
         match Map.tryFind namePrefix varEnv with //N.B. vars always supercede open names
@@ -223,22 +224,22 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         match tryResolveType (TySig(tyName, tyGenericArgs)) with
         | None -> semError pos (sprintf "could not resolve type: %s with generic arg types: %A" tyName tyGenericArgs)
         | Some(ty) ->
-            let args = args |> List.map (tycheck refAsms openNames varEnv)
+            let args = args |> List.map (fastTycheck)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             match tryResolveMethodWithGenericArgs ty methodName staticFlags (methodGenericArgs |> List.toArray) argTys pos with
             | None -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName ty.Name argTys)
             | Some(meth) -> 
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.ExpCall(instance, methodName, methodGenericArgs, args, pos) ->
-        let instance = tycheck refAsms openNames varEnv instance
-        let args = args |> List.map (tycheck refAsms openNames varEnv)
+        let instance = fastTycheck instance
+        let args = args |> List.map (fastTycheck)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         match tryResolveMethodWithGenericArgs instance.Type methodName instanceFlags (methodGenericArgs |> List.toArray) argTys pos with
         | None -> semError pos (sprintf "not a valid instace method: %s, for the given expression type: %s, and arg types: %A" methodName instance.Type.Name argTys)
         | Some(meth) ->
             texp.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.Let(name, assign, body, pos) ->
-        let assign = tycheck refAsms openNames varEnv assign
+        let assign = fastTycheck assign
         if assign.Type = typeof<Void> then
             semError pos (sprintf "System.Void is not a valid value in a let binding")
         let body = tycheck refAsms openNames (varEnv |> Map.add name assign.Type) body
@@ -248,7 +249,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
         | Some(ty) -> texp.Var(name,ty)
         | None -> semError pos (sprintf "Var not found in environment: %s" name)
     | rexp.Sequential(x,y, pos) ->
-        let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
+        let x, y = fastTycheck x, fastTycheck y
         texp.Sequential(x,y,y.Type)
     | rexp.Open(name, x, pos) ->
         let exists =
@@ -272,13 +273,13 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                     semError pos (sprintf "Unable to resolve assembly reference: %s" name)
         tycheck (asm::refAsms) openNames varEnv x
     | rexp.Not(x,pos) ->
-        let x = tycheck refAsms openNames varEnv x
+        let x = fastTycheck x
         if x.Type <> typeof<bool> then
             semError pos "Not expression must be bool"
         else
             texp.Not(x, x.Type)
     | rexp.Cast(x,ty,pos) ->
-        let x = tycheck refAsms openNames varEnv x
+        let x = fastTycheck x
         match tryResolveType ty with
         | None -> semError pos (sprintf "could not resolve cast type: %A" ty)
         | Some(ty) ->
@@ -302,14 +303,14 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                 | Some(meth) -> texp.StaticCall(meth, [x], meth.ReturnType)    
                 | None -> semError pos (sprintf "a cast from type %s to the type %s will always fail" x.Type.Name ty.Name)
     | rexp.IfThenElse(x,y,z,pos) ->
-        let x = tycheck refAsms openNames varEnv x
+        let x = fastTycheck x
         if x.Type <> typeof<bool> then
             semError pos (sprintf "test expresion must be boolean not %s" x.Type.Name)
         
-        let y = tycheck refAsms openNames varEnv y
+        let y = fastTycheck y
         match z with
         | Some(z) ->
-            let z = tycheck refAsms openNames varEnv z
+            let z = fastTycheck z
             if y.Type <> z.Type then
                 semError pos (sprintf "then and else branches must be of same type but instead are %s and %s" y.Type.Name z.Type.Name)
             texp.IfThenElse(x,y,z,y.Type)
@@ -319,7 +320,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
             else
                 texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)
     | rexp.ComparisonBinop(op, x, y, pos) ->
-        let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
+        let x, y = fastTycheck x, fastTycheck y
 
         if x.Type = typeof<int> && y.Type = typeof<float> then
             texp.ComparisonBinop(op, texp.Coerce(x,typeof<float>), y)
@@ -346,7 +347,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
     | rexp.Nop _ ->
         texp.Nop
     | rexp.VarSet(name, x, pos) ->
-        let x = tycheck refAsms openNames varEnv x
+        let x = fastTycheck x
         match Map.tryFind name varEnv with
         | Some(ty) -> 
             if x.Type <> ty then
