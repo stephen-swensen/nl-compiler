@@ -320,13 +320,7 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                 texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)
     | rexp.ComparisonBinop(op, x, y, pos) ->
         let x, y = tycheck refAsms openNames varEnv x, tycheck refAsms openNames varEnv y
-        match x, y with
-        | Null(_), _ when op = Eq && y.Type.IsValueType ->
-            semError pos (sprintf "Type value type '%s' will never equal null" y.Type.Name)
-        | _, Null(_) when op = Eq && x.Type.IsValueType ->
-            semError pos (sprintf "Type value type '%s' will never equal null" x.Type.Name)
-        | _ -> ()
-        
+
         if x.Type = typeof<int> && y.Type = typeof<float> then
             texp.ComparisonBinop(op, texp.Coerce(x,typeof<float>), y)
         elif x.Type = typeof<float> && y.Type = typeof<int> then

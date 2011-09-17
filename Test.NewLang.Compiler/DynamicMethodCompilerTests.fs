@@ -492,3 +492,51 @@ let ``false xor false`` () =
 let ``case insensitive keywords`` () =
     test <@ C.eval "fALse XOR False" = false @>
 
+[<Fact>]
+let ``primitive == true`` () =
+    test <@ C.eval "1 == 1" = true @>
+
+[<Fact>]
+let ``primitive == false`` () =
+    test <@ C.eval "1 == 2" = false @>
+
+[<Fact>]
+let ``primitive > true`` () =
+    test <@ C.eval "1 > 0" = true @>
+
+[<Fact>]
+let ``primitive > false`` () =
+    test <@ C.eval "1 > 2" = false @>
+
+[<Fact>]
+let ``primitive >= false`` () =
+    test <@ C.eval "1 >= 2" = false @>
+
+[<Fact>]
+let ``primitive >= true when ==`` () =
+    test <@ C.eval "1 >= 1" = true @>
+
+[<Fact>]
+let ``primitive >= true when >`` () =
+    test <@ C.eval "1 >= 0" = true @>
+
+[<Fact>]
+let ``primitive < true`` () =
+    test <@ C.eval "0 < 1" = true @>
+
+[<Fact>]
+let ``primitive < false`` () =
+    test <@ C.eval "1 < 1" = false @>
+
+[<Fact>]
+let ``primitive <= false`` () =
+    test <@ C.eval "3 <= 2" = false @>
+
+[<Fact>]
+let ``primitive <= true when ==`` () =
+    test <@ C.eval "1 <= 1" = true @>
+
+[<Fact>]
+let ``primitive <= true when <`` () =
+    test <@ C.eval "-1 <= 0" = true @>
+
