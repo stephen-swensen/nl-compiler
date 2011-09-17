@@ -22,6 +22,10 @@ let keywords =
         "type", TYPE
         "true", BOOL(true)
         "false", BOOL(false)
+        "while", WHILE
+        "do", DO
+        "break", BREAK
+        "continue", CONTINUE
     ] |> Map.ofList
 }
 
