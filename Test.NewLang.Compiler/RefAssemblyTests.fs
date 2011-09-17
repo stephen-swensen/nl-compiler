@@ -16,4 +16,4 @@ let ``ref assembly display name`` () =
 
 [<Fact>]
 let ``connot resolve assembly`` () =
-    raises<SemanticErrorException> <@ C.eval "ref \"not an assembly\" in 0" @>
+    raises<SemanticErrorException> <@ C.eval "ref \"not an assembly\" in ()" @>

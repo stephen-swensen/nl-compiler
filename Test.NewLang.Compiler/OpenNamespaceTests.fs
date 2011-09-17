@@ -21,5 +21,5 @@ let ``open expression`` () =
 
 [<Fact>]
 let ``connot resolve namespace`` () =
-    raises<SemanticErrorException> <@ C.eval "open hello.world in 3" @>
+    raises<SemanticErrorException> <@ C.eval "open hello.world in ()" @>
 

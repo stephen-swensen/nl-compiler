@@ -26,9 +26,14 @@ let ``ifthen void`` () =
     test <@ C.eval "if true then console.writeline(1)" = () @>
 
 [<Fact>]
+let ``ifthenelse with explicit else void`` () =
+    test <@ C.eval "if false then console.writeline(1) else ()" = () @>
+
+[<Fact>]
 let ``ifthen default valuetype`` () =
     test <@ C.eval "if false then true" = false @>
 
 [<Fact>]
 let ``ifthen default reftype`` () =
     test <@ C.eval "if false then \"asdf\"" = null @>
+
