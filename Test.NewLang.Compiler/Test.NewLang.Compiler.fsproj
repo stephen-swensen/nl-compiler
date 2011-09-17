@@ -34,9 +34,20 @@
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="TestHelpers.fs" />
-    <Compile Include="DynamicMethodCompilerTests.fs" />
     <None Include="packages.config" />
+    <Compile Include="TestHelpers.fs" />
+    <Compile Include="LiteralTests.fs" />
+    <Compile Include="NumericOpTests.fs" />
+    <Compile Include="VarTests.fs" />
+    <Compile Include="SequentialTests.fs" />
+    <Compile Include="ConstructorTests.fs" />
+    <Compile Include="MethodCallTests.fs" />
+    <Compile Include="IfThenElseTests.fs" />
+    <Compile Include="LogicOpTests.fs" />
+    <Compile Include="ComparisonOpTests.fs" />
+    <Compile Include="CastTests.fs" />
+    <Compile Include="OpenNamespaceTests.fs" />
+    <Compile Include="RefAssemblyTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
