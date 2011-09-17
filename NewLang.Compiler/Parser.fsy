@@ -136,11 +136,13 @@ rexp:
     | NULL LBRACKET tySig RBRACKET              
         { rexp.Null($3, parseState.InputStartPosition 3) }
     | TYPE LBRACKET tySig RBRACKET            
-       { rexp.Typeof($3, parseState.InputStartPosition 3) }
+        { rexp.Typeof($3, parseState.InputStartPosition 3) }
+    | LPAREN RPAREN
+        { rexp.Nop(parseState.InputStartPosition 1) }
     
     //enclosed expression
     | LPAREN rexp RPAREN                      
-       { $2 }
+        { $2 }
     
     //bind variable
     | longName EQ rexp IN rexp                

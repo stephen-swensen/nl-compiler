@@ -146,6 +146,7 @@ let emitOpCodes (il:ILGenerator) ast =
             il.MarkLabel(beginElseLabel)
             emit lenv z
             il.MarkLabel(endIfLabel)
+        | Nop -> ()
 
     and emitAll lenv exps =
         for arg in exps do 
