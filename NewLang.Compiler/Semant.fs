@@ -248,6 +248,8 @@ let rec tycheck isLoopBody (refAsms:Assembly list) openNames varEnv rawExpressio
         match Map.tryFind name varEnv with
         | Some(ty) -> texp.Var(name,ty)
         | None -> semError pos (sprintf "Var not found in environment: %s" name)
+    | rexp.Sequential((rexp.Break(_)|rexp.Continue(_)),_, pos) ->
+        semError pos (sprintf "unreachable code detected")
     | rexp.Sequential(x,y, pos) ->
         let x, y = fastTycheck x, fastTycheck y
         texp.Sequential(x,y,y.Type)
@@ -362,7 +364,6 @@ let rec tycheck isLoopBody (refAsms:Assembly list) openNames varEnv rawExpressio
         else
             let body = tycheck true refAsms openNames varEnv body
             texp.WhileLoop(condition, body)
-
     | rexp.Break(pos) ->
         if not isLoopBody then
             semError pos (sprintf "'break()' is only valid inside a loop body")
