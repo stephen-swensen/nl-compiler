@@ -343,6 +343,8 @@ let rec tycheck (refAsms:Assembly list) openNames varEnv rawExpression =
                 texp.ComparisonBinop(op, x, y)    
             | None ->
                 semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
+    | rexp.Nop _ ->
+        texp.Nop
 
 //
 //        

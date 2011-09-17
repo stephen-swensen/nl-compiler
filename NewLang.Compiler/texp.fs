@@ -29,6 +29,7 @@ type texp =
     | IfThen       of texp * texp
     | IfThenElse   of texp * texp * texp * Type
     | ComparisonBinop  of comparisonBinop * texp * texp
+    | Nop
     with 
         member this.Type =
             match this with
@@ -40,6 +41,7 @@ type texp =
             | Typeof(_)              -> typeof<Type>
             | IfThen(_,_)            -> typeof<System.Void>
             | ComparisonBinop(_,_,_) -> typeof<bool>
+            | Nop -> typeof<Void>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
