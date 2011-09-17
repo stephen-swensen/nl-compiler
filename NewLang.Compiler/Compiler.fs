@@ -157,6 +157,29 @@ let emitOpCodes (il:ILGenerator) ast =
             fastEmit z
             il.MarkLabel(endIfLabel)
         | Nop -> ()
+        | WhileLoop(condition, body) ->
+            let beginConditionLabel = il.DefineLabel()
+            let endBodyLabel = il.DefineLabel()
+            il.MarkLabel(beginConditionLabel)
+            fastEmit condition
+            il.Emit(OpCodes.Brfalse_S, endBodyLabel)
+            emit (Some(beginConditionLabel, endBodyLabel)) lenv body
+            if body.Type <> typeof<Void> then
+                il.Emit(OpCodes.Pop)
+            il.Emit(OpCodes.Br, beginConditionLabel)
+            il.MarkLabel(endBodyLabel)
+        | Continue ->
+            match loopLabel with
+            | Some(beginConditionLabel,_) ->
+                il.Emit(OpCodes.Br, beginConditionLabel)
+            | None ->
+                failwith "invalid continue"
+        | Break ->
+            match loopLabel with
+            | Some(_, endBodyLabel) ->
+                il.Emit(OpCodes.Br, endBodyLabel)
+            | None ->
+                failwith "break"               
 
     emit None Map.empty ast |> ignore
 
