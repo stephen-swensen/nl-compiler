@@ -17,3 +17,7 @@ let ``continue not allowed outside of while loop`` () =
 [<Fact>]
 let ``simple while loop`` () =
     test <@ C.eval "x=0 in (while x<5 do x<-x+1); x " = 5 @>
+
+[<Fact>]
+let ``while loop with break`` () =
+    test <@ C.eval "x=0 in (while x<5 do (x<-x+1; if x == 3 then break())); x " = 3 @>
