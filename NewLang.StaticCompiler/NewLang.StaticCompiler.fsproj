@@ -45,7 +45,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NewLang.Compiler\NewLang.fsproj">
+    <ProjectReference Include="..\NewLang\NewLang.fsproj">
       <Name>NewLang</Name>
       <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
       <Private>True</Private>
