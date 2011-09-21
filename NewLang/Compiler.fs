@@ -19,17 +19,18 @@ let parseFromString code =
         lexbuf
     try 
         Parser.start Lexer.tokenize lexbuf
-        |> Semant.tycheckWith
-            false
-           (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-             "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-             "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-             "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
-            ["system"
-             "system.collections"
-             "system.collections.generic"
-             "system.numerics"] 
-            Map.empty
+        |> Semant.tycheckWith 
+           {Semant.SemanticEnvironment.Default with 
+                Assemblies=
+                   (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                     "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                     "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                     "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
+                Namespaces=
+                    ["system"
+                     "system.collections"
+                     "system.collections.generic"
+                     "system.numerics"] }
     with
     | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
         raise <| SyntaxErrorException(lexbuf.StartPos)

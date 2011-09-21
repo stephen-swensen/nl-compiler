@@ -78,17 +78,28 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
     (fun onty fromty toto -> tryResolveConversionOp "op_Implicit" onty fromty toto), 
     (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
+///Environmental context passed to each recursive expression process during semantic analysis
+type SemanticEnvironment = 
+    {
+        IsLoopBody: bool
+        Assemblies: Assembly list
+        Namespaces: string list
+        Variables: (string,Type) Map
+    }
+    with 
+        static member Default = { IsLoopBody=false; Assemblies=[]; Namespaces=[]; Variables= Map.empty }
+
 ///Symantic analysis (type checking)
-let rec tycheckWith isLoopBody (refAsms:Assembly list) openNames varEnv rawExpression =
-    let tycheck = tycheckWith isLoopBody refAsms openNames varEnv
+let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) openNames varEnv rawExpression =
+    let tycheck = tycheckWith env
     ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
     let rec tryResolveType gsig =
         match gsig with
         | TySig("",_) -> None
         | TySig(name,args) ->
             seq {
-                for possibleName in (name::(openNames |> List.map (fun n -> n + "." + name))) do
-                    for possibleAsm in refAsms do
+                for possibleName in (name::(env.Namespaces |> List.map (fun n -> n + "." + name))) do
+                    for possibleAsm in env.Assemblies do
                         if args = [] then
                             let possibleFullName = possibleName + ", " + possibleAsm.FullName
                             let ty = Type.GetType(possibleFullName,false, true)
@@ -196,7 +207,7 @@ let rec tycheckWith isLoopBody (refAsms:Assembly list) openNames varEnv rawExpre
         let args = args |> List.map (tycheck)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
 
-        match Map.tryFind namePrefix varEnv with //N.B. vars always supercede open names
+        match Map.tryFind namePrefix env.Variables with //N.B. vars always supercede open names
         | Some(ty:Type) -> //instance method call on variable
             match tryResolveMethodWithGenericArgs ty methodName instanceFlags (genericArgs |> List.toArray) argTys pos with
             | None -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName ty.Name argTys)
@@ -242,10 +253,10 @@ let rec tycheckWith isLoopBody (refAsms:Assembly list) openNames varEnv rawExpre
         let assign = tycheck assign
         if assign.Type = typeof<Void> then
             semError pos (sprintf "System.Void is not a valid value in a let binding")
-        let body = tycheckWith isLoopBody refAsms openNames (varEnv |> Map.add name assign.Type) body
+        let body = tycheckWith {env with Variables=env.Variables |> Map.add name assign.Type} body
         texp.Let(name,assign, body, body.Type)
     | rexp.Var(name, pos) ->
-        match Map.tryFind name varEnv with
+        match Map.tryFind name env.Variables with
         | Some(ty) -> texp.Var(name,ty)
         | None -> semError pos (sprintf "Var not found in environment: %s" name)
     | rexp.Sequential((rexp.Break(_)|rexp.Continue(_)),_, pos) ->
@@ -255,14 +266,14 @@ let rec tycheckWith isLoopBody (refAsms:Assembly list) openNames varEnv rawExpre
         texp.Sequential(x,y,y.Type)
     | rexp.Open(name, x, pos) ->
         let exists =
-            refAsms
+            env.Assemblies
             |> Seq.collect (fun asm -> asm.GetTypes() |> Seq.map (fun ty -> let ns = ty.Namespace in if ns = null then "" else ns.ToLower()))
             |> Seq.exists ((=)name)
 
         if not exists then
-            semError pos (sprintf "namespace %s does not exist in any currently open assemblies: %A" name refAsms)
+            semError pos (sprintf "namespace %s does not exist in any currently open assemblies: %A" name env.Assemblies)
 
-        tycheckWith isLoopBody refAsms (name::openNames) varEnv x
+        tycheckWith {env with Namespaces=name::env.Namespaces} x
     | rexp.Ref(name, x, pos) ->
         let asm =
             try
@@ -273,7 +284,7 @@ let rec tycheckWith isLoopBody (refAsms:Assembly list) openNames varEnv rawExpre
                     Assembly.LoadFrom(name)
                 with _ ->
                     semError pos (sprintf "Unable to resolve assembly reference: %s" name)
-        tycheckWith isLoopBody (asm::refAsms) openNames varEnv x
+        tycheckWith {env with Assemblies=asm::env.Assemblies} x
     | rexp.Not(x,pos) ->
         let x = tycheck x
         if x.Type <> typeof<bool> then
@@ -350,7 +361,7 @@ let rec tycheckWith isLoopBody (refAsms:Assembly list) openNames varEnv rawExpre
         texp.Nop
     | rexp.VarSet(name, x, pos) ->
         let x = tycheck x
-        match Map.tryFind name varEnv with
+        match Map.tryFind name env.Variables with
         | Some(ty) -> 
             if x.Type <> ty then
                 semError pos (sprintf "Var %s of type '%s' is not the same type as the expression being assigned, '%s'" name ty.Name x.Type.Name)
@@ -362,15 +373,15 @@ let rec tycheckWith isLoopBody (refAsms:Assembly list) openNames varEnv rawExpre
         if condition.Type <> typeof<bool> then
             semError pos (sprintf "while loop condition must be of type 'bool' but instead is of type '%s'" condition.Type.Name)
         else
-            let body = tycheckWith true refAsms openNames varEnv body
+            let body = tycheckWith {env with IsLoopBody=true} body
             texp.WhileLoop(condition, body)
     | rexp.Break(pos) ->
-        if not isLoopBody then
+        if not env.IsLoopBody then
             semError pos (sprintf "'break()' is only valid inside a loop body")
         else
             texp.Break
     | rexp.Continue(pos) ->
-        if not isLoopBody then
+        if not env.IsLoopBody then
             semError pos (sprintf "'continue()' is only valid inside a loop body")
         else
             texp.Continue
