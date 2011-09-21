@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang.Program", "NewLang.Program\NewLang.Program.fsproj", "{ABD56F8C-A0B9-4285-9825-8176A5A50EB2}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang.InteractiveCompiler", "NewLang.Program\NewLang.InteractiveCompiler.fsproj", "{ABD56F8C-A0B9-4285-9825-8176A5A50EB2}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang.Compiler", "NewLang.Compiler\NewLang.Compiler.fsproj", "{E25F2830-8E94-4680-882B-39E30CE3D586}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang", "NewLang.Compiler\NewLang.fsproj", "{E25F2830-8E94-4680-882B-39E30CE3D586}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.NewLang.Compiler", "Test.NewLang.Compiler\Test.NewLang.Compiler.fsproj", "{82730E14-DF66-4FE8-9EB6-BDB35C4FCA65}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.NewLang", "Test.NewLang.Compiler\Test.NewLang.fsproj", "{82730E14-DF66-4FE8-9EB6-BDB35C4FCA65}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang.Compiler.Application", "NewLang.Compiler.Application\NewLang.Compiler.Application.fsproj", "{EF46D00D-9B1C-468B-8020-319B8AF0BB03}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NewLang.StaticCompiler", "NewLang.Compiler.Application\NewLang.StaticCompiler.fsproj", "{EF46D00D-9B1C-468B-8020-319B8AF0BB03}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
