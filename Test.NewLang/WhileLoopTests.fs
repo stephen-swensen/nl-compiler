@@ -21,3 +21,5 @@ let ``simple while loop`` () =
 [<Fact>]
 let ``while loop with break`` () =
     test <@ C.eval "x=0 in (while x<5 do (x<-x+1; if x == 3 then break())); x " = 3 @>
+
+//NEED TO FINISH OTHER CASES: continue, and nested while loops, invalid assignment
