@@ -1,4 +1,4 @@
-﻿module Swensen.NewLang.Compiler.Application.Program
+﻿module Swensen.NewLang.StaticCompiler
 open Swensen.NewLang
 
 [<EntryPoint>]

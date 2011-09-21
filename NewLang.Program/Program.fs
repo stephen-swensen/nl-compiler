@@ -1,4 +1,5 @@
-﻿open Swensen.NewLang
+﻿module Swensen.NewLang.InteractiveCompiler
+open Swensen.NewLang
 open System
 
 let rec loop() =

@@ -12,7 +12,7 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>NewLang.Program</Name>
+    <Name>NewLang.InteractiveCompiler</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -47,8 +47,10 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <ProjectReference Include="..\NewLang.Compiler\NewLang.Compiler.fsproj">
-      <Name>NewLang.Compiler</Name>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NewLang.Compiler\NewLang.fsproj">
+      <Name>NewLang</Name>
       <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
       <Private>True</Private>
     </ProjectReference>
