@@ -7,8 +7,18 @@ open Swensen.NewLang
 open Lexer
 open Parser
 
-open  System.Reflection.Emit
+open System.Reflection.Emit
 
+///parse from the lexbuf with the given semantic environment
+let parseWith lexbuf env =
+    try 
+        Parser.start Lexer.tokenize lexbuf
+        |> Semant.tycheckWith env
+    with
+    | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
+        raise <| SyntaxErrorException(lexbuf.StartPos)
+
+///parse from the string
 let parseFromString code =
     let lexbuf = 
         let lexbuf = LexBuffer<char>.FromString(code)
@@ -17,23 +27,20 @@ let parseFromString code =
                            pos_cnum=1
                            pos_lnum=1 }
         lexbuf
-    try 
-        Parser.start Lexer.tokenize lexbuf
-        |> Semant.tycheckWith 
-           {Semant.SemanticEnvironment.Default with 
-                Assemblies=
-                   (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                     "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                     "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                     "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
-                Namespaces=
-                    ["system"
-                     "system.collections"
-                     "system.collections.generic"
-                     "system.numerics"] }
-    with
-    | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
-        raise <| SyntaxErrorException(lexbuf.StartPos)
+
+    parseWith
+        lexbuf
+        { Semant.SemanticEnvironment.Default with 
+            Assemblies=
+                (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                  "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                  "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                  "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
+            Namespaces=
+                ["system"
+                 "system.collections"
+                 "system.collections.generic"
+                 "system.numerics"] }
 
 let emitOpCodes (il:ILGenerator) ast =
     let rec emitWith loopLabel lenv ast =
@@ -193,7 +200,9 @@ let dmFromAst (ast:texp) =
 
 let dmFromString = parseFromString>>dmFromAst
 
-let eval<'a> code : 'a = (dmFromString code).Invoke(null,null) |> unbox
+let eval<'a> code : 'a = 
+    let dm = (dmFromString code)
+    dm.Invoke(null,null) |> unbox
 
 open System.Reflection
 
