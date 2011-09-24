@@ -43,6 +43,7 @@
     <FsYaccOutputFolder>$(IntermediateOutputPath)</FsYaccOutputFolder>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Utils.fs" />
     <Compile Include="Exceptions.fs" />
     <Compile Include="rexp.fs" />
     <Compile Include="$(IntermediateOutputPath)\Parser.fs">
