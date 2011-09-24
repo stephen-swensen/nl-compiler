@@ -11,7 +11,7 @@ type CompilerErrorType =
     | Syntactic
     | Semantic
     | Internal
-//
+
 type CompilerErrorRange(posStart:Position, posEnd:Position) =
     member __.Start = posStart
     member __.End = posEnd
