@@ -1,13 +1,12 @@
 ﻿module Swensen.NewLang.Compiler
 
-open Microsoft.FSharp.Text.Lexing
 open System
-open Swensen.NewLang
+open System.Reflection
+open System.Reflection.Emit
 
+open Microsoft.FSharp.Text.Lexing
 open Lexer
 open Parser
-
-open System.Reflection.Emit
 
 let emitOpCodes (il:ILGenerator) ast =
     let rec emitWith loopLabel lenv ast =
@@ -162,7 +161,7 @@ let emitOpCodes (il:ILGenerator) ast =
 let parseWith env lexbuf =
     try 
         Parser.start Lexer.tokenize lexbuf
-        |> Semant.tycheckWith env
+        |> SemanticAnalysis.tycheckWith env
     with
     | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
         raise <| SyntaxErrorException(lexbuf.StartPos)
@@ -183,7 +182,7 @@ let parseFromStringWith env code =
 let parseFromString = parseFromStringWith SemanticEnvironment.Default
 
 let dmFromAst (ast:texp) =
-    let dm = System.Reflection.Emit.DynamicMethod("Eval", ast.Type, null)
+    let dm = DynamicMethod("Eval", ast.Type, null)
     let il = dm.GetILGenerator()
     emitOpCodes il ast
     il.Emit(OpCodes.Ret)
@@ -196,8 +195,6 @@ let dmFromString = parseFromString>>dmFromAst
 let eval<'a> code : 'a = 
     let dm = (dmFromString code)
     dm.Invoke(null,null) |> unbox
-
-open System.Reflection
 
 //type NliState =
 //    {

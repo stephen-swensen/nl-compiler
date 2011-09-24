@@ -1,4 +1,4 @@
-﻿module Swensen.NewLang.Semant
+﻿module Swensen.NewLang.SemanticAnalysis
 
 open System
 open System.Reflection
