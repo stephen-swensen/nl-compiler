@@ -2,13 +2,6 @@
 
 open System
 open System.Reflection
-open Swensen.NewLang
-
-module Option =
-    let fromNullable nullable =
-        match nullable with
-        | null -> None
-        | _ -> Some(nullable)
 
 let semError pos msg = raise <| SemanticErrorException(pos, msg)
 let checkNull x f = if x = null then f()
