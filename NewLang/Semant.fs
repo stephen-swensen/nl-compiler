@@ -78,30 +78,6 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
     (fun onty fromty toto -> tryResolveConversionOp "op_Implicit" onty fromty toto), 
     (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
-///Environmental context passed to each recursive expression process during semantic analysis
-type SemanticEnvironment = 
-    {
-        IsLoopBody: bool
-        Assemblies: Assembly list
-        Namespaces: string list
-        Variables: (string,Type) Map
-    }
-    with 
-        //todo: make singleton
-        static member Empty = { IsLoopBody=false; Assemblies=[]; Namespaces=[]; Variables= Map.empty }
-        static member Default =
-            { SemanticEnvironment.Empty with 
-                Assemblies=
-                    (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                      "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                      "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                      "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
-                Namespaces=
-                    ["system"
-                     "system.collections"
-                     "system.collections.generic"
-                     "system.numerics"] }
-
 ///Symantic analysis (type checking)
 let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) openNames varEnv rawExpression =
     let tycheck = tycheckWith env

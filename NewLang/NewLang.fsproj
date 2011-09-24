@@ -61,6 +61,7 @@
     </FsYacc>
     <Compile Include="texp.fs" />
     <Compile Include="CoreOps.fs" />
+    <Compile Include="SemanticEnvironment.fs" />
     <Compile Include="Semant.fs" />
     <Compile Include="Compiler.fs" />
     <None Include="packages.config" />
