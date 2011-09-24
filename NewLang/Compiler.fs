@@ -9,39 +9,6 @@ open Parser
 
 open System.Reflection.Emit
 
-///parse from the lexbuf with the given semantic environment
-let parseWith lexbuf env =
-    try 
-        Parser.start Lexer.tokenize lexbuf
-        |> Semant.tycheckWith env
-    with
-    | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
-        raise <| SyntaxErrorException(lexbuf.StartPos)
-
-///parse from the string
-let parseFromString code =
-    let lexbuf = 
-        let lexbuf = LexBuffer<char>.FromString(code)
-        lexbuf.EndPos <- { pos_bol = 0
-                           pos_fname=""
-                           pos_cnum=1
-                           pos_lnum=1 }
-        lexbuf
-
-    parseWith
-        lexbuf
-        { Semant.SemanticEnvironment.Default with 
-            Assemblies=
-                (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                  "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                  "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                  "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
-            Namespaces=
-                ["system"
-                 "system.collections"
-                 "system.collections.generic"
-                 "system.numerics"] }
-
 let emitOpCodes (il:ILGenerator) ast =
     let rec emitWith loopLabel lenv ast =
         let emit = emitWith loopLabel lenv
@@ -187,24 +154,89 @@ let emitOpCodes (il:ILGenerator) ast =
             | Some(_, endBodyLabel) ->
                 il.Emit(OpCodes.Br, endBodyLabel)
             | None ->
-                failwith "break"               
+                failwith "break"    
 
     emitWith None Map.empty ast |> ignore
 
+///parse from the lexbuf with the given semantic environment
+let parseWith env lexbuf =
+    try 
+        Parser.start Lexer.tokenize lexbuf
+        |> Semant.tycheckWith env
+    with
+    | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
+        raise <| SyntaxErrorException(lexbuf.StartPos)
+
+///parse from the string with the given semantic environment
+let parseFromStringWith env code =
+    let lexbuf = 
+        let lexbuf = LexBuffer<char>.FromString(code)
+        lexbuf.EndPos <- { pos_bol = 0
+                           pos_fname=""
+                           pos_cnum=1
+                           pos_lnum=1 }
+        lexbuf
+
+    parseWith env lexbuf
+
+///parseFromString with the "default" environment
+let parseFromString = parseFromStringWith Semant.SemanticEnvironment.Default
+
 let dmFromAst (ast:texp) =
-    let dm = System.Reflection.Emit.DynamicMethod("NewLang", ast.Type, null)
+    let dm = System.Reflection.Emit.DynamicMethod("Eval", ast.Type, null)
     let il = dm.GetILGenerator()
     emitOpCodes il ast
     il.Emit(OpCodes.Ret)
     dm
 
+///Create a dynamic method from a string using the default environment
 let dmFromString = parseFromString>>dmFromAst
 
+///evaluate a string using the default environment
 let eval<'a> code : 'a = 
     let dm = (dmFromString code)
     dm.Invoke(null,null) |> unbox
 
 open System.Reflection
+
+//type NliState =
+//    {
+//        Assemblies: Assembly list
+//        Namespaces: string list
+//        Variables: (string,(obj*Type)) Map
+//    }
+//    with
+//        static member Empty = {Assemblies = []; Namespaces=[]; Variables=Map.empty}
+//        static member Default =
+//            let se = Semant.SemanticEnvironment.Default
+//            { NliState.Empty with Assemblies=se.Assemblies; Namespaces=se.Namespaces }
+//
+/////The NL interactive
+//type Nli() = 
+//    ///head of list is most recent, this should not be externally mutable
+//    let mutable historicalState: NliState list = []
+//    ///the current state, this can be externally mutable if so desired
+//    let mutable currentState: NliState = NliState.Default
+//
+//    ///evaluate the code string in the Nli environment
+//    let eval code =
+//        //WE NEED THE RAW AST FIRST
+//        let lexbuf = 
+//            let lexbuf = LexBuffer<char>.FromString(code)
+//            lexbuf.EndPos <- { pos_bol = 0
+//                               pos_fname=""
+//                               pos_cnum=1
+//                               pos_lnum=1 }
+//            lexbuf
+//
+//        let ast = parseFromStringWith { Semant.SemanticEnvironment.Empty with Assemblies=currentState.Assemblies; Namespaces=currentState.Namespaces; Variables=currentState.Variables |> Map.map (fun _ (_,ty)->ty) } code
+//        let dm = System.Reflection.Emit.DynamicMethod("Eval", ast.Type, null)
+//            let il = dm.GetILGenerator()
+//            emitOpCodes il (Return(ast, ast.Type))
+//            dm
+//
+//        for a in currentState.Assemblies do
+
 
 ///ast -> assemblyName -> unit
 let compileFromAst ast asmName =
