@@ -180,7 +180,7 @@ let parseFromStringWith env code =
     parseWith env lexbuf
 
 ///parseFromString with the "default" environment
-let parseFromString = parseFromStringWith Semant.SemanticEnvironment.Default
+let parseFromString = parseFromStringWith SemanticEnvironment.Default
 
 let dmFromAst (ast:texp) =
     let dm = System.Reflection.Emit.DynamicMethod("Eval", ast.Type, null)
