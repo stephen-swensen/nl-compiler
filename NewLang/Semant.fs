@@ -87,7 +87,20 @@ type SemanticEnvironment =
         Variables: (string,Type) Map
     }
     with 
-        static member Default = { IsLoopBody=false; Assemblies=[]; Namespaces=[]; Variables= Map.empty }
+        //todo: make singleton
+        static member Empty = { IsLoopBody=false; Assemblies=[]; Namespaces=[]; Variables= Map.empty }
+        static member Default =
+            { SemanticEnvironment.Empty with 
+                Assemblies=
+                    (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                      "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                      "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                      "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map (fun name -> System.Reflection.Assembly.Load(name)))
+                Namespaces=
+                    ["system"
+                     "system.collections"
+                     "system.collections.generic"
+                     "system.numerics"] }
 
 ///Symantic analysis (type checking)
 let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) openNames varEnv rawExpression =

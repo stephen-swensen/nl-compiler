@@ -24,15 +24,15 @@ type texp =
     | Sequential    of texp * texp * Type
     | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
     ///Default value of ValueType ("zero") or Ref type (null)
-    | Default      of Type
-    | Not          of texp * Type
-    | IfThen       of texp * texp
-    | IfThenElse   of texp * texp * texp * Type
+    | Default       of Type
+    | Not           of texp * Type
+    | IfThen        of texp * texp
+    | IfThenElse    of texp * texp * texp * Type
     | ComparisonBinop  of comparisonBinop * texp * texp
     | Nop
-    | VarSet       of string * texp
-    | WhileLoop    of texp * texp
-    | Break
+    | VarSet        of string * texp
+    | WhileLoop     of texp * texp
+    | Break         
     | Continue
     with 
         member this.Type =
@@ -50,6 +50,7 @@ type texp =
             | Break                  -> typeof<Void>
             | Continue               -> typeof<Void>
             | WhileLoop(_,_)         -> typeof<Void>
+        //    | NliReturn _            -> typeof<obj[]>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
