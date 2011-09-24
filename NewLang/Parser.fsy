@@ -1,9 +1,15 @@
 ﻿%{
 
 open Swensen.NewLang
+open Microsoft.FSharp.Text.Parsing
 
 //let parse_error msg =
 //    failwithf "%A" msg
+
+let range (parseState:IParseState) rangeStart rangeEnd =
+    let posStart,_ = parseState.InputRange rangeStart
+    let _,posEnd   = parseState.InputRange rangeEnd
+    CompilerErrorRange(posStart,posEnd)
 
 %}
 
