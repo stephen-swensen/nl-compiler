@@ -4,7 +4,7 @@ open Xunit
 open Swensen.Unquote
 open Swensen.NewLang
 open System.Collections.Generic
-module C = Compiler
+module C = Compilation
 
 [<Fact>]
 let ``ref relative path dll`` () =

@@ -8,7 +8,7 @@ let rec loop() =
     | "exit" -> ()
     | str ->
         try
-            printfn "%A" (Compiler.eval str)
+            printfn "%A" (Compilation.eval str)
         with
         | :? SemanticErrorException as e -> printfn "%s" e.Message
         | :? SyntaxErrorException as e -> printfn "%s" e.Message

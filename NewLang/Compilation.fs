@@ -1,4 +1,4 @@
-﻿module Swensen.NewLang.Compiler
+﻿module Swensen.NewLang.Compilation
 
 open System
 open System.Reflection
@@ -181,6 +181,7 @@ let parseFromStringWith env code =
 ///parseFromString with the "default" environment
 let parseFromString = parseFromStringWith SemanticEnvironment.Default
 
+///Create a dynamic method from a typed expression using the default environment
 let dmFromAst (ast:texp) =
     let dm = DynamicMethod("Eval", ast.Type, null)
     let il = dm.GetILGenerator()
@@ -195,6 +196,36 @@ let dmFromString = parseFromString>>dmFromAst
 let eval<'a> code : 'a = 
     let dm = (dmFromString code)
     dm.Invoke(null,null) |> unbox
+
+//todo: currently this function compilies an expression to a single method
+//      set as the entry point of an assembly, obviously this needs to evolve.
+///ast -> assemblyName -> unit
+let compileFromAst ast asmName =
+    let asmFileName = asmName + ".exe"
+    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
+    let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".netmodule", asmFileName, false) //need to specify asmFileName here!
+    let tyBuilder = modBuilder.DefineType(asmName + ".Application", TypeAttributes.Public)
+    let methBuilder = tyBuilder.DefineMethod("Run", MethodAttributes.Public ||| MethodAttributes.Static, typeof<System.Void>, null)
+    
+    let il = methBuilder.GetILGenerator()
+    emitOpCodes il ast
+    il.Emit(OpCodes.Ret)
+
+    tyBuilder.CreateType() |> ignore
+    asmBuilder.SetEntryPoint(methBuilder, PEFileKinds.ConsoleApplication)
+    asmBuilder.Save(asmFileName)
+
+///Compile the given source code string into an assembly
+///code -> assemblyName -> unit
+let compileFromString = parseFromString>>compileFromAst
+
+///Compile all the given source code files into a single assembly
+///fileNames -> assemblyName -> unit
+let compileFromFiles fileNames =
+    fileNames
+    |> Seq.map System.IO.File.ReadAllText
+    |> String.concat System.Environment.NewLine
+    |> compileFromString
 
 //type NliState =
 //    {
@@ -233,30 +264,3 @@ let eval<'a> code : 'a =
 //            dm
 //
 //        for a in currentState.Assemblies do
-
-
-///ast -> assemblyName -> unit
-let compileFromAst ast asmName =
-    let asmFileName = asmName + ".exe"
-    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
-    let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".netmodule", asmFileName, false) //need to specify asmFileName here!
-    let tyBuilder = modBuilder.DefineType(asmName + ".Application", TypeAttributes.Public)
-    let methBuilder = tyBuilder.DefineMethod("Run", MethodAttributes.Public ||| MethodAttributes.Static, typeof<System.Void>, null)
-    
-    let il = methBuilder.GetILGenerator()
-    emitOpCodes il ast
-    il.Emit(OpCodes.Ret)
-
-    tyBuilder.CreateType() |> ignore
-    asmBuilder.SetEntryPoint(methBuilder, PEFileKinds.ConsoleApplication)
-    asmBuilder.Save(asmFileName)
-
-///code -> assemblyName -> unit
-let compileFromString = parseFromString>>compileFromAst
-
-///fileNames -> assemblyName -> unit
-let compileFromFiles fileNames =
-    fileNames
-    |> Seq.map System.IO.File.ReadAllText
-    |> String.concat System.Environment.NewLine
-    |> compileFromString
