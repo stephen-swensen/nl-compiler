@@ -64,7 +64,7 @@
     <Compile Include="CoreOps.fs" />
     <Compile Include="SemanticEnvironment.fs" />
     <Compile Include="SemanticAnalysis.fs" />
-    <Compile Include="Compiler.fs" />
+    <Compile Include="Compilation.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

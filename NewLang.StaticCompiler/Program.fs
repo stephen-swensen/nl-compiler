@@ -9,7 +9,7 @@ let main args =
         | [|fileNames; asmName|] -> fileNames.Split('|'), asmName // | is an invalid path name so good delimiter
         | _ -> failwithf "Could not parse args: %A" args
     try
-        Compiler.compileFromFiles fileNames asmName
+        Compilation.compileFromFiles fileNames asmName
         0
     with e ->
         printfn "%s" e.Message

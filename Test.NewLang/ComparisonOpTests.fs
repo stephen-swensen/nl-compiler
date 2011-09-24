@@ -3,7 +3,7 @@
 open Xunit
 open Swensen.Unquote
 open Swensen.NewLang
-module C = Compiler
+module C = Compilation
 
 [<Fact>]
 let ``primitive == true`` () =

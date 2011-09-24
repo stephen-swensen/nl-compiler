@@ -4,7 +4,7 @@ open Xunit
 open Swensen.Unquote
 open Swensen.NewLang
 open System.Collections.Generic
-module C = Compiler
+module C = Compilation
 
 [<Fact>]
 let ``literal System.Int32 exp`` () =
