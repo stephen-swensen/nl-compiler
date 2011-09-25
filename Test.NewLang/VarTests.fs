@@ -31,7 +31,7 @@ let ``var ids are case insensitive`` () =
 
 [<Fact>]
 let ``Void not valid in let binding`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "x = console.writeline(\"asdf\") in x" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 

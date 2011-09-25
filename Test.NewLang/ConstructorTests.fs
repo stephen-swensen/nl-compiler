@@ -53,6 +53,6 @@ let ``resolve complex generic signature in constructor`` () =
 
 [<Fact>]
 let ``Void cannot be instantiated`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "System.Void()" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
