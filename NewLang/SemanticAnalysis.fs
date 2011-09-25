@@ -3,8 +3,11 @@
 open System
 open System.Reflection
 
-let semError pos msg = raise <| SemanticErrorException(pos, msg)
+let semError pos msg = 
+    raise <| SemanticAnalysisException(pos, msg)
+
 let checkNull x f = if x = null then f()
+
 let checkMeth (meth:MethodInfo) pos name tys =
     checkNull meth (fun () -> semError pos (sprintf "method %s not found for parameter types %A" name tys))
 

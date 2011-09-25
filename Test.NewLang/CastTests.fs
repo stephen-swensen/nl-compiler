@@ -33,11 +33,15 @@ let ``downcast and upcast value type to and from interface`` () =
 
 [<Fact>]
 let ``semantic error trying to cast sealed value type to anything other than object or implemented interface `` () =
-    raises<SemanticErrorException> <@ C.eval "32[string]" @>
+    raisesWhen 
+        <@ C.eval "32[string]" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``semantic error trying to cast sealed ref type to anything other than object or implemented interface `` () =
-    raises<SemanticErrorException> <@ C.eval "\"asdf\"[char]" @>
+    raisesWhen 
+        <@ C.eval "\"asdf\"[char]" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>] //fixed
 let ``cast var - does not needs to be surrounded with parens`` () =
@@ -45,11 +49,15 @@ let ``cast var - does not needs to be surrounded with parens`` () =
 
 [<Fact>]
 let ``cast var has more than one generic ty arg`` () =
-    raises<SyntaxErrorException> <@ C.eval "x = 3 in x[object,int32]" @>
+    raisesWhen 
+        <@ C.eval "x = 3 in x[object,int32]" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Syntactic @>)
 
 [<Fact>]
 let ``cannot cast value to its own type`` () =
-    raises<SemanticErrorException> <@ C.eval "3[int32]" @>
+    raisesWhen 
+        <@ C.eval "3[int32]" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``cast int to double, a widening coersion`` () =
@@ -69,4 +77,6 @@ let ``cast biginteger to int32, a biginteger.op_explicit `` () =
 
 [<Fact>]
 let ``casting to Void will always fail`` () =
-    raises<SemanticErrorException> <@ C.eval "3[object][System.Void]" @>
+    raisesWhen 
+        <@ C.eval "3[object][System.Void]" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)

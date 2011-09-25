@@ -7,11 +7,15 @@ module C = Compilation
 
 [<Fact>]
 let ``ifthenelse condition must be boolean`` () =
-    raises<SemanticErrorException> <@ C.eval "if 0 then true else false" @>
+    raisesWhen 
+        <@ C.eval "if 0 then true else false" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``ifthenelse type must be consistent`` () =
-    raises<SemanticErrorException> <@ C.eval "if true then true else 0" @>
+    raisesWhen 
+        <@ C.eval "if true then true else 0" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``simple ifthenelse exp condition is true`` () =

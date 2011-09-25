@@ -10,8 +10,7 @@ let rec loop() =
         try
             printfn "%A" (Compilation.eval str)
         with
-        | :? SemanticErrorException as e -> printfn "%s" e.Message
-        | :? SyntaxErrorException as e -> printfn "%s" e.Message
+        | :? CompilerException as e -> printfn "%s" e.Message
         | e -> printfn "%A" e
 
         loop()

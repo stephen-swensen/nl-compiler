@@ -153,7 +153,7 @@ let emitOpCodes (il:ILGenerator) ast =
             | Some(_, endBodyLabel) ->
                 il.Emit(OpCodes.Br, endBodyLabel)
             | None ->
-                failwith "break"    
+                failwith "invalid break"    
 
     emitWith None Map.empty ast |> ignore
 
@@ -163,8 +163,13 @@ let parseWith env lexbuf =
         Parser.start Lexer.tokenize lexbuf
         |> SemanticAnalysis.tycheckWith env
     with
-    | e when e.Message = "parse error" || e.Message = "unrecognized input" -> //fragil hack check
-        raise <| SyntaxErrorException(lexbuf.StartPos)
+    | SemanticAnalysisException(pr,msg) ->
+        raise <| CompilerException(CompilerError(pr, CompilerErrorType.Semantic, CompilerErrorLevel.Error, -1, msg))
+    //fslex/yacc do not use specific exception types
+    | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
+        raise <| CompilerException(CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), CompilerErrorType.Syntactic, CompilerErrorLevel.Error, -1, e.Message))
+    | e ->
+        raise <| CompilerException(CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), CompilerErrorType.Internal, CompilerErrorLevel.Error, -1, e.ToString()))
 
 ///parse from the string with the given semantic environment
 let parseFromStringWith env code =

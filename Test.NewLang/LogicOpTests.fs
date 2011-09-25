@@ -7,11 +7,15 @@ module C = Compilation
 
 [<Fact>]
 let ``lhs of and  must be bool`` () =
-    raises<SemanticErrorException> <@ C.eval "3 and true" @>
+    raisesWhen 
+        <@ C.eval "3 and true" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``rhs of and  must be bool`` () =
-    raises<SemanticErrorException> <@ C.eval "true and 3" @>
+    raisesWhen 
+        <@ C.eval "true and 3" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``true and true`` () =
@@ -31,11 +35,15 @@ let ``false and false`` () =
 
 [<Fact>]
 let ``lhs of or  must be bool`` () =
-    raises<SemanticErrorException> <@ C.eval "3 or true" @>
+    raisesWhen 
+        <@ C.eval "3 or true" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``rhs of or  must be bool`` () =
-    raises<SemanticErrorException> <@ C.eval "true or 3" @>
+    raisesWhen 
+        <@ C.eval "true or 3" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``true or true`` () =
@@ -55,11 +63,15 @@ let ``false or false`` () =
 
 [<Fact>]
 let ``lhs of xor  must be bool`` () =
-    raises<SemanticErrorException> <@ C.eval "3 xor true" @>
+    raisesWhen 
+        <@ C.eval "3 xor true" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``rhs of xor  must be bool`` () =
-    raises<SemanticErrorException> <@ C.eval "true xor 3" @>
+    raisesWhen 
+        <@ C.eval "true xor 3" @>
+        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``true xor true`` () =
