@@ -9,7 +9,7 @@ open Microsoft.FSharp.Text.Parsing
 let range (parseState:IParseState) rangeStart rangeEnd =
     let posStart,_ = parseState.InputRange rangeStart
     let _,posEnd   = parseState.InputRange rangeEnd
-    CompilerErrorRange(posStart,posEnd)
+    PositionRange(posStart,posEnd)
 
 %}
 
@@ -84,51 +84,51 @@ rexp:
     //-- logical binary operators --
 
     | rexp XOR rexp                             
-        { rexp.Xor($1, $3, parseState.InputStartPosition 2) }
+        { rexp.Xor($1, $3, range parseState 2 2) }
     | rexp OR rexp                             
-        { rexp.Or($1,$3, parseState.InputStartPosition 2) }
+        { rexp.Or($1,$3, range parseState 2 2) }
     | rexp AND rexp                             
-        { rexp.And($1, $3, parseState.InputStartPosition 2) }
+        { rexp.And($1, $3, range parseState 2 2) }
 
     //-- comparison operators --
 
     | rexp EQEQ rexp                             
-        { rexp.ComparisonBinop(Eq, $1, $3, parseState.InputStartPosition 2) }
+        { rexp.ComparisonBinop(Eq, $1, $3, range parseState 2 2) }
     | rexp NOTEQ rexp                             
-        { rexp.NotEq($1, $3, parseState.InputStartPosition 2) }
+        { rexp.NotEq($1, $3, range parseState 2 2) }
     | rexp LT rexp                             
-        { rexp.ComparisonBinop(Lt, $1, $3, parseState.InputStartPosition 2) }
+        { rexp.ComparisonBinop(Lt, $1, $3, range parseState 2 2) }
     | rexp GT rexp                                 
-        { rexp.ComparisonBinop(Gt, $1, $3, parseState.InputStartPosition 2) }
+        { rexp.ComparisonBinop(Gt, $1, $3, range parseState 2 2) }
     | rexp LTEQ rexp                                 
-        { rexp.LtEq($1, $3, parseState.InputStartPosition 2) }
+        { rexp.LtEq($1, $3, range parseState 2 2) }
     | rexp GTEQ rexp                                 
-        { rexp.GtEq($1, $3, parseState.InputStartPosition 2) }
+        { rexp.GtEq($1, $3, range parseState 2 2) }
 
     //-- numeric binary operators --
 
     | rexp PLUS rexp                             
-        { rexp.NumericBinop(Plus, $1, $3, parseState.InputStartPosition 2) }
+        { rexp.NumericBinop(Plus, $1, $3, range parseState 2 2) }
     | rexp MINUS rexp                             
-        { rexp.NumericBinop(Minus, $1, $3, parseState.InputStartPosition 2) }
+        { rexp.NumericBinop(Minus, $1, $3, range parseState 2 2) }
     | rexp TIMES rexp                             
-        { rexp.NumericBinop(Times, $1, $3, parseState.InputStartPosition 2) }
+        { rexp.NumericBinop(Times, $1, $3, range parseState 2 2) }
     | rexp DIV rexp                                 
-        { rexp.NumericBinop(Div, $1, $3, parseState.InputStartPosition 2) }
+        { rexp.NumericBinop(Div, $1, $3, range parseState 2 2) }
     | rexp POW rexp                                 
-        { rexp.Pow($1, $3, parseState.InputStartPosition 2) }
+        { rexp.Pow($1, $3, range parseState 2 2) }
             
     //-- postfix operators --
     
     | rexp BANG                                     
-        { rexp.Fact($1, parseState.InputStartPosition 2) }
+        { rexp.Fact($1, range parseState 2 2) }
     
     //-- prefix operators --
     
     | MINUS rexp %prec UMINUS                    
-        { rexp.UMinus($2, parseState.InputStartPosition 1) }
+        { rexp.UMinus($2, range parseState 1 1) }
     | NOT rexp                                    
-        { rexp.Not($2, parseState.InputStartPosition 1) }
+        { rexp.Not($2, range parseState 1 1) }
 
     //-- literal values --
 
@@ -143,11 +143,11 @@ rexp:
     | BOOL                                  
         { rexp.Bool($1) }
     | NULL LBRACKET tySig RBRACKET              
-        { rexp.Null($3, parseState.InputStartPosition 3) }
+        { rexp.Null($3, range parseState 3 3) }
     | TYPE LBRACKET tySig RBRACKET            
-        { rexp.Typeof($3, parseState.InputStartPosition 3) }
+        { rexp.Typeof($3, range parseState 3 3) }
     | LPAREN RPAREN
-        { rexp.Nop(parseState.InputStartPosition 1) }
+        { rexp.Nop(range parseState 1 1) }
     
     //enclosed expression
     | LPAREN rexp RPAREN                      
@@ -155,13 +155,13 @@ rexp:
     
     //bind variable
     | longName EQ rexp IN rexp                
-       { rexp.Let($1,$3,$5, parseState.InputStartPosition 1) }
+       { rexp.Let($1,$3,$5, range parseState 1 1) }
     //var expression
     | longName                                     
-        { rexp.Var($1, parseState.InputStartPosition 1)}
+        { rexp.Var($1, range parseState 1 1)}
     //set var expression
     | longName SET rexp
-        { rexp.VarSet($1, $3, parseState.InputStartPosition 1)}
+        { rexp.VarSet($1, $3, range parseState 1 1)}
 
     //cast on var
     | longName LBRACKET tySigList RBRACKET
@@ -169,55 +169,55 @@ rexp:
             if $3.Length <> 1 then //a bit of a hack here; we need to use tySigList instead of just tySig to disambiguate grammer
                 parseState.RaiseError()
 
-            rexp.Cast(rexp.Var($1, parseState.InputStartPosition 1), $3.Head, parseState.InputStartPosition 3) 
+            rexp.Cast(rexp.Var($1, range parseState 1 1), $3.Head, range parseState 3 3) 
         }
 
     //cast on expression
     | rexp LBRACKET tySig RBRACKET                
-        { rexp.Cast($1, $3, parseState.InputStartPosition 3) }
+        { rexp.Cast($1, $3, range parseState 3 3) }
 
     //non-generic constructor or static call or instance call on var
     | longName LPAREN rexpList RPAREN                                            
-        { rexp.NameCall($1, [], $3, parseState.InputStartPosition 1) }
+        { rexp.NameCall($1, [], $3, range parseState 1 1) }
     //generic constructor or static call or instance call on var
     | longName LBRACKET tySigList RBRACKET LPAREN rexpList RPAREN            
-        { rexp.NameCall($1, $3, $6, parseState.InputStartPosition 1) }
+        { rexp.NameCall($1, $3, $6, range parseState 1 1) }
     //generic type non-generic static call
     | longName LBRACKET tySigList RBRACKET DOT NAME LPAREN rexpList RPAREN
-        { rexp.GenericTypeStaticCall($1, $3, $6, [], $8, parseState.InputStartPosition 1) }
+        { rexp.GenericTypeStaticCall($1, $3, $6, [], $8, range parseState 1 1) }
     //generic type generic static call
     | longName LBRACKET tySigList RBRACKET DOT NAME LBRACKET tySigList RBRACKET LPAREN rexpList RPAREN    
-        { rexp.GenericTypeStaticCall($1, $3, $6, $8, $11, parseState.InputStartPosition 1) }
+        { rexp.GenericTypeStaticCall($1, $3, $6, $8, $11, range parseState 1 1) }
     
     //non-generic method call on expression
     | rexp DOT NAME LPAREN rexpList RPAREN        
-        { rexp.ExpCall($1,$3,[],$5, parseState.InputStartPosition 1) }
+        { rexp.ExpCall($1,$3,[],$5, range parseState 1 1) }
     //generic method call on expression
     | rexp DOT NAME LBRACKET tySigList RBRACKET LPAREN rexpList RPAREN        
-        { rexp.ExpCall($1,$3,$5,$8, parseState.InputStartPosition 1) }
+        { rexp.ExpCall($1,$3,$5,$8, range parseState 1 1) }
     
     //sequential expression 
     | rexp SEMICOLON rexp                     
-        { rexp.Sequential($1,$3, parseState.InputStartPosition 3) }
+        { rexp.Sequential($1,$3, range parseState 3 3) }
     
     //open namespace
     | OPEN longName IN rexp                    
-        { rexp.Open($2,$4, parseState.InputStartPosition 2) }
+        { rexp.Open($2,$4, range parseState 2 2) }
     
     //open assembly reference (by assembly name or file name)
     | REF STRING IN rexp                     
-        { rexp.Ref($2, $4, parseState.InputStartPosition 2) }
+        { rexp.Ref($2, $4, range parseState 2 2) }
 
     //if then else expressions
     | IF rexp THEN rexp
-        { rexp.IfThenElse($2,$4,None, parseState.InputStartPosition 1) }
+        { rexp.IfThenElse($2,$4,None, range parseState 1 1) }
     | IF rexp THEN rexp ELSE rexp
-        { rexp.IfThenElse($2,$4,Some($6), parseState.InputStartPosition 1) }
+        { rexp.IfThenElse($2,$4,Some($6), range parseState 1 1) }
 
     //-- loops --
     | WHILE rexp DO rexp
-        { rexp.WhileLoop($2,$4, parseState.InputStartPosition 1) }
+        { rexp.WhileLoop($2,$4, range parseState 1 1) }
     | BREAK LPAREN RPAREN
-        { rexp.Break(parseState.InputStartPosition 1) }
+        { rexp.Break(range parseState 1 1) }
     | CONTINUE LPAREN RPAREN
-        { rexp.Continue(parseState.InputStartPosition 1) }
+        { rexp.Continue(range parseState 1 1) }
