@@ -7,13 +7,13 @@ module C = Compilation
 
 [<Fact>]
 let ``lhs of and  must be bool`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "3 and true" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``rhs of and  must be bool`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "true and 3" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
@@ -35,13 +35,13 @@ let ``false and false`` () =
 
 [<Fact>]
 let ``lhs of or  must be bool`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "3 or true" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``rhs of or  must be bool`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "true or 3" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
@@ -63,13 +63,13 @@ let ``false or false`` () =
 
 [<Fact>]
 let ``lhs of xor  must be bool`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "3 xor true" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``rhs of xor  must be bool`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "true xor 3" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 

@@ -8,13 +8,13 @@ module C = Compilation
 
 [<Fact>]
 let ``break not allowed outside of while loop`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "break()" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``continue not allowed outside of while loop`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "continue()" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 

@@ -16,6 +16,6 @@ let ``ref assembly display name`` () =
 
 [<Fact>]
 let ``connot resolve assembly`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "ref \"not an assembly\" in ()" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)

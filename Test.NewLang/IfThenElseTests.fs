@@ -7,13 +7,13 @@ module C = Compilation
 
 [<Fact>]
 let ``ifthenelse condition must be boolean`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "if 0 then true else false" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
 [<Fact>]
 let ``ifthenelse type must be consistent`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "if true then true else 0" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 

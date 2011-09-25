@@ -21,7 +21,7 @@ let ``open expression`` () =
 
 [<Fact>]
 let ``connot resolve namespace`` () =
-    raisesWhen 
+    raisesWith 
         <@ C.eval "open hello.world in ()" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
 
