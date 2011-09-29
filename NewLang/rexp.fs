@@ -4,11 +4,51 @@ open System
 open Microsoft.FSharp.Text.Lexing
 
 type numericBinop = Plus | Minus | Times | Div
+    with
+        override x.ToString() =
+            match x with
+            | Plus -> "+"
+            | Minus -> "-"
+            | Times -> "*"
+            | Div -> "/"
+        member x.DisplayValue = x.ToString()
+
 type logicBinop = And | Or | XOr
+    with
+        override x.ToString() =
+            match x with
+            | And -> "and"
+            | Or -> "or"
+            | XOr -> "xor"
+        member x.DisplayValue = x.ToString()
+
 type comparisonBinop = Eq | Lt | Gt
+    with
+        override x.ToString() =
+            match x with
+            | Eq -> "=="
+            | Lt -> "<"
+            | Gt -> ">"
+        member x.DisplayValue = x.ToString()
 
 type tySig =
     | TySig of string * tySig list
+    with 
+        //TODO:test
+//> TySig("hi",[]);;
+//val it : tySig = TySig ("hi",[])
+//> TySig("hi",[]).ToString();;
+//val it : string = "hi"
+//> TySig("hi",[TySig("bye",[])]).ToString();;
+//val it : string = "hi[bye]"
+//> TySig("hi",[TySig("bye",[]); TySig("night",[])]).ToString();;
+//val it : string = "hi[bye,night]"
+        override x.ToString() =
+            let rec build = function
+                | TySig(name, []) -> name
+                | TySig(name, xl) -> name + "[" + (xl |> List.map build |> String.concat ",") + "]"
+            build x
+        member x.DisplayValue = x.ToString() //call "Name"?
 
 ///Raw (untyped) parsed expression
 type rexp =

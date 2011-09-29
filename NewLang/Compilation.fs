@@ -163,8 +163,8 @@ let parseWith env lexbuf =
         Parser.start Lexer.tokenize lexbuf
         |> SemanticAnalysis.tycheckWith env
     with
-    | SemanticAnalysisException(pr,msg) ->
-        raise <| CompilerException(CompilerError(pr, CompilerErrorType.Semantic, CompilerErrorLevel.Error, -1, msg))
+    | SemanticAnalysisException(pr,errMsg) ->
+        raise <| CompilerException(CompilerError(pr, CompilerErrorType.Semantic, CompilerErrorLevel.Error, errMsg.Code, errMsg.Message))
     //fslex/yacc do not use specific exception types
     | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
         raise <| CompilerException(CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), CompilerErrorType.Syntactic, CompilerErrorLevel.Error, -1, e.Message))
