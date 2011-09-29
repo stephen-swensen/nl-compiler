@@ -3,13 +3,28 @@
 open System
 open System.Reflection
 
-let semError pos msg = 
-    raise <| SemanticAnalysisException(pos, msg)
+module EM = ErrorMessage
 
-let checkNull x f = if x = null then f()
+let sprintSeqForDisplay xs f =
+    if xs = Seq.empty then "()" 
+    else (xs |> Seq.map (fun x -> sprintf "'%s'" (f x)) |> String.concat ", ")
 
-let checkMeth (meth:MethodInfo) pos name tys =
-    checkNull meth (fun () -> semError pos (sprintf "method %s not found for parameter types %A" name tys))
+let sprintTypes (tarr:Type seq) =
+    sprintSeqForDisplay tarr (fun ty -> ty.Name)
+
+let sprintTySigs (tarr:tySig seq) =
+    sprintSeqForDisplay tarr (fun ty -> ty.DisplayValue)
+
+let sprintAssemblies (tarr:Assembly seq) =
+    sprintSeqForDisplay tarr (fun asm -> asm.FullName)
+
+let semError pos errMsg = 
+    raise <| SemanticAnalysisException(pos, errMsg)
+
+//let checkNull x f = if x = null then f()
+//
+//let checkMeth (meth:MethodInfo) pos name tys =
+//    checkNull meth (fun () -> semError pos (sprintf "method %s not found for parameter types %A" name tys))
 
 ///Binding flags for our language
 let instanceFlags = BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
@@ -117,7 +132,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             tryResolveMethod ty methodName bindingFlags [||] argTys
         | genericArgs -> 
             match tryResolveGenericArgTys genericArgs with
-            | None -> semError pos (sprintf "could not resolve generic arg types: %A" genericArgs)
+            | None -> semError pos (EM.Could_not_resolve_types (sprintTySigs genericArgs))
             | Some(genericArgTys) -> tryResolveMethod ty methodName bindingFlags genericArgTys argTys
 
     match rawExpression with
@@ -128,14 +143,14 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
     | rexp.Bool x   -> texp.Bool x
     | rexp.Null(name, pos)   -> 
         match tryResolveType name with
-        | None -> semError pos (sprintf "could not resolve type of null: %A" name)
+        | None -> semError pos (EM.Could_not_resolve_type name.DisplayValue) //todo: specific pos for ty name
         | Some(ty) ->
             if ty.IsValueType then
-                semError pos (sprintf "null is not a valid value for the value type %s" ty.Name)
+                semError pos (EM.Null_is_invalid_for_value_types ty.Name)
             texp.Null(ty)
     | rexp.Typeof(name, pos)   -> 
         match tryResolveType name with
-        | None -> semError pos (sprintf "could not resolve type in type literal expression: %A" name)
+        | None -> semError pos (EM.Could_not_resolve_type name.DisplayValue)
         | Some(ty) -> texp.Typeof(ty)
     | rexp.UMinus(x,pos) ->
         let x = tycheck x
@@ -143,14 +158,15 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
     | rexp.Fact(x,pos) ->
         let x = tycheck x
         if x.Type <> typeof<int> then
-            semError pos (sprintf "factorial expects int but got: %A" x.Type)
+            semError pos (EM.Expected_type_but_got_type "System.Int32" x.Type.Name)
         else
             let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
             texp.StaticCall(meth, [x], meth.ReturnType)
     | rexp.Pow(x,y,pos) ->
         let x, y = tycheck x, tycheck y
         let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
-        checkMeth meth pos "Pow" [x;y]
+        if meth = null then
+            semError pos (EM.Invalid_static_method "Pow" "System.Math" (sprintTypes [x.Type;y.Type]))
         texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
     | rexp.NumericBinop(op,x,y,pos) ->
         let x, y = tycheck x, tycheck y
@@ -166,7 +182,8 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             texp.NumericBinop(op, coerceIfNeeded retTy x, coerceIfNeeded retTy y, retTy)
         | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string concat
             let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
-            checkMeth meth pos "Concat" [x;y]
+            if meth = null then //TODO: TRY RESOLVE AND PRODUCE ERROR MESSAGE IN ONE STROKE
+                semError pos (EM.Invalid_static_method "Concat" "System.String" (sprintTypes [|x.Type; y.Type|]))
             texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
         | None -> //static "op_*" overloads
             let opName =
@@ -182,7 +199,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
 
             match meth with
             | None ->
-                semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
+                semError pos (EM.No_overload_found_for_binary_operator op.DisplayValue x.Type.Name y.Type.Name)
             | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
     | rexp.NameCall(longName, genericArgs, args, pos) -> //todo: need more position info for different tokens
@@ -195,35 +212,36 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         match Map.tryFind namePrefix env.Variables with //N.B. vars always supercede open names
         | Some(ty:Type) -> //instance method call on variable
             match tryResolveMethodWithGenericArgs ty methodName instanceFlags (genericArgs |> List.toArray) argTys pos with
-            | None -> semError pos (sprintf "not a valid instance method: %s, for the given instance type: %s, and arg types: %A" methodName ty.Name argTys)
+            | None -> semError pos (EM.Invalid_instance_method methodName ty.Name (sprintTypes argTys))
             | Some(meth) -> texp.InstanceCall(Var(namePrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | None ->
             match tryResolveType (TySig(namePrefix,[])) with
             | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
                 match  tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys pos with
-                | None -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName ty.Name argTys)
+                | None -> 
+                    semError pos (EM.Invalid_static_method methodName ty.Name (sprintTypes argTys))
                 | Some(meth) -> texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
             | None -> //constructors
                 match tryResolveType (TySig(longName,genericArgs)) with
-                | None -> semError pos (sprintf "could not resolve method call type: %s or constructor type: %s" namePrefix longName)
+                | None -> semError pos (EM.Could_not_resolve_possible_method_call_or_contructor_type namePrefix longName)
                 | Some(ty) ->
                     if ty.IsValueType && args.Length = 0 then
                         if ty = typeof<System.Void> then
-                            semError pos (sprintf "System.Void cannot be instantiated")
+                            semError pos (EM.Void_cannot_be_instantiated)
                         else
                             texp.Default(ty)
                     else
                         match ty.GetConstructor(argTys) with
-                        | null -> semError pos (sprintf "could not resolve constructor for type: %s with arg types: %A" ty.Name (args |> List.map(fun arg -> arg.Type)))
+                        | null -> semError pos (EM.Could_not_resolve_constructor ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes))
                         | ctor -> texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
     | rexp.GenericTypeStaticCall(tyName, tyGenericArgs, methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
         match tryResolveType (TySig(tyName, tyGenericArgs)) with
-        | None -> semError pos (sprintf "could not resolve type: %s with generic arg types: %A" tyName tyGenericArgs)
+        | None -> semError pos (EM.Could_not_resolve_type (TySig(tyName,tyGenericArgs).DisplayValue))
         | Some(ty) ->
             let args = args |> List.map (tycheck)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             match tryResolveMethodWithGenericArgs ty methodName staticFlags (methodGenericArgs |> List.toArray) argTys pos with
-            | None -> semError pos (sprintf "not a valid static method: %s, for the given class type: %s, and arg types: %A" methodName ty.Name argTys)
+            | None -> semError pos (EM.Invalid_static_method methodName ty.Name (sprintTypes argTys))
             | Some(meth) -> 
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.ExpCall(instance, methodName, methodGenericArgs, args, pos) ->
@@ -231,21 +249,21 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         let args = args |> List.map (tycheck)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
         match tryResolveMethodWithGenericArgs instance.Type methodName instanceFlags (methodGenericArgs |> List.toArray) argTys pos with
-        | None -> semError pos (sprintf "not a valid instace method: %s, for the given expression type: %s, and arg types: %A" methodName instance.Type.Name argTys)
+        | None -> semError pos (EM.Invalid_instance_method methodName instance.Type.Name (sprintTypes argTys))
         | Some(meth) ->
             texp.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
     | rexp.Let(name, assign, body, pos) ->
         let assign = tycheck assign
         if assign.Type = typeof<Void> then
-            semError pos (sprintf "System.Void is not a valid value in a let binding")
+            semError pos (EM.Void_invalid_in_let_binding)
         let body = tycheckWith {env with Variables=env.Variables |> Map.add name assign.Type} body
         texp.Let(name,assign, body, body.Type)
     | rexp.Var(name, pos) ->
         match Map.tryFind name env.Variables with
         | Some(ty) -> texp.Var(name,ty)
-        | None -> semError pos (sprintf "Var not found in environment: %s" name)
+        | None -> semError pos (EM.Variable_not_found name)
     | rexp.Sequential((rexp.Break(_)|rexp.Continue(_)),_, pos) ->
-        semError pos (sprintf "unreachable code detected")
+        semError pos (EM.Unreachable_code_detected)
     | rexp.Sequential(x,y, pos) ->
         let x, y = tycheck x, tycheck y
         texp.Sequential(x,y,y.Type)
@@ -256,7 +274,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             |> Seq.exists ((=)name)
 
         if not exists then
-            semError pos (sprintf "namespace %s does not exist in any currently open assemblies: %A" name env.Assemblies)
+            semError pos (EM.Namespace_not_found name (sprintAssemblies env.Assemblies))
 
         tycheckWith {env with Namespaces=name::env.Namespaces} x
     | rexp.Ref(name, x, pos) ->
@@ -268,23 +286,23 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                     //are we sure we don't want to use LoadFile so that we can use reference in different scopes?
                     Assembly.LoadFrom(name)
                 with _ ->
-                    semError pos (sprintf "Unable to resolve assembly reference: %s" name)
+                    semError pos (EM.Could_not_resolve_assembly name)
         tycheckWith {env with Assemblies=asm::env.Assemblies} x
     | rexp.Not(x,pos) ->
         let x = tycheck x
         if x.Type <> typeof<bool> then
-            semError pos "Not expression must be bool"
+            semError pos (EM.Expected_type_but_got_type "System.Boolean" x.Type.Name)
         else
             texp.Not(x, x.Type)
     | rexp.Cast(x,ty,pos) ->
         let x = tycheck x
         match tryResolveType ty with
-        | None -> semError pos (sprintf "could not resolve cast type: %A" ty)
+        | None -> semError pos (EM.Could_not_resolve_type ty.DisplayValue)
         | Some(ty) ->
             if ty = typeof<System.Void> then
-                semError pos (sprintf "casting to Sytem.Void will always fail")
+                semError pos (EM.Casting_to_void_invalid)
             elif x.Type = ty then
-                semError pos (sprintf "casting a value to itself own type (%s) is a no-op" x.Type.Name)
+                semError pos (EM.Casting_noop x.Type.Name)
             elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
                 texp.Cast(x,ty)
             elif (x.Type = typeof<int> && ty = typeof<float>) || (x.Type = typeof<float> && ty = typeof<int>) then
@@ -299,18 +317,18 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
 
                 match meth with
                 | Some(meth) -> texp.StaticCall(meth, [x], meth.ReturnType)    
-                | None -> semError pos (sprintf "a cast from type %s to the type %s will always fail" x.Type.Name ty.Name)
+                | None -> semError pos (EM.Casting_from_type_to_type_always_invalid x.Type.Name ty.Name)
     | rexp.IfThenElse(x,y,z,pos) ->
         let x = tycheck x
         if x.Type <> typeof<bool> then
-            semError pos (sprintf "test expresion must be boolean not %s" x.Type.Name)
+            semError pos (EM.Expected_type_but_got_type "System.Boolean" x.Type.Name)
         
         let y = tycheck y
         match z with
         | Some(z) ->
             let z = tycheck z
             if y.Type <> z.Type then
-                semError pos (sprintf "then and else branches must be of same type but instead are %s and %s" y.Type.Name z.Type.Name)
+                semError pos (EM.IfThenElse_branch_type_mismatch y.Type.Name z.Type.Name)
             texp.IfThenElse(x,y,z,y.Type)
         | None ->
             if y.Type = typeof<Void> then
@@ -341,7 +359,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             | None when op = Eq && x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type) -> //we know value types are not involved
                 texp.ComparisonBinop(op, x, y)    
             | None ->
-                semError pos (sprintf "No overloads found for binary operator %A with left-hand-side type %A and right-hand-side type %A" op x.Type y.Type)
+                semError pos (EM.No_overload_found_for_binary_operator op.DisplayValue x.Type.Name y.Type.Name)
     | rexp.Nop _ ->
         texp.Nop
     | rexp.VarSet(name, x, pos) ->
@@ -349,25 +367,25 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         match Map.tryFind name env.Variables with
         | Some(ty) -> 
             if x.Type <> ty then
-                semError pos (sprintf "Var %s of type '%s' is not the same type as the expression being assigned, '%s'" name ty.Name x.Type.Name)
+                semError pos (EM.Variable_set_type_mismatch name ty.Name x.Type.Name)
             else
                 texp.VarSet(name, x)
-        | None -> semError pos (sprintf "Var not found in environment: %s" name)
+        | None -> semError pos (EM.Variable_not_found name)
     | rexp.WhileLoop(condition, body, pos) ->
         let condition = tycheck condition
         if condition.Type <> typeof<bool> then
-            semError pos (sprintf "while loop condition must be of type 'bool' but instead is of type '%s'" condition.Type.Name)
+            semError pos (EM.Expected_type_but_got_type "System.Boolean" condition.Type.Name) //todo: NEED PRECISE POSITION INFO HERE!
         else
             let body = tycheckWith {env with IsLoopBody=true} body
             texp.WhileLoop(condition, body)
     | rexp.Break(pos) ->
         if not env.IsLoopBody then
-            semError pos (sprintf "'break()' is only valid inside a loop body")
+            semError pos (EM.Break_outside_of_loop)
         else
             texp.Break
     | rexp.Continue(pos) ->
         if not env.IsLoopBody then
-            semError pos (sprintf "'continue()' is only valid inside a loop body")
+            semError pos (EM.Continue_outside_of_loop)
         else
             texp.Continue
 //
