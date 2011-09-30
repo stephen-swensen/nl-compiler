@@ -13,7 +13,6 @@ let keywords =
         "or", OR
         "xor", XOR
         "open", OPEN
-        "ref", REF //spell out? "reference" or "open assembly" and "open namespace"
         "in", IN
         "if", IF
         "then", THEN

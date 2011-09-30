@@ -267,7 +267,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
     | rexp.Sequential(x,y, pos) ->
         let x, y = tycheck x, tycheck y
         texp.Sequential(x,y,y.Type)
-    | rexp.Open(name, x, pos) ->
+    | rexp.OpenNamespace(name, x, pos) ->
         let exists =
             env.Assemblies
             |> Seq.collect (fun asm -> asm.GetTypes() |> Seq.map (fun ty -> let ns = ty.Namespace in if ns = null then "" else ns.ToLower()))
@@ -277,7 +277,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             semError pos (EM.Namespace_not_found name (sprintAssemblies env.Assemblies))
 
         tycheckWith {env with Namespaces=name::env.Namespaces} x
-    | rexp.Ref(name, x, pos) ->
+    | rexp.OpenAssembly(name, x, pos) ->
         let asm =
             try
                 Assembly.Load(name)
