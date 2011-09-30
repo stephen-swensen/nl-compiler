@@ -8,14 +8,14 @@ module C = Compilation
 
 [<Fact>]
 let ``ref relative path dll`` () =
-    test <@ C.eval<obj> "ref \"xunit.dll\" in Xunit.Record()" :? Xunit.Record @>
+    test <@ C.eval<obj> "open \"xunit.dll\" in Xunit.Record()" :? Xunit.Record @>
 
 [<Fact>]
-let ``ref assembly display name`` () =
-    test <@ C.eval "ref \"System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\" in open System.Web.Mail in SmtpMail.get_SmtpServer()" = "" @>
+let ``open assembly display name`` () =
+    test <@ C.eval "open \"System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\" in open System.Web.Mail in SmtpMail.get_SmtpServer()" = "" @>
 
 [<Fact>]
 let ``connot resolve assembly`` () =
     raisesWith 
-        <@ C.eval "ref \"not an assembly\" in ()" @>
+        <@ C.eval "open \"not an assembly\" in ()" @>
         (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)

@@ -77,9 +77,9 @@ type rexp =
     ///discard left hand side, return right hand side
     | Sequential       of rexp * rexp * PositionRange
     ///open a namespace
-    | Open             of string * rexp * PositionRange
+    | OpenNamespace    of string * rexp * PositionRange
     ///reference an assembly by name or dll path
-    | Ref              of string * rexp * PositionRange
+    | OpenAssembly     of string * rexp * PositionRange
     | Not              of rexp * PositionRange
     | Cast             of rexp * tySig * PositionRange
     | IfThenElse       of rexp * rexp * rexp option * PositionRange //should be pos for each!

@@ -26,7 +26,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token IN EQ
 %token LPAREN RPAREN
 %token COMMA DOT SEMICOLON
-%token OPEN REF
+%token OPEN
 %token LBRACKET RBRACKET
 %token IF THEN ELSE
 %token SET
@@ -202,11 +202,11 @@ rexp:
     
     //open namespace
     | OPEN longName IN rexp                    
-        { rexp.Open($2,$4, range parseState 2 2) }
+        { rexp.OpenNamespace($2,$4, range parseState 2 2) }
     
     //open assembly reference (by assembly name or file name)
-    | REF STRING IN rexp                     
-        { rexp.Ref($2, $4, range parseState 2 2) }
+    | OPEN STRING IN rexp                     
+        { rexp.OpenAssembly($2, $4, range parseState 2 2) }
 
     //if then else expressions
     | IF rexp THEN rexp
