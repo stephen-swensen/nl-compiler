@@ -23,5 +23,5 @@ let ``open expression`` () =
 let ``connot resolve namespace`` () =
     raisesWith 
         <@ C.eval "open hello.world in ()" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|18|])
 

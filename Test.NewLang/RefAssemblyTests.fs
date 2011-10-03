@@ -18,4 +18,4 @@ let ``open assembly display name`` () =
 let ``connot resolve assembly`` () =
     raisesWith 
         <@ C.eval "open \"not an assembly\" in ()" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|19|])
