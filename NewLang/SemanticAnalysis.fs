@@ -381,7 +381,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             if y.Type = typeof<Void> then
                 texp.IfThen(x,y)
             else
-                texp.IfThenElse(x, y, texp.Error(y.Type), y.Type)
+                texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)
     | rexp.ComparisonBinop(op, x, y, pos) ->
         let x, y = tycheck x, tycheck y
 
