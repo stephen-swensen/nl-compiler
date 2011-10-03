@@ -34,6 +34,7 @@ type texp =
     | WhileLoop     of texp * texp
     | Break         
     | Continue
+    | Error         of Type
     with 
         member this.Type =
             match this with
@@ -65,4 +66,6 @@ type texp =
             | Null(ty)
             | Not(_,ty)
             | IfThenElse(_,_,_,ty)
+            //ty is the recovery typeof the expression. (maybe add optional first parameter with the specific branch which was type checked but in error?)
+            | Error(ty)
                 -> ty

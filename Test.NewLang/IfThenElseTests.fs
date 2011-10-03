@@ -1,4 +1,4 @@
-﻿module IfThenElseTests
+﻿module Tests.IfThenElseTests
 
 open Xunit
 open Swensen.Unquote
@@ -9,13 +9,13 @@ module C = Compilation
 let ``ifthenelse condition must be boolean`` () =
     raisesWith 
         <@ C.eval "if 0 then true else false" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``ifthenelse type must be consistent`` () =
     raisesWith 
         <@ C.eval "if true then true else 0" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``simple ifthenelse exp condition is true`` () =

@@ -8,6 +8,8 @@ open Microsoft.FSharp.Text.Lexing
 open Lexer
 open Parser
 
+type EL = ErrorLogger
+
 let emitOpCodes (il:ILGenerator) ast =
     let rec emitWith loopLabel lenv ast =
         let emit = emitWith loopLabel lenv
@@ -153,23 +155,29 @@ let emitOpCodes (il:ILGenerator) ast =
             | Some(_, endBodyLabel) ->
                 il.Emit(OpCodes.Br, endBodyLabel)
             | None ->
-                failwith "invalid break"    
+                failwith "invalid break"
+        | Error _ ->
+            failwith "Should not be emitting opcodes for an ast with errors"
 
     emitWith None Map.empty ast |> ignore
 
 ///parse from the lexbuf with the given semantic environment
 let parseWith env lexbuf =
     try 
-        Parser.start Lexer.tokenize lexbuf
+        Parser.start Lexer.tokenize lexbuf 
         |> SemanticAnalysis.tycheckWith env
     with
-    | SemanticAnalysisException(pr,errMsg) ->
-        raise <| CompilerException(CompilerError(pr, CompilerErrorType.Semantic, CompilerErrorLevel.Error, errMsg.Code, errMsg.Message))
+    | CompilerInterruptException ->
+        texp.Error(typeof<Void>)
     //fslex/yacc do not use specific exception types
     | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
-        raise <| CompilerException(CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), CompilerErrorType.Syntactic, CompilerErrorLevel.Error, -1, e.Message))
+        EL.ActiveLogger.Log
+            (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Syntactic, ErrorLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
+        texp.Error(typeof<Void>)
     | e ->
-        raise <| CompilerException(CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), CompilerErrorType.Internal, CompilerErrorLevel.Error, -1, e.ToString()))
+        EL.ActiveLogger.Log
+            (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Internal, ErrorLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
+        texp.Error(typeof<Void>)
 
 ///parse from the string with the given semantic environment
 let parseFromStringWith env code =
@@ -194,13 +202,22 @@ let dmFromAst (ast:texp) =
     il.Emit(OpCodes.Ret)
     dm
 
-///Create a dynamic method from a string using the default environment
-let dmFromString = parseFromString>>dmFromAst
+//should have "tryEval" which doesn't throw?
 
-///evaluate a string using the default environment
+///Evaluate an NL code string using the default environment.
+///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let eval<'a> code : 'a = 
-    let dm = (dmFromString code)
-    dm.Invoke(null,null) |> unbox
+    EL.InstallDefaultLogger()
+    let ast = parseFromString code
+    match EL.ActiveLogger.ErrorCount with
+    | 0 ->
+        let dm = (dmFromAst ast)
+        dm.Invoke(null,null) |> unbox
+    | _ ->
+        raise (EvaluationException(EL.ActiveLogger.Errors |> Seq.toArray))
+
+//TODO: the following methods are used for nlc.exe and nli.exe. in the future we will have 
+//specialized methodss for the Compiler service, vs. nlc.exe, vs. nli.exe with APPRORPIATE ERRORLOGGERS installed.
 
 //todo: currently this function compilies an expression to a single method
 //      set as the entry point of an assembly, obviously this needs to evolve.

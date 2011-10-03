@@ -38,7 +38,7 @@ let ``null literal`` () =
 let ``null literal of value type is invalid`` () =
     raisesWith
         <@ C.eval "null[int32]" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``literal typeof value type`` () =
