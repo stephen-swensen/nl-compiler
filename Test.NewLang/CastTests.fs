@@ -35,13 +35,13 @@ let ``downcast and upcast value type to and from interface`` () =
 let ``semantic error trying to cast sealed value type to anything other than object or implemented interface `` () =
     raisesWith 
         <@ C.eval "32[string]" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|22|])
 
 [<Fact>]
 let ``semantic error trying to cast sealed ref type to anything other than object or implemented interface `` () =
     raisesWith 
         <@ C.eval "\"asdf\"[char]" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|22|])
 
 [<Fact>] //fixed
 let ``cast var - does not needs to be surrounded with parens`` () =
@@ -57,7 +57,7 @@ let ``cast var has more than one generic ty arg`` () =
 let ``cannot cast value to its own type`` () =
     raisesWith 
         <@ C.eval "3[int32]" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|21|])
 
 [<Fact>]
 let ``cast int to double, a widening coersion`` () =
@@ -79,4 +79,4 @@ let ``cast biginteger to int32, a biginteger.op_explicit `` () =
 let ``casting to Void will always fail`` () =
     raisesWith 
         <@ C.eval "3[object][System.Void]" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|20|])

@@ -15,7 +15,7 @@ let ``ifthenelse condition must be boolean`` () =
 let ``ifthenelse type must be consistent`` () =
     raisesWith 
         <@ C.eval "if true then true else 0" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|23|])
 
 [<Fact>]
 let ``simple ifthenelse exp condition is true`` () =

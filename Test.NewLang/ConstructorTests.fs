@@ -55,4 +55,4 @@ let ``resolve complex generic signature in constructor`` () =
 let ``Void cannot be instantiated`` () =
     raisesWith 
         <@ C.eval "System.Void()" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|14|])

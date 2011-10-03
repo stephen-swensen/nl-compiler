@@ -147,7 +147,7 @@ module ErrorMessage =
         mk ErrorLevel.Error ErrorType.Semantic 15 pos "Could not resolve constructor for type '%s' with argument types %s"
 
     let Void_invalid_in_let_binding pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 16 pos "System.Void is not a valid assignment value in a let binding"
+        mk ErrorLevel.Error ErrorType.Semantic 16 pos "'System.Void' is not a valid assignment value in a let binding"
 
     let Unreachable_code_detected pos = 
         mk ErrorLevel.Error ErrorType.Semantic 17 pos "Unreachable code detected"

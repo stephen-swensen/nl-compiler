@@ -9,13 +9,13 @@ module C = Compilation
 let ``lhs of and  must be bool`` () =
     raisesWith 
         <@ C.eval "3 and true" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|6|])
 
 [<Fact>]
 let ``rhs of and  must be bool`` () =
     raisesWith 
         <@ C.eval "true and 3" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|23|])
 
 [<Fact>]
 let ``true and true`` () =
@@ -37,13 +37,13 @@ let ``false and false`` () =
 let ``lhs of or  must be bool`` () =
     raisesWith 
         <@ C.eval "3 or true" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|6|])
 
 [<Fact>]
 let ``rhs of or  must be bool`` () =
     raisesWith 
         <@ C.eval "true or 3" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|23|])
 
 [<Fact>]
 let ``true or true`` () =
@@ -65,13 +65,13 @@ let ``false or false`` () =
 let ``lhs of xor  must be bool`` () =
     raisesWith 
         <@ C.eval "3 xor true" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|6|])
 
 [<Fact>]
 let ``rhs of xor  must be bool`` () =
     raisesWith 
         <@ C.eval "true xor 3" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|6|])
 
 [<Fact>]
 let ``true xor true`` () =

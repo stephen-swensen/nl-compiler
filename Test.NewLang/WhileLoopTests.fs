@@ -10,13 +10,13 @@ module C = Compilation
 let ``break not allowed outside of while loop`` () =
     raisesWith 
         <@ C.eval "break()" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|8|])
 
 [<Fact>]
 let ``continue not allowed outside of while loop`` () =
     raisesWith 
         <@ C.eval "continue()" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|9|])
 
 [<Fact>]
 let ``simple while loop`` () =
