@@ -33,7 +33,7 @@ let ``var ids are case insensitive`` () =
 let ``Void not valid in let binding`` () =
     raisesWith 
         <@ C.eval "x = console.writeline(\"asdf\") in x" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``Var set`` () =

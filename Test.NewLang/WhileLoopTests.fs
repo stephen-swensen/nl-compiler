@@ -1,4 +1,4 @@
-﻿module WhileLoopTests
+﻿module Tests.WhileLoopTests
 
 open Xunit
 open Swensen.Unquote
@@ -10,13 +10,13 @@ module C = Compilation
 let ``break not allowed outside of while loop`` () =
     raisesWith 
         <@ C.eval "break()" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``continue not allowed outside of while loop`` () =
     raisesWith 
         <@ C.eval "continue()" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``simple while loop`` () =

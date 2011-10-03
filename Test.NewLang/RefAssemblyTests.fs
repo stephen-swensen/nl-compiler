@@ -18,4 +18,4 @@ let ``open assembly display name`` () =
 let ``connot resolve assembly`` () =
     raisesWith 
         <@ C.eval "open \"not an assembly\" in ()" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])

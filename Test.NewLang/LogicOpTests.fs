@@ -1,4 +1,4 @@
-﻿module LogicOpTests
+﻿module Tests.LogicOpTests
 
 open Xunit
 open Swensen.Unquote
@@ -9,13 +9,13 @@ module C = Compilation
 let ``lhs of and  must be bool`` () =
     raisesWith 
         <@ C.eval "3 and true" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``rhs of and  must be bool`` () =
     raisesWith 
         <@ C.eval "true and 3" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``true and true`` () =
@@ -37,13 +37,13 @@ let ``false and false`` () =
 let ``lhs of or  must be bool`` () =
     raisesWith 
         <@ C.eval "3 or true" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``rhs of or  must be bool`` () =
     raisesWith 
         <@ C.eval "true or 3" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``true or true`` () =
@@ -65,13 +65,13 @@ let ``false or false`` () =
 let ``lhs of xor  must be bool`` () =
     raisesWith 
         <@ C.eval "3 xor true" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``rhs of xor  must be bool`` () =
     raisesWith 
         <@ C.eval "true xor 3" @>
-        (fun (e:CompilerException) -> <@ e.CompilerError.Type = CompilerErrorType.Semantic @>)
+        (expectedErrors [|-1|])
 
 [<Fact>]
 let ``true xor true`` () =

@@ -1,4 +1,5 @@
 ﻿namespace Tests
+open Swensen.NewLang
 
 [<AutoOpen>]
 module Helpers =
@@ -8,6 +9,11 @@ module Helpers =
     let openNamespace = "open Tests in "
     ///prefix used to reference this assembly and this namespace in dynamic NewLang tests
     let openPrefix = openAsm + openNamespace
+
+    let expectedErrors codes = 
+        fun (e:EvaluationException) ->
+            let errors = e.Errors
+            <@ errors |> Array.map (fun err -> err.Code) = codes @>
 
 type Test1() =
     member __.DoIt1<'a>() = Unchecked.defaultof<'a>
