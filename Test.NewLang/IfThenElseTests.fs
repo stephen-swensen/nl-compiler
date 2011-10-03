@@ -9,7 +9,7 @@ module C = Compilation
 let ``ifthenelse condition must be boolean`` () =
     raisesWith 
         <@ C.eval "if 0 then true else false" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|6|])
 
 [<Fact>]
 let ``ifthenelse type must be consistent`` () =
