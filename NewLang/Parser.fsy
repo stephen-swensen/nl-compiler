@@ -84,7 +84,7 @@ rexp:
     //-- logical binary operators --
 
     | rexp XOR rexp                             
-        { rexp.Xor($1, $3, range parseState 2 2) }
+        { rexp.Xor(($1, range parseState 1 1), ($3, range parseState 3 3)) }
     | rexp OR rexp                             
         { rexp.Or($1,$3, range parseState 2 2) }
     | rexp AND rexp                             

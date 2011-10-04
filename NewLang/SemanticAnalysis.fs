@@ -208,7 +208,33 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 EM.No_overload_found_for_binary_operator pos op.DisplayValue x.Type.Name y.Type.Name
                 texp.Error(x.Type) //error recovery: best guess of intended return type
             | Some(meth) ->
+                texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType) 
+    | rexp.ComparisonBinop(op, x, y, pos) ->
+        let x, y = tycheck x, tycheck y
+
+        if x.Type = typeof<int> && y.Type = typeof<float> then
+            texp.ComparisonBinop(op, texp.Coerce(x,typeof<float>), y)
+        elif x.Type = typeof<float> && y.Type = typeof<int> then
+            texp.ComparisonBinop(op, x, texp.Coerce(y,typeof<float>))
+        else
+            let opName =
+                match op with
+                | Eq -> "op_Equality"
+                | Lt -> "op_LessThan"
+                | Gt -> "op_GreaterThan"
+            
+            let meth = seq {
+                yield tryResolveMethod x.Type opName staticFlags [||] [|x.Type; y.Type|]
+                yield tryResolveMethod y.Type opName staticFlags [||] [|x.Type; y.Type|] } |> Seq.tryPick id
+
+            match meth with
+            | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
+            | None when op = Eq && x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type) -> //we know value types are not involved
+                texp.ComparisonBinop(op, x, y)    
+            | None ->
+                EM.No_overload_found_for_binary_operator pos op.DisplayValue x.Type.Name y.Type.Name
+                texp.Error(typeof<bool>)   
     | rexp.NameCall(longName, genericArgs, args, pos) -> //todo: need more position info for different tokens
         let namePrefix, methodName =
             let split = longName.Split('.')
@@ -360,54 +386,44 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 | None -> 
                     EM.Casting_from_type_to_type_always_invalid pos x.Type.Name ty.Name
                     texp.Error(ty)
-    | rexp.IfThenElse(x,y,z,pos) ->
-        let x = 
-            let x = tycheck x
-            if x.Type <> typeof<bool> then
-                EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
+    | rexp.Xor((x,xpos),(y,ypos)) ->
+        let x =
+            match tycheck x with
+            | x when x.Type <> typeof<bool> -> 
+                EM.Expected_type_but_got_type xpos "System.Bool" x.Type.Name
+                texp.Error(typeof<bool>)
+            | x -> x
+
+        let y = 
+            match tycheck y with
+            | y when y.Type <> typeof<bool> ->
+                EM.Expected_type_but_got_type ypos "System.Bool" y.Type.Name
+                texp.Error(typeof<bool>)
+            | y -> y
+        texp.Xor(x,y)
+    | rexp.IfThenElse(condition,thenBranch,elseBranch,pos) ->
+        let condition = 
+            let condition = tycheck condition
+            if condition.Type <> typeof<bool> then
+                EM.Expected_type_but_got_type pos "System.Boolean" condition.Type.Name
                 texp.Error(typeof<bool>)
             else
-                x
-        let y = tycheck y
-        match z with
-        | Some(z) ->
-            let z = tycheck z
-            if y.Type <> z.Type then
-                EM.IfThenElse_branch_type_mismatch pos y.Type.Name z.Type.Name
-                texp.IfThenElse(x,y, texp.Error(y.Type), y.Type)
+                condition
+        let thenBranch = tycheck thenBranch
+        match elseBranch with
+        | Some(elseBranch) ->
+            let elseBranch = tycheck elseBranch
+            if thenBranch.Type <> elseBranch.Type then
+                //maybe could use 
+                EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
+                texp.IfThenElse(condition,thenBranch, texp.Error(thenBranch.Type), thenBranch.Type)
             else
-                texp.IfThenElse(x,y,z,y.Type)
+                texp.IfThenElse(condition,thenBranch,elseBranch,thenBranch.Type)
         | None ->
-            if y.Type = typeof<Void> then
-                texp.IfThen(x,y)
+            if thenBranch.Type = typeof<Void> then
+                texp.IfThen(condition,thenBranch)
             else
-                texp.IfThenElse(x, y, texp.Default(y.Type), y.Type)
-    | rexp.ComparisonBinop(op, x, y, pos) ->
-        let x, y = tycheck x, tycheck y
-
-        if x.Type = typeof<int> && y.Type = typeof<float> then
-            texp.ComparisonBinop(op, texp.Coerce(x,typeof<float>), y)
-        elif x.Type = typeof<float> && y.Type = typeof<int> then
-            texp.ComparisonBinop(op, x, texp.Coerce(y,typeof<float>))
-        else
-            let opName =
-                match op with
-                | Eq -> "op_Equality"
-                | Lt -> "op_LessThan"
-                | Gt -> "op_GreaterThan"
-            
-            let meth = seq {
-                yield tryResolveMethod x.Type opName staticFlags [||] [|x.Type; y.Type|]
-                yield tryResolveMethod y.Type opName staticFlags [||] [|x.Type; y.Type|] } |> Seq.tryPick id
-
-            match meth with
-            | Some(meth) ->
-                texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
-            | None when op = Eq && x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type) -> //we know value types are not involved
-                texp.ComparisonBinop(op, x, y)    
-            | None ->
-                EM.No_overload_found_for_binary_operator pos op.DisplayValue x.Type.Name y.Type.Name
-                texp.Error(typeof<bool>)
+                texp.IfThenElse(condition, thenBranch, texp.Default(thenBranch.Type), thenBranch.Type)
     | rexp.Nop _ ->
         texp.Nop
     | rexp.VarSet(name, x, pos) ->
