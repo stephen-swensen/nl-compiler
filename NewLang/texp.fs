@@ -35,6 +35,7 @@ type texp =
     | Break         
     | Continue
     | Error         of Type
+    | Xor           of texp * texp
     with 
         member this.Type =
             match this with
@@ -44,13 +45,14 @@ type texp =
             | Char(_)                -> typeof<char>
             | Bool(_)                -> typeof<bool>
             | Typeof(_)              -> typeof<Type>
-            | IfThen(_,_)            -> typeof<System.Void>
+            | IfThen(_,_)            -> typeof<Void>
             | ComparisonBinop(_,_,_) -> typeof<bool>
             | Nop                    -> typeof<Void>
             | VarSet(_,_)            -> typeof<Void>
             | Break                  -> typeof<Void>
             | Continue               -> typeof<Void>
             | WhileLoop(_,_)         -> typeof<Void>
+            | Xor(_,_)               -> typeof<bool>
         //    | NliReturn _            -> typeof<obj[]>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)

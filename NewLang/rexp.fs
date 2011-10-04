@@ -89,6 +89,7 @@ type rexp =
     | WhileLoop        of rexp * rexp * PositionRange
     | Break            of PositionRange
     | Continue         of PositionRange
+    | Xor              of (rexp * PositionRange) * (rexp * PositionRange)
     with
         static member Or(lhs:rexp, rhs:rexp, pos:PositionRange) =
             rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)
@@ -98,8 +99,6 @@ type rexp =
             rexp.Or(rexp.ComparisonBinop(Lt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
         static member GtEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
             rexp.Or(rexp.ComparisonBinop(Gt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
-        static member Xor(lhs:rexp, rhs:rexp, pos:PositionRange) =
-            rexp.IfThenElse(lhs, rexp.Not(rhs, pos), Some(rhs), pos)
         static member And(lhs:rexp, rhs:rexp, pos:PositionRange) =
             rexp.IfThenElse(lhs, rhs, Some(rexp.Bool(false)), pos)
 

@@ -156,6 +156,9 @@ let emitOpCodes (il:ILGenerator) ast =
                 il.Emit(OpCodes.Br, endBodyLabel)
             | None ->
                 failwith "invalid break"
+        | Xor(x,y) ->
+            emitAll [x;y]
+            il.Emit(OpCodes.Xor)
         | Error _ ->
             failwith "Should not be emitting opcodes for an ast with errors"
 

@@ -101,4 +101,14 @@ let ``static operator <= true when ==`` () =
 let ``static operator <= true when <`` () =
     test <@ C.eval "biginteger(-1) <= biginteger(0)" = true @>
 
+[<Fact(Skip="todo")>]
+let ``boxed value types of same value are equal`` () =
+    test <@ C.eval "3[object] == 3[object]" = true @>
+
+[<Fact(Skip="todo")>]
+let ``can't compare boxed object to value type`` () =
+    test <@ C.eval "3[object] == 3" = true @>
+
+
+
 //still got a bunch more cases to go

@@ -71,7 +71,7 @@ let ``lhs of xor  must be bool`` () =
 let ``rhs of xor  must be bool`` () =
     raisesWith 
         <@ C.eval "true xor 3" @>
-        (expectedErrors [|6|])
+        (expectedErrors [|6|]) //double reporting error since synthetic ifthenelse constructions in rexpr.
 
 [<Fact>]
 let ``true xor true`` () =
