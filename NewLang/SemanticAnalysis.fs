@@ -26,6 +26,10 @@ let staticFlags = BindingFlags.Static ||| BindingFlags.Public ||| BindingFlags.I
 let coerceIfNeeded expectedTy (targetExp:texp) =
     if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
 
+let coerceEachIfNeeded expectedTys targetExps =
+    List.zip expectedTys targetExps
+    |> List.map (fun (targetTy, targetExp) -> coerceIfNeeded targetTy targetExp)
+
 let castIfNeeded expectedTy (targetExp:texp) =
     if targetExp.Type <> expectedTy then Cast(targetExp,expectedTy) else targetExp
 
@@ -211,30 +215,34 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType) 
     | rexp.ComparisonBinop(op, x, y, pos) ->
         let x, y = tycheck x, tycheck y
-
-        if x.Type = typeof<int> && y.Type = typeof<float> then
-            texp.ComparisonBinop(op, texp.Coerce(x,typeof<float>), y)
-        elif x.Type = typeof<float> && y.Type = typeof<int> then
-            texp.ComparisonBinop(op, x, texp.Coerce(y,typeof<float>))
-        else
-            let opName =
-                match op with
-                | Eq -> "op_Equality"
-                | Lt -> "op_LessThan"
-                | Gt -> "op_GreaterThan"
-            
+        
+        //todo: refactor this tower stuff!
+        let tower = [(typeof<int>, 1); (typeof<float>, 2)]
+        let heightInTower inputTy = tower |> List.tryPick (fun (towerTy, height) -> if inputTy = towerTy then Some(height) else None)
+        let towerTy = 
+            match heightInTower x.Type, heightInTower y.Type with
+            | Some(xheight), Some(yheight) ->
+                Some(if xheight > yheight then x.Type else y.Type)
+            | _ -> None
+                
+        //first numeric tower value type cases
+        match towerTy with
+        | Some(towerTy) ->
+            texp.ComparisonBinop(op, coerceIfNeeded towerTy x, coerceIfNeeded towerTy y)
+        | None ->
+            //next operator overloads
             let meth = seq {
-                yield tryResolveMethod x.Type opName staticFlags [||] [|x.Type; y.Type|]
-                yield tryResolveMethod y.Type opName staticFlags [||] [|x.Type; y.Type|] } |> Seq.tryPick id
+                yield tryResolveMethod x.Type op.Name staticFlags [||] [|x.Type; y.Type|]
+                yield tryResolveMethod y.Type op.Name staticFlags [||] [|x.Type; y.Type|] } |> Seq.tryPick id
 
-            match meth with
-            | Some(meth) ->
+            match meth, op with
+            | Some(meth), _ ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
-            | None when op = Eq && x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type) -> //we know value types are not involved
+            | None, (Eq | Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> //reference equals
                 texp.ComparisonBinop(op, x, y)    
-            | None ->
-                EM.No_overload_found_for_binary_operator pos op.DisplayValue x.Type.Name y.Type.Name
-                texp.Error(typeof<bool>)   
+            | None, _ ->
+                EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
+                texp.Error(typeof<bool>)
     | rexp.NameCall(longName, genericArgs, args, pos) -> //todo: need more position info for different tokens
         let namePrefix, methodName =
             let split = longName.Split('.')
