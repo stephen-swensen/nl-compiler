@@ -101,9 +101,11 @@ let ``static operator <= true when ==`` () =
 let ``static operator <= true when <`` () =
     test <@ C.eval "biginteger(-1) <= biginteger(0)" = true @>
 
-[<Fact(Skip="todo")>]
-let ``boxed value types of same value are equal`` () =
-    test <@ C.eval "3[object] == 3[object]" = true @>
+//note: in F# box 3 = box 3 is true, whereas in C# (object) 3 == (object) 3 is false
+//we'll keep the C# semantics for now
+//[<Fact(Skip="todo")>]
+//let ``boxed value types of same value are equal`` () =
+//    test <@ C.eval "3[object] == 3[object]" = true @>
 
 [<Fact(Skip="todo")>]
 let ``can't compare boxed object to value type`` () =
