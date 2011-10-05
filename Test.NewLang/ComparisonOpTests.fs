@@ -1,4 +1,4 @@
-﻿module ComparisonOpTests
+﻿module Tests.ComparisonOpTests
 
 open Xunit
 open Swensen.Unquote
@@ -107,10 +107,16 @@ let ``static operator <= true when <`` () =
 //let ``boxed value types of same value are equal`` () =
 //    test <@ C.eval "3[object] == 3[object]" = true @>
 
-[<Fact(Skip="todo")>]
+[<Fact>]
 let ``can't compare boxed object to value type`` () =
-    test <@ C.eval "3[object] == 3" = true @>
+    raisesWith 
+        <@ C.eval "3[object] == 3" = true @>
+        (expectedErrors [|3|])
 
-
+[<Fact>]
+let ``can't compare value type to boxed object`` () =
+    raisesWith 
+        <@ C.eval "3 == 3[object]" = true @>
+        (expectedErrors [|3|])
 
 //still got a bunch more cases to go

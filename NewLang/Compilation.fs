@@ -40,6 +40,18 @@ let emitOpCodes (il:ILGenerator) ast =
             | Eq -> il.Emit(OpCodes.Ceq)
             | Lt -> il.Emit(OpCodes.Clt)
             | Gt -> il.Emit(OpCodes.Cgt)
+            | Neq -> 
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Ceq)
+            | LtEq ->
+                il.Emit(OpCodes.Cgt)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Ceq)
+            | GtEq ->
+                il.Emit(OpCodes.Clt)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Ceq)
         | Let(name, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit assign

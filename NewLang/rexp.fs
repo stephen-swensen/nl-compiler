@@ -22,14 +22,26 @@ type logicBinop = And | Or | XOr
             | XOr -> "xor"
         member x.DisplayValue = x.ToString()
 
-type comparisonBinop = Eq | Lt | Gt
+///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
+type comparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
     with
-        override x.ToString() =
+        member x.Symbol =
             match x with
             | Eq -> "=="
             | Lt -> "<"
             | Gt -> ">"
-        member x.DisplayValue = x.ToString()
+            | LtEq -> "<="
+            | GtEq -> ">="
+            | Neq -> "~="
+
+        member x.Name =
+            match x with
+            | Eq -> "op_Equality"
+            | Lt -> "op_LessThan"
+            | Gt -> "op_GreaterThan"
+            | LtEq -> "op_LessThanOrEqual"
+            | GtEq -> "op_GreaterThanOrEqual"
+            | Neq -> "op_Inequality"
 
 type tySig =
     | TySig of string * tySig list
@@ -93,12 +105,12 @@ type rexp =
     with
         static member Or(lhs:rexp, rhs:rexp, pos:PositionRange) =
             rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)
-        static member NotEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
-            rexp.Not(rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
-        static member LtEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
-            rexp.Or(rexp.ComparisonBinop(Lt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
-        static member GtEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
-            rexp.Or(rexp.ComparisonBinop(Gt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
+//        static member NotEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
+//            rexp.Not(rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
+//        static member LtEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
+//            rexp.Or(rexp.ComparisonBinop(Lt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
+//        static member GtEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
+//            rexp.Or(rexp.ComparisonBinop(Gt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
         static member And(lhs:rexp, rhs:rexp, pos:PositionRange) =
             rexp.IfThenElse(lhs, rhs, Some(rexp.Bool(false)), pos)
 
