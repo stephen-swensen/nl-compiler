@@ -25,7 +25,7 @@ let sprintTypes (tarr:Type seq) =
     sprintSeqForDisplay tarr (fun ty -> ty.Name)
 
 let sprintTySigs (tarr:tySig seq) =
-    sprintSeqForDisplay tarr (fun ty -> ty.DisplayValue)
+    sprintSeqForDisplay tarr (fun ty -> ty.Name)
 
 let sprintAssemblies (tarr:Assembly seq) =
     sprintSeqForDisplay tarr (fun asm -> asm.FullName)
@@ -154,7 +154,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
     | rexp.Null(name, pos)   -> 
         match tryResolveType name with
         | None -> 
-            EM.Could_not_resolve_type pos name.DisplayValue //todo: specific pos for ty name
+            EM.Could_not_resolve_type pos name.Name //todo: specific pos for ty name
             abort()
         | Some(ty) ->
             if ty.IsValueType then
@@ -165,7 +165,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
     | rexp.Typeof(name, pos)   -> 
         match tryResolveType name with
         | None -> 
-            EM.Could_not_resolve_type pos name.DisplayValue
+            EM.Could_not_resolve_type pos name.Name
             texp.Typeof(typeof<obj>) //error recovery: this is a runtime value that won't hurt us error 
         | Some(ty) -> 
             texp.Typeof(ty)
@@ -280,7 +280,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
     | rexp.GenericTypeStaticCall(tyName, tyGenericArgs, methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
         match tryResolveType (TySig(tyName, tyGenericArgs)) with
         | None -> 
-            EM.Could_not_resolve_type pos (TySig(tyName,tyGenericArgs).DisplayValue)
+            EM.Could_not_resolve_type pos (TySig(tyName,tyGenericArgs).Name)
             abort()
         | Some(ty) ->
             let args = args |> List.map (tycheck)
@@ -358,7 +358,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         let x = tycheck x
         match tryResolveType ty with
         | None -> 
-            EM.Could_not_resolve_type pos ty.DisplayValue
+            EM.Could_not_resolve_type pos ty.Name
             abort()
         | Some(ty) ->
             if ty = typeof<System.Void> then
