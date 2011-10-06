@@ -3,6 +3,17 @@
 open System
 open System.Reflection
 
+///Functions for calculating primitive type widening
+module NumericTower =
+        //todo: refactor this tower stuff!
+    let private tower = [(typeof<int>, 1); (typeof<float>, 2)]
+    let heightInTower inputTy = tower |> List.tryPick (fun (towerTy, height) -> if inputTy = towerTy then Some(height) else None)
+    let tallestTy xTy yTy = 
+        match heightInTower xTy, heightInTower yTy with
+        | Some(xheight), Some(yheight) ->
+            Some(if xheight > yheight then xTy else yTy)
+        | _ -> None
+
 module EM = ErrorMessage
 let abort() = raise CompilerInterruptException
 
@@ -178,22 +189,18 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
     | rexp.NumericBinop(op,x,y,pos) ->
         let x, y = tycheck x, tycheck y
-        let retTy =
-            if x.Type = typeof<float> || y.Type = typeof<float> then
-                Some(typeof<float>)
-            elif x.Type = typeof<int> && y.Type = typeof<int> then
-                Some(typeof<int>)
-            else
-                None
-        match retTy with
-        | Some(retTy) -> //primitive
-            texp.NumericBinop(op, coerceIfNeeded retTy x, coerceIfNeeded retTy y, retTy)
+        
+        match NumericTower.tallestTy x.Type y.Type with
+        | Some(tallestTy) -> //primitive
+            texp.NumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
         | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string concat
-            let meth = typeof<System.String>.GetMethod("Concat",[|x.Type; y.Type|])
-            if meth = null then //TODO: TRY RESOLVE AND PRODUCE ERROR MESSAGE IN ONE STROKE
-                EM.Invalid_static_method pos "Concat" "System.String" (sprintTypes [|x.Type; y.Type|])
+            let meth = tryResolveMethod typeof<System.String> "Concat" staticFlags [||] [|x.Type; y.Type|]
+            match meth with
+            | None ->
+                //there should always be a String.Concat(obj,obj) overload
+                EM.Internal_error pos (sprintf "Could not resolve 'String.Concat' ('+') overload for argument types '%s' and '%s'" x.Type.Name y.Type.Name)
                 texp.String("") //error recovery
-            else
+            | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
         | None -> //static "op_*" overloads
             let meth = seq {
@@ -208,20 +215,11 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType) 
     | rexp.ComparisonBinop(op, x, y, pos) ->
         let x, y = tycheck x, tycheck y
-        
-        //todo: refactor this tower stuff!
-        let tower = [(typeof<int>, 1); (typeof<float>, 2)]
-        let heightInTower inputTy = tower |> List.tryPick (fun (towerTy, height) -> if inputTy = towerTy then Some(height) else None)
-        let towerTy = 
-            match heightInTower x.Type, heightInTower y.Type with
-            | Some(xheight), Some(yheight) ->
-                Some(if xheight > yheight then x.Type else y.Type)
-            | _ -> None
-                
+                        
         //first numeric tower value type cases
-        match towerTy with
-        | Some(towerTy) ->
-            texp.ComparisonBinop(op, coerceIfNeeded towerTy x, coerceIfNeeded towerTy y)
+        match NumericTower.tallestTy x.Type y.Type with
+        | Some(tallestTy) ->
+            texp.ComparisonBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y)
         | None ->
             //next operator overloads
             let meth = seq {

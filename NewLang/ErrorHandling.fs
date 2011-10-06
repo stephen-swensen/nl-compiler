@@ -170,8 +170,13 @@ module ErrorMessage =
     let IfThenElse_branch_type_mismatch pos =
         mk ErrorLevel.Error ErrorType.Semantic 23 pos "'if ... then' and 'else' branches must be of same type but instead are '%s' and '%s'"
 
+    let Internal_error pos =
+        mk ErrorLevel.Error ErrorType.Internal 24 pos "%s"
+
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
 exception EvaluationException of CompilerError[]
     with 
         member this.Errors = this.Data0
+
+exception CompilerInternalErrorException
