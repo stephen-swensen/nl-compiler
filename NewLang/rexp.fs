@@ -5,22 +5,28 @@ open Microsoft.FSharp.Text.Lexing
 
 type numericBinop = Plus | Minus | Times | Div
     with
-        override x.ToString() =
+        member x.Name =
+            match x with
+            | Plus -> "op_Addition"
+            | Minus -> "op_Subtraction"
+            | Div -> "op_Division"
+            | Times -> "op_Multiply"
+
+        member x.Symbol =
             match x with
             | Plus -> "+"
             | Minus -> "-"
             | Times -> "*"
             | Div -> "/"
-        member x.DisplayValue = x.ToString()
 
-type logicBinop = And | Or | XOr
-    with
-        override x.ToString() =
-            match x with
-            | And -> "and"
-            | Or -> "or"
-            | XOr -> "xor"
-        member x.DisplayValue = x.ToString()
+//type logicBinop = And | Or | XOr
+//    with
+//        override x.ToString() =
+//            match x with
+//            | And -> "and"
+//            | Or -> "or"
+//            | XOr -> "xor"
+//        member x.DisplayValue = x.ToString()
 
 ///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
 type comparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
@@ -105,12 +111,6 @@ type rexp =
     with
         static member Or(lhs:rexp, rhs:rexp, pos:PositionRange) =
             rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)
-//        static member NotEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
-//            rexp.Not(rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
-//        static member LtEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
-//            rexp.Or(rexp.ComparisonBinop(Lt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
-//        static member GtEq(lhs:rexp, rhs:rexp, pos:PositionRange) =
-//            rexp.Or(rexp.ComparisonBinop(Gt, lhs, rhs, pos), rexp.ComparisonBinop(Eq, lhs, rhs, pos), pos)
         static member And(lhs:rexp, rhs:rexp, pos:PositionRange) =
             rexp.IfThenElse(lhs, rhs, Some(rexp.Bool(false)), pos)
 

@@ -196,20 +196,13 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             else
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
         | None -> //static "op_*" overloads
-            let opName =
-                match op with
-                | Plus -> "op_Addition"
-                | Minus -> "op_Subtraction"
-                | Div -> "op_Division"
-                | Times -> "op_Multiply"
-            
             let meth = seq {
-                yield x.Type.GetMethod(opName, [|x.Type; y.Type|])
-                yield y.Type.GetMethod(opName, [|x.Type; y.Type|]) } |> Seq.tryFind ((<>)null)
+                yield tryResolveMethod x.Type op.Name staticFlags [||] [|x.Type; y.Type|]
+                yield tryResolveMethod y.Type op.Name staticFlags [||] [|x.Type; y.Type|] } |> Seq.tryPick id
 
             match meth with
             | None ->
-                EM.No_overload_found_for_binary_operator pos op.DisplayValue x.Type.Name y.Type.Name
+                EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                 texp.Error(x.Type) //error recovery: best guess of intended return type
             | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType) 
