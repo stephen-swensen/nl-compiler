@@ -198,7 +198,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             match meth with
             | None ->
                 //there should always be a String.Concat(obj,obj) overload
-                EM.Internal_error pos (sprintf "Could not resolve 'String.Concat' ('+') overload for argument types '%s' and '%s'" x.Type.Name y.Type.Name)
+                EM.Internal_error pos (sprintf "Could not resolve 'String.Concat' synthetic '+' overload for argument types %s" (sprintTypes [x.Type; y.Type]))
                 texp.String("") //error recovery
             | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
@@ -389,7 +389,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         let x =
             match tycheck x with
             | x when x.Type <> typeof<bool> -> 
-                EM.Expected_type_but_got_type xpos "System.Bool" x.Type.Name
+                EM.Expected_type_but_got_type xpos "System.Boolean" x.Type.Name
                 texp.Error(typeof<bool>)
             | x -> x
 
