@@ -61,12 +61,11 @@ type tySig =
 //val it : string = "hi[bye]"
 //> TySig("hi",[TySig("bye",[]); TySig("night",[])]).ToString();;
 //val it : string = "hi[bye,night]"
-        override x.ToString() =
+        member x.Name =
             let rec build = function
                 | TySig(name, []) -> name
                 | TySig(name, xl) -> name + "[" + (xl |> List.map build |> String.concat ",") + "]"
             build x
-        member x.DisplayValue = x.ToString() //call "Name"?
 
 ///Raw (untyped) parsed expression
 type rexp =
