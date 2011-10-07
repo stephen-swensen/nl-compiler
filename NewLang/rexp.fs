@@ -66,7 +66,7 @@ type rexp =
     | Null             of tySig * PositionRange
     | Typeof           of tySig * PositionRange
     | NumericBinop     of numericBinop * rexp * rexp * PositionRange
-    | Pow              of rexp * rexp * PositionRange
+    | Pow              of (rexp * PositionRange) * (rexp * PositionRange)
     | UMinus           of rexp * PositionRange
     //| Fact             of rexp * PositionRange
     ///bind a variable

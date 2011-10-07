@@ -180,13 +180,24 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
 //        else
 //            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
 //            texp.StaticCall(meth, [x], meth.ReturnType)
-    | rexp.Pow(x,y,pos) ->
-        let x, y = tycheck x, tycheck y
+    | rexp.Pow((x,xpos), (y,ypos)) ->
+        let floatHeight = (NumericTower.heightInTower typeof<float>).Value //assert?
+        let tycheckPowArg arg pos =
+            let arg = tycheck arg
+            match NumericTower.heightInTower arg.Type with
+            | Some(argheight) when argheight <= floatHeight -> arg
+            | _ ->
+                EM.Expected_type_but_got_type pos typeof<float>.Name arg.Type.Name //better error message?
+                texp.Error(typeof<float>)
+        
+        let x,y = tycheckPowArg x xpos, tycheckPowArg y ypos
         //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
-        let meth = typeof<System.Math>.GetMethod("Pow",[|typeof<float>;typeof<float>|])
-//        if meth = null then
-//            semError pos (EM.Invalid_static_method "Pow" "System.Math" (sprintTypes [x.Type;y.Type]))
-        texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
+        match tryResolveMethod typeof<System.Math> "Pow" staticFlags [||] [|typeof<float>;typeof<float>|] with
+        | None -> 
+            EM.Internal_error (PositionRange(xpos, ypos)) "Failed to resolve 'System.Math.Pow(float,float)' for synthetic operator '**'"
+            Error(typeof<float>)
+        | Some(meth) ->
+            texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
     | rexp.NumericBinop(op,x,y,pos) ->
         let x, y = tycheck x, tycheck y
         
@@ -199,7 +210,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             | None ->
                 //there should always be a String.Concat(obj,obj) overload
                 EM.Internal_error pos (sprintf "Could not resolve 'String.Concat' synthetic '+' overload for argument types %s" (sprintTypes [x.Type; y.Type]))
-                texp.String("") //error recovery
+                texp.Error(typeof<string>) //error recovery
             | Some(meth) ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
         | None -> //static "op_*" overloads
@@ -396,7 +407,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         let y = 
             match tycheck y with
             | y when y.Type <> typeof<bool> ->
-                EM.Expected_type_but_got_type ypos "System.Bool" y.Type.Name
+                EM.Expected_type_but_got_type ypos "System.Boolean" y.Type.Name
                 texp.Error(typeof<bool>)
             | y -> y
         
