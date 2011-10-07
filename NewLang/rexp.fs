@@ -52,15 +52,6 @@ type comparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
 type tySig =
     | TySig of string * tySig list
     with 
-        //TODO:test
-//> TySig("hi",[]);;
-//val it : tySig = TySig ("hi",[])
-//> TySig("hi",[]).ToString();;
-//val it : string = "hi"
-//> TySig("hi",[TySig("bye",[])]).ToString();;
-//val it : string = "hi[bye]"
-//> TySig("hi",[TySig("bye",[]); TySig("night",[])]).ToString();;
-//val it : string = "hi[bye,night]"
         member x.Name =
             let rec build = function
                 | TySig(name, []) -> name
