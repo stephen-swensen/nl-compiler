@@ -172,14 +172,14 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
     | rexp.UMinus(x,pos) ->
         let x = tycheck x
         texp.UMinus(x,x.Type)
-    | rexp.Fact(x,pos) ->
-        let x = tycheck x
-        if x.Type <> typeof<int> then
-            EM.Expected_type_but_got_type pos "System.Int32" x.Type.Name
-            texp.Int32(0) //error recovery: return type of Fact is always Int32
-        else
-            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
-            texp.StaticCall(meth, [x], meth.ReturnType)
+//    | rexp.Fact(x,pos) ->
+//        let x = tycheck x
+//        if x.Type <> typeof<int> then
+//            EM.Expected_type_but_got_type pos "System.Int32" x.Type.Name
+//            texp.Int32(0) //error recovery: return type of Fact is always Int32
+//        else
+//            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
+//            texp.StaticCall(meth, [x], meth.ReturnType)
     | rexp.Pow(x,y,pos) ->
         let x, y = tycheck x, tycheck y
         //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
@@ -347,7 +347,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             EM.Could_not_resolve_assembly pos name
             tycheck x
         | Some(asm) -> tycheckWith {env with Assemblies=asm::env.Assemblies} x
-    | rexp.Not(x,pos) ->
+    | rexp.LogicalNot(x,pos) ->
         let x = tycheck x
         if x.Type <> typeof<bool> then
             EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
@@ -385,7 +385,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 | None -> 
                     EM.Casting_from_type_to_type_always_invalid pos x.Type.Name ty.Name
                     texp.Error(ty)
-    | rexp.Xor((x,xpos),(y,ypos)) ->
+    | rexp.LogicBinop(op,(x,xpos),(y,ypos)) ->
         let x =
             match tycheck x with
             | x when x.Type <> typeof<bool> -> 
@@ -399,7 +399,10 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 EM.Expected_type_but_got_type ypos "System.Bool" y.Type.Name
                 texp.Error(typeof<bool>)
             | y -> y
-        texp.Xor(x,y)
+        
+        match op with
+        | And -> texp.IfThenElse(x, y, texp.Bool(false), typeof<bool>)
+        | Or -> texp.IfThenElse(x, texp.Bool(true), y, typeof<bool>)
     | rexp.IfThenElse(condition,thenBranch,elseBranch,pos) ->
         let condition = 
             let condition = tycheck condition

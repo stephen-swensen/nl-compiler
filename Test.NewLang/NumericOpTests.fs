@@ -55,11 +55,11 @@ let ``Lossless coersion of Int32 to Double in div`` () =
 
 [<Fact>]
 let ``Pow on floats only`` () =
-    test <@ C.eval "3.0 ^ 3.0" = 27.0 @>
+    test <@ C.eval "3.0 ** 3.0" = 27.0 @>
 
-[<Fact>]
-let ``Factorial on ints only`` () =
-    test <@ C.eval "4!" = 24 @>
+//[<Fact>]
+//let ``Factorial on ints only`` () =
+//    test <@ C.eval "4!" = 24 @>
 
 [<Fact>]
 let ``unary minus int`` () =

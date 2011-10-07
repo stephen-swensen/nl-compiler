@@ -19,7 +19,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token <char> CHAR
 %token <bool> BOOL
 %token NULL TYPE
-%token AND OR XOR
+%token ANDAND OROR //XOR
 %token EQEQ NOTEQ LT GT GTEQ LTEQ
 %token PLUS MINUS TIMES DIV POW BANG NOT
 %token <string> NAME
@@ -36,8 +36,8 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %right SEMICOLON
 %nonassoc SET
 
-%left OR XOR
-%left AND
+%left OROR //XOR
+%left ANDAND
 
 %left EQ NOTEQ LT GT GTEQ LTEQ
 
@@ -47,7 +47,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 
 %nonassoc UMINUS
 %nonassoc BANG
-%nonassoc NOT
+//%nonassoc NOT
 
 %start start
 %type <rexp> start
@@ -83,12 +83,12 @@ tySig:
 rexp: 
     //-- logical binary operators --
 
-    | rexp XOR rexp                             
-        { rexp.Xor(($1, range parseState 1 1), ($3, range parseState 3 3)) }
-    | rexp OR rexp                             
-        { rexp.Or($1,$3, range parseState 2 2) }
-    | rexp AND rexp                             
-        { rexp.And($1, $3, range parseState 2 2) }
+//    | rexp XOR rexp                             
+//        { rexp.LogicBinop(Xor, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
+    | rexp OROR rexp                             
+        { rexp.LogicBinop(Or, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
+    | rexp ANDAND rexp                             
+        { rexp.LogicBinop(And, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
 
     //-- comparison operators --
 
@@ -120,15 +120,15 @@ rexp:
             
     //-- postfix operators --
     
-    | rexp BANG                                     
-        { rexp.Fact($1, range parseState 2 2) }
+//    | rexp BANG                                     
+//        { rexp.Fact($1, range parseState 2 2) }
     
     //-- prefix operators --
     
     | MINUS rexp %prec UMINUS                    
         { rexp.UMinus($2, range parseState 1 1) }
-    | NOT rexp                                    
-        { rexp.Not($2, range parseState 1 1) }
+    | BANG rexp                                    
+        { rexp.LogicalNot($2, range parseState 1 1) }
 
     //-- literal values --
 

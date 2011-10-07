@@ -35,7 +35,7 @@ type texp =
     | Break         
     | Continue
     | Error         of Type
-    | Xor           of texp * texp
+//    | Xor           of texp * texp
     with 
         member this.Type =
             match this with
@@ -52,7 +52,8 @@ type texp =
             | Break                  -> typeof<Void>
             | Continue               -> typeof<Void>
             | WhileLoop(_,_)         -> typeof<Void>
-            | Xor(_,_)               -> typeof<bool>
+            //| LogicBinop _           -> typeof<bool>
+            //| Xor(_,_)               -> typeof<bool>
         //    | NliReturn _            -> typeof<obj[]>
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)

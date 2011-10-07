@@ -61,7 +61,6 @@
       <OtherFlags>--module Swensen.NewLang.Parser</OtherFlags>
     </FsYacc>
     <Compile Include="texp.fs" />
-    <Compile Include="CoreOps.fs" />
     <Compile Include="SemanticEnvironment.fs" />
     <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="Compilation.fs" />
