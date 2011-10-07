@@ -9,9 +9,6 @@ let lexeme lexbuf =
 
 let keywords =
     [
-        "and", AND
-        "or", OR
-        "xor", XOR
         "open", OPEN
         "in", IN
         "if", IF
@@ -38,23 +35,28 @@ rule tokenize = parse
 | whitespace { tokenize lexbuf }
 | newline    { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
 
-// Operators
-| "+"  { PLUS }
-| "-"  { MINUS }
-| "*"  { TIMES }
-| "/"  { DIV }
-| "^"  { POW }
-| "!"  { BANG }
-| "~"  { NOT }
+// math
+| "+"   { PLUS }
+| "-"   { MINUS }
+| "*"   { TIMES }
+| "**"  { POW }
+| "/"   { DIV }
 
-| "~=" { NOTEQ }
+//logic
+| "!"  { BANG }
+| "&&" { ANDAND }
+| "||" { OROR }
+//| "^"  { XOR }
+
+//compairson
+| "!=" { NOTEQ }
 | "==" { EQEQ }
 | ">"  { GT }
 | "<"  { LT }
 | ">=" { GTEQ }
 | "<=" { LTEQ }
 
-//various symbols and keywords (todo: make all word symbols case insensitive)
+//various
 | "[" { LBRACKET }
 | "]" { RBRACKET }
 | "(" { LPAREN }

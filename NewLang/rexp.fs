@@ -19,14 +19,12 @@ type numericBinop = Plus | Minus | Times | Div
             | Times -> "*"
             | Div -> "/"
 
-//type logicBinop = And | Or | XOr
-//    with
-//        override x.ToString() =
-//            match x with
-//            | And -> "and"
-//            | Or -> "or"
-//            | XOr -> "xor"
-//        member x.DisplayValue = x.ToString()
+type logicBinop = And | Or
+    with
+        member x.Symbol =
+            match x with
+            | And -> "&&"
+            | Or -> "||"
 
 ///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
 type comparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
@@ -70,7 +68,7 @@ type rexp =
     | NumericBinop     of numericBinop * rexp * rexp * PositionRange
     | Pow              of rexp * rexp * PositionRange
     | UMinus           of rexp * PositionRange
-    | Fact             of rexp * PositionRange
+    //| Fact             of rexp * PositionRange
     ///bind a variable
     | Let              of string * rexp * rexp * PositionRange
     ///reference a variable
@@ -88,7 +86,7 @@ type rexp =
     | OpenNamespace    of string * rexp * PositionRange
     ///reference an assembly by name or dll path
     | OpenAssembly     of string * rexp * PositionRange
-    | Not              of rexp * PositionRange
+    | LogicalNot       of rexp * PositionRange
     | Cast             of rexp * tySig * PositionRange
     | IfThenElse       of rexp * rexp * rexp option * PositionRange //should be pos for each!
     | ComparisonBinop  of comparisonBinop * rexp * rexp * PositionRange
@@ -97,12 +95,9 @@ type rexp =
     | WhileLoop        of rexp * rexp * PositionRange
     | Break            of PositionRange
     | Continue         of PositionRange
-    | Xor              of (rexp * PositionRange) * (rexp * PositionRange)
-    with
-        static member Or(lhs:rexp, rhs:rexp, pos:PositionRange) =
-            rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)
-        static member And(lhs:rexp, rhs:rexp, pos:PositionRange) =
-            rexp.IfThenElse(lhs, rhs, Some(rexp.Bool(false)), pos)
-
-
-            
+    | LogicBinop       of logicBinop * (rexp * PositionRange) * (rexp * PositionRange)
+//    with
+//        static member Or(lhs:rexp, rhs:rexp, pos:PositionRange) =
+//            rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)
+//        static member And(lhs:rexp, rhs:rexp, pos:PositionRange) =
+//            rexp.IfThenElse(lhs, rhs, Some(rexp.Bool(false)), pos)
