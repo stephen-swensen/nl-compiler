@@ -16,6 +16,7 @@ type ErrorType =
 type PositionRange(posStart:Position, posEnd:Position) =
     member __.Start = posStart
     member __.End = posEnd
+    new(posRangeStart:PositionRange,posRangeEnd:PositionRange) = PositionRange(posRangeStart.Start, posRangeEnd.End)
 
 type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:ErrorLevel, errorCode:int, msg:string, stackTrace:StackTrace) =
     member __.Type = errorType
