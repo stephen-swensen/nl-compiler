@@ -43,6 +43,7 @@
     <FsYaccOutputFolder>$(IntermediateOutputPath)</FsYaccOutputFolder>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <Compile Include="Utils.fs" />
     <Compile Include="ErrorHandling.fs" />
     <Compile Include="rexp.fs" />
@@ -63,8 +64,8 @@
     <Compile Include="texp.fs" />
     <Compile Include="SemanticEnvironment.fs" />
     <Compile Include="SemanticAnalysis.fs" />
+    <Compile Include="Optimization.fs" />
     <Compile Include="Compilation.fs" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">

@@ -50,6 +50,7 @@
     <Compile Include="RefAssemblyTests.fs" />
     <Compile Include="WhileLoopTests.fs" />
     <Compile Include="TySigTests.fs" />
+    <Compile Include="OptimizationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
