@@ -41,7 +41,7 @@ type logicBinop = And | Or
             | Or -> "||"
 
 ///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
-type comparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
+type rcomparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
     with
         member x.Symbol =
             match x with
@@ -61,18 +61,18 @@ type comparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
             | GtEq -> "op_GreaterThanOrEqual"
             | Neq -> "op_Inequality"
 
-        ///Call the F# analog to this operator on the operands
-        member inline x.Call(lhs:'a,rhs:'a):bool =
-            let fsop =
-                match x with
-                | Eq -> (=)
-                | Lt -> (<)
-                | Gt -> (>)
-                | LtEq -> (<=)
-                | GtEq -> (>=)
-                | Neq -> (<>)
-
-            fsop lhs rhs
+//        ///Call the F# analog to this operator on the operands
+//        member inline x.Call(lhs:'a,rhs:'a):bool =
+//            let fsop =
+//                match x with
+//                | Eq -> (=)
+//                | Lt -> (<)
+//                | Gt -> (>)
+//                | LtEq -> (<=)
+//                | GtEq -> (>=)
+//                | Neq -> (<>)
+//
+//            fsop lhs rhs
 
 type tySig =
     | TySig of string * tySig list
@@ -116,7 +116,7 @@ type rexp =
     | LogicalNot       of rexp * PositionRange
     | Cast             of rexp * tySig * PositionRange
     | IfThenElse       of rexp * rexp * rexp option * PositionRange //should be pos for each!
-    | ComparisonBinop  of comparisonBinop * rexp * rexp * PositionRange
+    | ComparisonBinop  of rcomparisonBinop * rexp * rexp * PositionRange
     | Nop              of PositionRange
     | VarSet           of string * rexp * PositionRange
     | WhileLoop        of rexp * rexp * PositionRange

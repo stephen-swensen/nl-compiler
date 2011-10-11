@@ -2,6 +2,19 @@
 
 open System
 
+///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
+type tcomparisonBinop = Eq | Lt | Gt
+    with
+        ///Call the F# analog to this operator on the operands
+        member inline x.Call(lhs:'a,rhs:'a):bool =
+            let fsop =
+                match x with
+                | Eq -> (=)
+                | Lt -> (<)
+                | Gt -> (>)
+
+            fsop lhs rhs
+
 ///Typed expression
 type texp =
     | Double        of float
@@ -25,10 +38,10 @@ type texp =
     | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
     ///Default value of ValueType ("zero") or Ref type (null)
     | Default       of Type
-    | Not           of texp * Type
+    | LogicalNot    of texp
     | IfThen        of texp * texp
     | IfThenElse    of texp * texp * texp * Type
-    | ComparisonBinop  of comparisonBinop * texp * texp
+    | ComparisonBinop  of tcomparisonBinop * texp * texp
     | Nop
     | VarSet        of string * texp
     | WhileLoop     of texp * texp
@@ -39,6 +52,7 @@ type texp =
     with 
         member this.Type =
             match this with
+            | LogicalNot _           -> typeof<bool>
             | Double(_)              -> typeof<float>
             | Int32(_)               -> typeof<int>
             | String(_)              -> typeof<string>
@@ -67,8 +81,20 @@ type texp =
             | Ctor(_,_,ty)
             | Default(ty)
             | Null(ty)
-            | Not(_,ty)
             | IfThenElse(_,_,_,ty)
             //ty is the recovery typeof the expression. (maybe add optional first parameter with the specific branch which was type checked but in error?)
             | Error(ty)
                 -> ty
+        
+        ///make a comparison binop case using a rcomparisonBinop
+        static member mkComparisonBinop(op:rcomparisonBinop, x:texp, y:texp) = 
+            match op with
+            | rcomparisonBinop.Eq -> ComparisonBinop(Eq,x,y)
+            | rcomparisonBinop.Lt -> ComparisonBinop(Lt,x,y)
+            | rcomparisonBinop.Gt -> ComparisonBinop(Gt,x,y)
+            | rcomparisonBinop.Neq -> 
+                LogicalNot(ComparisonBinop(Eq,x,y))
+            | rcomparisonBinop.LtEq ->
+                LogicalNot(ComparisonBinop(Gt,x,y))
+            | rcomparisonBinop.GtEq ->
+                LogicalNot(ComparisonBinop(Lt,x,y))
