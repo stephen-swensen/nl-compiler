@@ -133,3 +133,9 @@ let ``logical not sub expression reduction`` () =
 [<Fact>]
 let ``comparison op sub expression reduction`` () =
     test <@ C.parseFromString "2 > (1 + 1)" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``numeric binop does not fold but one subexpression does`` () =
+    test <@ C.parseFromString "(2 + 1) + (\"asdf\".get_Length())" |> O.optimize = C.parseFromString "3 + (\"asdf\".get_Length())" @>
+
+

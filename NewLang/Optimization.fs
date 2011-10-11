@@ -15,18 +15,14 @@ let rec optimize (exp:texp) =
             texp.Int32(op.Call(xval, yval))
         | texp.Double(xval), texp.Double(yval) ->
             texp.Double((op.Call(xval, yval)))
-        | _ -> texp.NumericBinop(op, x, y, ty)
-    //i.e. "asdf" + "asdf" (can refactor this better?)
-    | texp.StaticCall(mi, [x;y], ty) when ty = typeof<string> && x.Type = typeof<string> && y.Type = typeof<string> && mi.DeclaringType = typeof<string> && mi.Name = "Concat" ->
-        let x, y = optimize x, optimize y
-        match x, y with
-        | texp.String(xval), texp.String(yval) ->
-            texp.String(xval + yval)
-        | _ -> 
-            texp.StaticCall(mi, [x;y], ty)
+        | _ -> texp.NumericBinop(op, x, y, ty)    
     | texp.StaticCall(mi, args, ty) ->
         let args = args |> List.map optimize
-        texp.StaticCall(mi, args, ty)
+        match args with
+        | [texp.String(xval); texp.String(yval)] when mi.DeclaringType = typeof<string> && mi.Name = "Concat" -> //i.e. "asdf" + "asdf" (can refactor this better?)
+            texp.String(xval + yval)
+        | _ ->
+            texp.StaticCall(mi, args, ty)
     | texp.InstanceCall(instance, mi, args, ty) ->
         let instance = optimize instance
         let args = args |> List.map optimize
