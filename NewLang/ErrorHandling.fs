@@ -138,6 +138,7 @@ module ErrorMessage =
     let Null_is_invalid_for_value_types pos = 
         mk ErrorLevel.Error ErrorType.Semantic 12 pos "'null' is not a valid value for the value type '%s'"
 
+    //todo: consider adding "variable not found" possiblity to all of this too, e.g. "x.toString()" trips this error.
     let Could_not_resolve_possible_method_call_or_contructor_type pos = 
         mk ErrorLevel.Error ErrorType.Semantic 13 pos "Could not resolve possible method call type '%s' or constructor type '%s'"
 
