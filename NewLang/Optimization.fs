@@ -12,21 +12,9 @@ let rec optimize (exp:texp) =
         let x, y = optimize x, optimize y
         match x, y with
         | texp.Int32(xval), texp.Int32(yval) ->
-            let fsOp =
-                match op with
-                | numericBinop.Plus -> (+)
-                | numericBinop.Div -> (/)
-                | numericBinop.Minus -> (-)
-                | numericBinop.Times -> (*)
-            texp.Int32(fsOp xval yval)
+            texp.Int32(op.Calc(xval, yval))
         | texp.Double(xval), texp.Double(yval) ->
-            let fsOp =
-                match op with
-                | numericBinop.Plus -> (+)
-                | numericBinop.Div -> (/)
-                | numericBinop.Minus -> (-)
-                | numericBinop.Times -> (*)
-            texp.Double(fsOp xval yval)
+            texp.Double((op.Calc(xval, yval)))
         | _ -> texp.NumericBinop(op, x, y, ty)
     | texp.Coerce(x, ty) ->
         let x = optimize x
