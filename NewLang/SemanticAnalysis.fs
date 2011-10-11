@@ -230,7 +230,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         //first numeric tower value type cases
         match NumericTower.tallestTy x.Type y.Type with
         | Some(tallestTy) ->
-            texp.ComparisonBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y)
+            texp.mkComparisonBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y)
         | None ->
             //next operator overloads
             let meth = seq {
@@ -240,8 +240,8 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             match meth, op with
             | Some(meth), _ ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
-            | None, (Eq | Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> //reference equals
-                texp.ComparisonBinop(op, x, y)    
+            | None, (rcomparisonBinop.Eq | rcomparisonBinop.Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> //reference equals
+                texp.mkComparisonBinop(op, x, y)    
             | None, _ ->
                 EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                 texp.Error(typeof<bool>)
@@ -364,7 +364,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
             texp.Error(typeof<bool>)
         else
-            texp.Not(x, x.Type)
+            texp.LogicalNot(x)
     | rexp.Cast(x,ty,pos) ->
         let x = tycheck x
         match tryResolveType ty with
