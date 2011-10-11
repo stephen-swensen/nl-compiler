@@ -204,7 +204,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         match NumericTower.tallestTy x.Type y.Type with
         | Some(tallestTy) -> //primitive
             texp.NumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
-        | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string concat
+        | None when op = Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string
             let meth = tryResolveMethod typeof<System.String> "Concat" staticFlags [||] [|x.Type; y.Type|]
             match meth with
             | None ->

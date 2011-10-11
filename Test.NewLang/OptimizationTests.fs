@@ -48,7 +48,19 @@ let ``unreachable then branch condition recursively optimized`` () =
 //    test <@ C.parseFromString "(true && true) || (console.writeline('x'); false)" |> O.optimize = C.parseFromString "true" @>
 //
 
-[<Fact(Skip="first need to recursively reduce instance call sub expressions")>]
+[<Fact>]
+let ``String concat folding`` () =
+    test <@ C.parseFromString "\"str\" + \"str\"" |> O.optimize = C.parseFromString "\"strstr\"" @>
+
+[<Fact>]
+let ``instance call sub expressions optimized`` () =
+    test <@ C.parseFromString "(\"str\" + \"str\").EndsWith(\"str\" + \"str\")" |> O.optimize = C.parseFromString "(\"strstr\").EndsWith(\"strstr\")" @>
+
+[<Fact>]
+let ``static call sub expressions optimized`` () =
+    test <@ C.parseFromString "String.Compare(\"str\" + \"str\", \"str\" + \"str\")" |> O.optimize = C.parseFromString "String.Compare(\"strstr\", \"strstr\")" @>
+
+[<Fact>]
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
     test <@ C.parseFromString "if ((true || true).getType() == type[boolean]) then true else false" |> O.optimize = C.parseFromString "if (true.getType() == type[boolean]) then true else false" @>
 
@@ -117,3 +129,7 @@ let ``logical not of true`` () =
 [<Fact>]
 let ``logical not sub expression reduction`` () =
     test <@ C.parseFromString "!(true && true)" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``comparison op sub expression reduction`` () =
+    test <@ C.parseFromString "2 > (1 + 1)" |> O.optimize = C.parseFromString "false" @>
