@@ -21,8 +21,8 @@ type numericBinop = Plus | Minus | Times | Div
             | Times -> "*"
             | Div -> "/"
         
-        ///calculate the operands using the F# version of this operator
-        member inline x.Calc(lhs:'a,rhs:'a):'a =
+        ///Call the F# analog to this operator on the operands
+        member inline x.Call(lhs:'a,rhs:'a):'a =
             let fsop =
                 match x with
                 | numericBinop.Plus -> (+)
@@ -60,6 +60,19 @@ type comparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
             | LtEq -> "op_LessThanOrEqual"
             | GtEq -> "op_GreaterThanOrEqual"
             | Neq -> "op_Inequality"
+
+        ///Call the F# analog to this operator on the operands
+        member inline x.Call(lhs:'a,rhs:'a):bool =
+            let fsop =
+                match x with
+                | Eq -> (=)
+                | Lt -> (<)
+                | Gt -> (>)
+                | LtEq -> (<=)
+                | GtEq -> (>=)
+                | Neq -> (<>)
+
+            fsop lhs rhs
 
 type tySig =
     | TySig of string * tySig list
