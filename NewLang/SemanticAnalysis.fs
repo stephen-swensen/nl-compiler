@@ -182,7 +182,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
 //            texp.StaticCall(meth, [x], meth.ReturnType)
     | rexp.Pow((x,xpos), (y,ypos)) ->
         let floatHeight = (NumericTower.heightInTower typeof<float>).Value //assert?
-        let tycheckPowArg arg pos =
+        let tycheckPowArg arg pos = //TODO: UNIT TEST THESE CASES
             let arg = tycheck arg
             match NumericTower.heightInTower arg.Type with
             | Some(argheight) when argheight <= floatHeight -> arg
