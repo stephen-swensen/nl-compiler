@@ -44,3 +44,10 @@ let ``recursively optimized lhs of || is true`` () =
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
     test <@ C.parseFromString "if ((true || true).getType() == type[boolean]) then true else false" |> O.optimize = C.parseFromString "if (true.getType() == type[boolean]) then true else false" @>
 
+[<Fact>]
+let ``Int32 constants folding`` () =
+    test <@ C.parseFromString "((2 * 3) + 45) - (24 / 2)" |> O.optimize = C.parseFromString "39" @>
+
+[<Fact>]
+let ``Double constants folding`` () =
+    test <@ C.parseFromString "((2.0 * 3.0) + 45.0) - (24.0 / 2.0)" |> O.optimize = C.parseFromString "39.0" @>
