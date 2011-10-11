@@ -64,3 +64,36 @@ let ``coersion subexpression is optimized`` () =
 let ``constants folding with optimized implicit int to double coersion`` () =
     test <@ C.parseFromString "2 + 3.0" |> O.optimize = C.parseFromString "5.0" @>
 
+[<Fact>]
+let ``Int32 equals comparison constants folding true`` () =
+    test <@ C.parseFromString "2 == 2" |> O.optimize = C.parseFromString "true" @>
+
+[<Fact>]
+let ``Int32 equals comparison constants folding false`` () =
+    test <@ C.parseFromString "2 == 3" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``Int32 not equals comparison constants folding true`` () =
+    test <@ C.parseFromString "2 != 3" |> O.optimize = C.parseFromString "true" @>
+
+[<Fact>]
+let ``Int32 not equals comparison constants folding false`` () =
+    test <@ C.parseFromString "2 != 2" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``Int32 less than comparison constants folding true`` () =
+    test <@ C.parseFromString "2 < 3" |> O.optimize = C.parseFromString "true" @>
+
+[<Fact>]
+let ``Int32 less than comparison constants folding false`` () =
+    test <@ C.parseFromString "3 < 2" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``Int32 greater than comparison constants folding true`` () =
+    test <@ C.parseFromString "2 > 1" |> O.optimize = C.parseFromString "true" @>
+
+[<Fact>]
+let ``Int32 greater than comparison constants folding false`` () =
+    test <@ C.parseFromString "1 > 2" |> O.optimize = C.parseFromString "false" @>
+
+//skipping >= and <= (just too many permutations to maintain)
