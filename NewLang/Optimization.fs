@@ -29,4 +29,10 @@ let rec optimize (exp:texp) =
         match x with
         | Int32(x) -> Double(float x)
         | _ -> texp.Coerce(x, ty)
+    | texp.LogicalNot(x) ->
+        let x = optimize x
+        match x with
+        | texp.Bool(true) -> texp.Bool(false)
+        | texp.Bool(false) -> texp.Bool(true)
+        | _ -> x
     | _ -> exp
