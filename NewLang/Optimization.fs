@@ -28,4 +28,9 @@ let rec optimize (exp:texp) =
                 | numericBinop.Times -> (*)
             texp.Double(fsOp xval yval)
         | _ -> texp.NumericBinop(op, x, y, ty)
+    | texp.Coerce(x, ty) ->
+        let x = optimize x
+        match x with
+        | Int32(x) -> Double(float x)
+        | _ -> texp.Coerce(x, ty)
     | _ -> exp

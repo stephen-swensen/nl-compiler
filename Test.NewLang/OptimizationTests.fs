@@ -51,3 +51,16 @@ let ``Int32 constants folding`` () =
 [<Fact>]
 let ``Double constants folding`` () =
     test <@ C.parseFromString "((2.0 * 3.0) + 45.0) - (24.0 / 2.0)" |> O.optimize = C.parseFromString "39.0" @>
+
+[<Fact>]
+let ``coersion of literal int to double is optimized away`` () =
+    test <@ C.parseFromString "2[double]" |> O.optimize = C.parseFromString "2.0" @>
+
+[<Fact>]
+let ``coersion subexpression is optimized`` () =
+    test <@ C.parseFromString "(2 + 2)[double]" |> O.optimize = C.parseFromString "4.0" @>
+
+[<Fact>]
+let ``constants folding with optimized implicit int to double coersion`` () =
+    test <@ C.parseFromString "2 + 3.0" |> O.optimize = C.parseFromString "5.0" @>
+
