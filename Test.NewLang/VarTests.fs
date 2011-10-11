@@ -43,6 +43,12 @@ let ``Var set`` () =
 let ``Var set stronger precedence than semicolon`` () =
     test <@ C.eval "x = 3 in x <- 2 ; x" = 2 @>
 
+[<Fact>]
+let ``var not found`` () =
+    raisesWith 
+        <@ C.eval "x; ()" @>
+        (expectedErrors [|5|])
+
 //[<Fact>]
 //let ``Var set weaker precedence than fact`` () =
 //    test <@ C.eval "x = 3 in x <- 2! ; x" = 2 @>
