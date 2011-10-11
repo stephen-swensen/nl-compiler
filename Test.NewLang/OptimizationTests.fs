@@ -80,13 +80,15 @@ let ``Int32 equals comparison constants folding true`` () =
 let ``Int32 equals comparison constants folding false`` () =
     test <@ C.parseFromString "2 == 3" |> O.optimize = C.parseFromString "false" @>
 
-[<Fact>]
-let ``Int32 not equals comparison constants folding true`` () =
-    test <@ C.parseFromString "2 != 3" |> O.optimize = C.parseFromString "true" @>
+//don't need to do this cases since they are logical not transformations
 
-[<Fact>]
-let ``Int32 not equals comparison constants folding false`` () =
-    test <@ C.parseFromString "2 != 2" |> O.optimize = C.parseFromString "false" @>
+//[<Fact>]
+//let ``Int32 not equals comparison constants folding true`` () =
+//    test <@ C.parseFromString "2 != 3" |> O.optimize = C.parseFromString "true" @>
+//
+//[<Fact>]
+//let ``Int32 not equals comparison constants folding false`` () =
+//    test <@ C.parseFromString "2 != 2" |> O.optimize = C.parseFromString "false" @>
 
 [<Fact>]
 let ``Int32 less than comparison constants folding true`` () =
@@ -104,4 +106,14 @@ let ``Int32 greater than comparison constants folding true`` () =
 let ``Int32 greater than comparison constants folding false`` () =
     test <@ C.parseFromString "1 > 2" |> O.optimize = C.parseFromString "false" @>
 
-//skipping >= and <= (just too many permutations to maintain)
+[<Fact>]
+let ``logical not of false`` () =
+    test <@ C.parseFromString "!false" |> O.optimize = C.parseFromString "true" @>
+
+[<Fact>]
+let ``logical not of true`` () =
+    test <@ C.parseFromString "!true" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``logical not sub expression reduction`` () =
+    test <@ C.parseFromString "!(true && true)" |> O.optimize = C.parseFromString "false" @>
