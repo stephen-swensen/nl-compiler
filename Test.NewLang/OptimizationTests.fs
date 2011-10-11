@@ -8,6 +8,11 @@ open System.Collections.Generic
 module O = Optimization
 module C = Compilation
 
+//N.B. we use parseFromString to obtain a texp tree for convienence and readability, but we are really only testing 
+//texp -> texp transformations for optimization. (this does make me a little nervous, of course, but hand constructing
+//all these ASTs would be tedious to say the least. we can use code coverage analysis tools like NCover to give us 
+//more confidence that we are indeed following all paths).
+
 [<Fact>]
 let ``unreachable else branch`` () =
     test <@ C.parseFromString "if true then 1 else 0" |> O.optimize = C.parseFromString "1" @>
@@ -24,21 +29,24 @@ let ``unreachable else branch condition recursively optimized`` () =
 let ``unreachable then branch condition recursively optimized`` () =
     test <@ C.parseFromString "if (if false then true else false) then 1 else 0" |> O.optimize = C.parseFromString "0" @>
 
-[<Fact>]
-let ``lhs of && is false`` () =
-    test <@ C.parseFromString "false && (console.writeline('x'); false)" |> O.optimize = C.parseFromString "false" @>
+//-----do not need to test && and || optimization since they are implemented in terms of if / then / else
 
-[<Fact>]
-let ``lhs of || is true`` () =
-    test <@ C.parseFromString "true || (console.writeline('x'); false)" |> O.optimize = C.parseFromString "true" @>
-
-[<Fact>]
-let ``recursively optimized lhs of && is false`` () =
-    test <@ C.parseFromString "(false || false) && (console.writeline('x'); false)" |> O.optimize = C.parseFromString "false" @>
-
-[<Fact>]
-let ``recursively optimized lhs of || is true`` () =
-    test <@ C.parseFromString "(true && true) || (console.writeline('x'); false)" |> O.optimize = C.parseFromString "true" @>
+//[<Fact>]
+//let ``lhs of && is false`` () =
+//    test <@ C.parseFromString "false && (console.writeline('x'); false)" |> O.optimize = C.parseFromString "false" @>
+//
+//[<Fact>]
+//let ``lhs of || is true`` () =
+//    test <@ C.parseFromString "true || (console.writeline('x'); false)" |> O.optimize = C.parseFromString "true" @>
+//
+//[<Fact>]
+//let ``recursively optimized lhs of && is false`` () =
+//    test <@ C.parseFromString "(false || false) && (console.writeline('x'); false)" |> O.optimize = C.parseFromString "false" @>
+//
+//[<Fact>]
+//let ``recursively optimized lhs of || is true`` () =
+//    test <@ C.parseFromString "(true && true) || (console.writeline('x'); false)" |> O.optimize = C.parseFromString "true" @>
+//
 
 [<Fact(Skip="first need to recursively reduce instance call sub expressions")>]
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
