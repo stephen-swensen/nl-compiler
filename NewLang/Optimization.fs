@@ -32,9 +32,8 @@ let rec optimize (exp:texp) =
         match x, y with
         | texp.Int32(xval), texp.Int32(yval) ->
             texp.Bool(op.Call(xval, yval))
-        //todo: boolean and double folding
-//        | texp.Double(xval), texp.Double(yval) ->
-//            texp.Double((op.Calc(xval, yval)))
+        | texp.Double(xval), texp.Double(yval) ->
+            texp.Bool(op.Call(xval, yval))
         | _ -> texp.ComparisonBinop(op, x, y)
     | texp.Coerce(x, ty) -> //mostly for implicit coersions to improve constants folding
         let x = optimize x
