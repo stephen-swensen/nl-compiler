@@ -3,11 +3,25 @@
 let rec optimize (exp:texp) = 
     match exp with
     | texp.IfThenElse(condition, thenBranch, elseBranch, ty) -> //unreachable code elimination
-        let condition = optimize condition
+        let condition, thenBranch, elseBranch = optimize condition, optimize thenBranch, optimize elseBranch
         match condition with
         | texp.Bool(true) -> thenBranch
         | texp.Bool(false) -> elseBranch
-        | _ -> texp.IfThenElse(condition, thenBranch, elseBranch, ty)
+        | _ -> 
+            match thenBranch with
+            | texp.Nop -> texp.IfThen(condition, thenBranch) //asser ty = typeof<void>
+            | _ ->
+                texp.IfThenElse(condition, thenBranch, elseBranch, ty)
+    | texp.IfThen(condition, thenBranch) -> //unreachable code elimination
+        let condition, thenBranch = optimize condition, optimize thenBranch
+        match condition with
+        | texp.Bool(true) -> thenBranch
+        | texp.Bool(false) -> texp.Nop
+        | _ -> 
+            match thenBranch with
+            | texp.Nop -> condition
+            | _ ->
+                texp.IfThen(condition, thenBranch)
     | texp.NumericBinop(op, x, y, ty) -> //numeric constants folding
         let x, y = optimize x, optimize y
         match x, y with
@@ -48,6 +62,12 @@ let rec optimize (exp:texp) =
         | texp.Bool(true) -> texp.Bool(false)
         | texp.Bool(false) -> texp.Bool(true)
         | _ -> x
+    | texp.Sequential(x,y,ty) ->
+        let x,y = optimize x, optimize y
+        match x, y with
+        | texp.Nop, texp.Nop -> texp.Nop //();() -> ()
+        | texp.Nop, _ -> y // (); exp -> exp
+        | _,_ -> texp.Sequential(x,y,ty)
     | _ -> exp
 
 //type MyStruct =

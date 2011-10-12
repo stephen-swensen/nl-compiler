@@ -14,20 +14,40 @@ module C = Compilation
 //more confidence that we are indeed following all paths).
 
 [<Fact>]
-let ``unreachable else branch`` () =
+let ``if/then/else unreachable else branch`` () =
     test <@ C.parseFromString "if true then 1 else 0" |> O.optimize = C.parseFromString "1" @>
 
 [<Fact>]
-let ``unreachable then branch`` () =
+let ``if/then/else unreachable then branch`` () =
     test <@ C.parseFromString "if false then 1 else 0" |> O.optimize = C.parseFromString "0" @>
 
 [<Fact>]
-let ``unreachable else branch condition recursively optimized`` () =
+let ``if/then/else unreachable else branch condition recursively optimized`` () =
     test <@ C.parseFromString "if (if true then true else false) then 1 else 0" |> O.optimize = C.parseFromString "1" @>
 
 [<Fact>]
-let ``unreachable then branch condition recursively optimized`` () =
+let ``if/then/else unreachable then branch condition recursively optimized`` () =
     test <@ C.parseFromString "if (if false then true else false) then 1 else 0" |> O.optimize = C.parseFromString "0" @>
+
+[<Fact>]
+let ``if/then unreachable else branch`` () = //note the expectation of the implicit default[int] in the else branch
+    test <@ C.parseFromString "if true then 1;()" |> O.optimize = C.parseFromString "1;()" @>
+
+[<Fact>]
+let ``if/then unreachable then branch`` () =
+    test <@ C.parseFromString "if false then 1;()" |> O.optimize = C.parseFromString "()" @>
+
+[<Fact>]
+let ``if/then unreachable else branch condition recursively optimized`` () =
+    test <@ C.parseFromString "if (1+1)==2 then ()" |> O.optimize = C.parseFromString "()" @>
+
+[<Fact>]
+let ``if/then unreachable then branch condition recursively optimized`` () =
+    test <@ C.parseFromString "if (1+1)==3 then ()" |> O.optimize = C.parseFromString "()" @>
+
+[<Fact>]
+let ``if/then thenBranch is reduced to nop so just give condition`` () =
+    test <@ C.parseFromString "if datetime.isLeapYear(1) then ()" |> O.optimize = C.parseFromString "datetime.isLeapYear(1)" @>
 
 //-----do not need to test && and || optimization since they are implemented in terms of if / then / else
 
@@ -144,3 +164,35 @@ let ``Boolean equals comparison constants folding true`` () =
 [<Fact>]
 let ``Boolean equals comparison constants folding false`` () =
     test <@ C.parseFromString "false == true" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``sequence of noops is reduced`` () =
+    test <@ C.parseFromString "();();();()" |> O.optimize = C.parseFromString "()" @>
+
+[<Fact>]
+let ``sequence of noops and ints ending in int is reduced`` () =
+    test <@ C.parseFromString "();1;();1" |> O.optimize = C.parseFromString "1;1" @>
+
+[<Fact>]
+let ``sequence of noops and ints ending in noop is reduced`` () =
+    test <@ C.parseFromString "();1;();1;()" |> O.optimize = C.parseFromString "1;1;()" @>
+
+[<Fact>]
+let ``reduce sequence sub expressions`` () =
+    test <@ C.parseFromString "1+2;2+3" |> O.optimize = C.parseFromString "3;5" @>
+
+[<Fact>]
+let ``trim explicit noop if then else branch`` () =
+    test <@ C.parseFromString "if datetime.isLeapYear(1) then () else ()" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then ()" @>
+
+[<Fact>]
+let ``trim explicit sequence of noop if then else branch`` () =
+    test <@ C.parseFromString "if datetime.isLeapYear(1) then () else (();();())" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then ()" @>
+
+[<Fact>]
+let ``optimize if/then/else then and else branches`` () =
+    test <@ C.parseFromString "if datetime.isLeapYear(1) then 1 + 2 else 3 + 4" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then 3 else 7" @>
+
+[<Fact>]
+let ``optimize if/then then branch`` () =
+    test <@ C.parseFromString "if datetime.isLeapYear(1) then 1 + 2; ()" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then 3;()" @>
