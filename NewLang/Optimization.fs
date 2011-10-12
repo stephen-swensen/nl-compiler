@@ -69,11 +69,3 @@ let rec optimize (exp:texp) =
         | texp.Nop, _ -> y // (); exp -> exp
         | _,_ -> texp.Sequential(x,y,ty)
     | _ -> exp
-
-//type MyStruct =
-//    struct
-//        val myInt : int = 
-//        val myString : string
-//    end
-
-let x = defaultArg<int>
