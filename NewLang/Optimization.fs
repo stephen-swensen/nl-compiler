@@ -34,6 +34,8 @@ let rec optimize (exp:texp) =
             texp.Bool(op.Call(xval, yval))
         | texp.Double(xval), texp.Double(yval) ->
             texp.Bool(op.Call(xval, yval))
+        | texp.Bool(xval), texp.Bool(yval) ->
+            texp.Bool(op.Call(xval, yval))
         | _ -> texp.ComparisonBinop(op, x, y)
     | texp.Coerce(x, ty) -> //mostly for implicit coersions to improve constants folding
         let x = optimize x
