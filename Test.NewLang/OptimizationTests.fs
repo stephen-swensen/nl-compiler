@@ -31,23 +31,6 @@ let ``unreachable then branch condition recursively optimized`` () =
 
 //-----do not need to test && and || optimization since they are implemented in terms of if / then / else
 
-//[<Fact>]
-//let ``lhs of && is false`` () =
-//    test <@ C.parseFromString "false && (console.writeline('x'); false)" |> O.optimize = C.parseFromString "false" @>
-//
-//[<Fact>]
-//let ``lhs of || is true`` () =
-//    test <@ C.parseFromString "true || (console.writeline('x'); false)" |> O.optimize = C.parseFromString "true" @>
-//
-//[<Fact>]
-//let ``recursively optimized lhs of && is false`` () =
-//    test <@ C.parseFromString "(false || false) && (console.writeline('x'); false)" |> O.optimize = C.parseFromString "false" @>
-//
-//[<Fact>]
-//let ``recursively optimized lhs of || is true`` () =
-//    test <@ C.parseFromString "(true && true) || (console.writeline('x'); false)" |> O.optimize = C.parseFromString "true" @>
-//
-
 [<Fact>]
 let ``String concat folding`` () =
     test <@ C.parseFromString "\"str\" + \"str\"" |> O.optimize = C.parseFromString "\"strstr\"" @>
@@ -92,15 +75,7 @@ let ``Int32 equals comparison constants folding true`` () =
 let ``Int32 equals comparison constants folding false`` () =
     test <@ C.parseFromString "2 == 3" |> O.optimize = C.parseFromString "false" @>
 
-//don't need to do this cases since they are logical not transformations
-
-//[<Fact>]
-//let ``Int32 not equals comparison constants folding true`` () =
-//    test <@ C.parseFromString "2 != 3" |> O.optimize = C.parseFromString "true" @>
-//
-//[<Fact>]
-//let ``Int32 not equals comparison constants folding false`` () =
-//    test <@ C.parseFromString "2 != 2" |> O.optimize = C.parseFromString "false" @>
+//don't need to do != this cases since they are logical not (!) optimization
 
 [<Fact>]
 let ``Int32 less than comparison constants folding true`` () =
