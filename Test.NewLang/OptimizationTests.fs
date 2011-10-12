@@ -138,7 +138,6 @@ let ``comparison op sub expression reduction`` () =
 let ``numeric binop does not fold but one subexpression does`` () =
     test <@ C.parseFromString "(2 + 1) + (\"asdf\".get_Length())" |> O.optimize = C.parseFromString "3 + (\"asdf\".get_Length())" @>
 
-
 [<Fact>]
 let ``Double equals comparison constants folding true`` () =
     test <@ C.parseFromString "2.0 == 2.0" |> O.optimize = C.parseFromString "true" @>
@@ -162,3 +161,11 @@ let ``Double greater than comparison constants folding true`` () =
 [<Fact>]
 let ``Double greater than comparison constants folding false`` () =
     test <@ C.parseFromString "1.0 > 2.0" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``Boolean equals comparison constants folding true`` () =
+    test <@ C.parseFromString "true == true" |> O.optimize = C.parseFromString "true" @>
+
+[<Fact>]
+let ``Boolean equals comparison constants folding false`` () =
+    test <@ C.parseFromString "false == true" |> O.optimize = C.parseFromString "false" @>
