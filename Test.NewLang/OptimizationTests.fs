@@ -80,8 +80,12 @@ let ``coersion of literal int to double is optimized away`` () =
     test <@ C.parseFromString "2[double]" |> O.optimize = C.parseFromString "2.0" @>
 
 [<Fact>]
-let ``coersion subexpression is optimized`` () =
+let ``coersion subexpression folds`` () =
     test <@ C.parseFromString "(2 + 2)[double]" |> O.optimize = C.parseFromString "4.0" @>
+
+[<Fact>]
+let ``coersion subexpression doesn't fold but is optimized`` () =
+    test <@ C.parseFromString "x = 1 in (x + (2 + 3))[double]" |> O.optimize = C.parseFromString "x = 1 in (x + 5)[double]" @>
 
 [<Fact>]
 let ``constants folding with optimized implicit int to double coersion`` () =
@@ -122,8 +126,12 @@ let ``logical not of true`` () =
     test <@ C.parseFromString "!true" |> O.optimize = C.parseFromString "false" @>
 
 [<Fact>]
-let ``logical not sub expression reduction`` () =
+let ``logical not sub expression folds`` () =
     test <@ C.parseFromString "!(true && true)" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``logical not sub expression doesn't fold but is optimized`` () =
+    test <@ C.parseFromString "x = true in !(x && (true && true))" |> O.optimize = C.parseFromString "x = true in !(x && true)" @>
 
 [<Fact>]
 let ``comparison op sub expression reduction`` () =
@@ -164,6 +172,10 @@ let ``Boolean equals comparison constants folding true`` () =
 [<Fact>]
 let ``Boolean equals comparison constants folding false`` () =
     test <@ C.parseFromString "false == true" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``comparison doesn't fold but does optimze subexpression`` () =
+    test <@ C.parseFromString "x = 1 in x > (1 + 2)" |> O.optimize = C.parseFromString "x = 1 in x > 3" @>
 
 [<Fact>]
 let ``sequence of noops is reduced`` () =
