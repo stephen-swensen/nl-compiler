@@ -212,3 +212,16 @@ let ``optimize assignment of var binding`` () =
 [<Fact>]
 let ``optimize body of var binding`` () =
     test <@ C.parseFromString "x = 1 in 1 + 2" |> O.optimize = C.parseFromString "x = 1 in 3" @>
+
+[<Fact>]
+let ``constant fold uminus of int`` () =
+    test <@ texp.UMinus(texp.Int32(1), typeof<int32>) |> O.optimize = texp.Int32(-1) @>
+
+[<Fact>]
+let ``constant fold uminus of double`` () =
+    test <@ texp.UMinus(texp.Double(1.), typeof<double>) |> O.optimize = texp.Double(-1.) @>
+
+[<Fact>]
+let ``uminus no constant fold but sub optimization`` () =
+    //need to parenthisize 2 + 3 since addition is left associative and will not fold otheriwise
+    test <@ C.parseFromString "x = 1 in -(x + (2 + 3))" |> O.optimize = C.parseFromString "x = 1 in -(x + 5)" @>
