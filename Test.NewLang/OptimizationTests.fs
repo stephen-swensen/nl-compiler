@@ -204,3 +204,11 @@ let ``optimize cast subexpression`` () =
 [<Fact>]
 let ``optimize ctor args`` () =
     test <@ C.parseFromString "biginteger(2 + 1)" |> O.optimize = C.parseFromString "biginteger(3)" @>
+
+[<Fact>]
+let ``optimize assignment of var binding`` () =
+    test <@ C.parseFromString "x = 1 + 2 in ()" |> O.optimize = C.parseFromString "x = 3 in ()" @>
+
+[<Fact>]
+let ``optimize body of var binding`` () =
+    test <@ C.parseFromString "x = 1 in 1 + 2" |> O.optimize = C.parseFromString "x = 1 in 3" @>
