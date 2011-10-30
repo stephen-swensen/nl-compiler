@@ -70,6 +70,9 @@ let rec optimize (exp:texp) =
         | _,_ -> texp.Sequential(x,y,ty)
     | texp.Cast(x, ty) ->
         texp.Cast(optimize x, ty)
+    | texp.Ctor(ci, args, ty) ->
+        let args = List.map optimize args
+        texp.Ctor(ci, args, ty)
     | Double _
     | Int32 _
     | String _
@@ -82,5 +85,5 @@ let rec optimize (exp:texp) =
     | Nop
     | Break         
     | Continue
-    | Error _ 
+    | Error _ -> exp
     | _ -> exp

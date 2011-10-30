@@ -200,3 +200,7 @@ let ``optimize if/then then branch`` () =
 [<Fact>]
 let ``optimize cast subexpression`` () =
     test <@ C.parseFromString "(1 + 1)[object]" |> O.optimize = C.parseFromString "2[object]" @>
+
+[<Fact>]
+let ``optimize ctor args`` () =
+    test <@ C.parseFromString "biginteger(2 + 1)" |> O.optimize = C.parseFromString "biginteger(3)" @>
