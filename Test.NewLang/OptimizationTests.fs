@@ -8,6 +8,9 @@ open System.Collections.Generic
 module O = Optimization
 module C = Compilation
 
+//so that we see error details in console output while doing parse operations which don't install their own error loggers
+Swensen.NewLang.ErrorLogger.InstallConsoleLogger()
+
 //N.B. we use parseFromString to obtain a texp tree for convienence and readability, but we are really only testing 
 //texp -> texp transformations for optimization. (this does make me a little nervous, of course, but hand constructing
 //all these ASTs would be tedious to say the least. we can use code coverage analysis tools like NCover to give us 
@@ -249,3 +252,7 @@ let ``while loop condition is optimized`` () =
 [<Fact>]
 let ``while loop body is optimized`` () =
     test <@ C.parseFromString "while true do (true && true); break()" |> O.optimize = C.parseFromString "while true do true; break()" @>
+
+[<Fact>]
+let ``varset assign is optimized`` () =
+    test <@ C.parseFromString "x = 1 in x <- 1 + 1; x" |> O.optimize = C.parseFromString "x = 1 in x <- 2; x" @>

@@ -85,10 +85,11 @@ let rec optimize (exp:texp) =
     | texp.Cast(x, ty) ->
         texp.Cast(optimize x, ty)
     | texp.Ctor(ci, args, ty) ->
-        let args = List.map optimize args
-        texp.Ctor(ci, args, ty)
+        texp.Ctor(ci, List.map optimize args, ty)
     | texp.Let(name, assign, body, ty) ->
         texp.Let(name, optimize assign, optimize body, ty)
+    | texp.VarSet(name, assign) ->
+        texp.VarSet(name, optimize assign)
     | Double _
     | Int32 _
     | String _
@@ -100,7 +101,7 @@ let rec optimize (exp:texp) =
     | Default _
     | Nop
     | Break         
-    | Continue  -> exp
+    | Continue  -> exp //atomic expressions
     | Error _ ->
         failwith "Should not be optimizing an ast with errors"
-    | _ -> exp
+    | _ -> exp //fall through; these expressions will not be optimized at all
