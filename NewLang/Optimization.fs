@@ -68,4 +68,19 @@ let rec optimize (exp:texp) =
         | texp.Nop, texp.Nop -> texp.Nop //();() -> ()
         | texp.Nop, _ -> y // (); exp -> exp
         | _,_ -> texp.Sequential(x,y,ty)
+    | texp.Cast(x, ty) ->
+        texp.Cast(optimize x, ty)
+    | Double _
+    | Int32 _
+    | String _
+    | Char _
+    | Bool _
+    | Null _
+    | Typeof _
+    | Var _
+    | Default _
+    | Nop
+    | Break         
+    | Continue
+    | Error _ 
     | _ -> exp
