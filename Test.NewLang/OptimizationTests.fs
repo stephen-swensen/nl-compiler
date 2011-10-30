@@ -237,3 +237,15 @@ let ``constant fold uminus of double`` () =
 let ``uminus no constant fold but sub optimization`` () =
     //need to parenthisize 2 + 3 since addition is left associative and will not fold otheriwise
     test <@ C.parseFromString "x = 1 in -(x + (2 + 3))" |> O.optimize = C.parseFromString "x = 1 in -(x + 5)" @>
+
+[<Fact>]
+let ``trim while loop dead code`` () =
+    test <@ C.parseFromString "while false do ()" |> O.optimize = C.parseFromString "()" @>
+
+[<Fact>]
+let ``while loop condition is optimized`` () =
+    test <@ C.parseFromString "x = true in while x && (true && true) do break()" |> O.optimize = C.parseFromString "x = true in while x && true do break()" @>
+
+[<Fact>]
+let ``while loop body is optimized`` () =
+    test <@ C.parseFromString "while true do (true && true); break()" |> O.optimize = C.parseFromString "while true do true; break()" @>

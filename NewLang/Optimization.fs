@@ -74,6 +74,14 @@ let rec optimize (exp:texp) =
         | texp.Int32(xval) -> texp.Int32(-xval)
         | texp.Double(xval) -> texp.Double(-xval)
         | _ -> texp.UMinus(x, ty)
+    | texp.WhileLoop(cond, body) ->
+        let cond = optimize cond
+        match cond with
+        | texp.Bool(false) ->
+            texp.Nop
+        | _ ->
+            let body = optimize body
+            texp.WhileLoop(cond, body)
     | texp.Cast(x, ty) ->
         texp.Cast(optimize x, ty)
     | texp.Ctor(ci, args, ty) ->
