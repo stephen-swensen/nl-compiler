@@ -210,7 +210,7 @@ let dmFromAst (ast:texp) =
 ///Evaluate an NL code string using the default environment.
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let eval<'a> code : 'a = 
-    EL.InstallDefaultLogger()
+    EL.InstallDefaultLogger() //may want to switch back to previous logger when exiting eval
     let ast = parseFromString code
     match EL.ActiveLogger.ErrorCount with
     | 0 ->

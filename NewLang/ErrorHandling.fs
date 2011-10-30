@@ -59,6 +59,14 @@ type ErrorLogger() =
 
         errors.Add(ce)
 
+//    abstract Clear : unit -> unit
+//    //clear the active logger
+//    default __.Clear() = 
+//        errors.Clear()
+//        errorCount <- 0
+//        warningCount <- 0
+
+
     ///The count of the number of compiler errors which have "Error" severity level
     member __.ErrorCount = errorCount
     ///The count of the number of compiler errors which have "Warning" severity level
