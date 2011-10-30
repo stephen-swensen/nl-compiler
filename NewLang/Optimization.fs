@@ -73,6 +73,8 @@ let rec optimize (exp:texp) =
     | texp.Ctor(ci, args, ty) ->
         let args = List.map optimize args
         texp.Ctor(ci, args, ty)
+    | texp.Let(name, assign, body, ty) ->
+        texp.Let(name, optimize assign, optimize body, ty)
     | Double _
     | Int32 _
     | String _
