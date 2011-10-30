@@ -92,6 +92,7 @@ let rec optimize (exp:texp) =
     | Default _
     | Nop
     | Break         
-    | Continue
-    | Error _ -> exp
+    | Continue  -> exp
+    | Error _ ->
+        failwith "Should not be optimizing an ast with errors"
     | _ -> exp
