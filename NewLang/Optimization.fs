@@ -61,13 +61,19 @@ let rec optimize (exp:texp) =
         match x with
         | texp.Bool(true) -> texp.Bool(false)
         | texp.Bool(false) -> texp.Bool(true)
-        | _ -> x
+        | _ -> texp.LogicalNot(x)
     | texp.Sequential(x,y,ty) ->
         let x,y = optimize x, optimize y
         match x, y with
         | texp.Nop, texp.Nop -> texp.Nop //();() -> ()
         | texp.Nop, _ -> y // (); exp -> exp
         | _,_ -> texp.Sequential(x,y,ty)
+    | texp.UMinus(x, ty) ->
+        let x = optimize x
+        match x with
+        | texp.Int32(xval) -> texp.Int32(-xval)
+        | texp.Double(xval) -> texp.Double(-xval)
+        | _ -> texp.UMinus(x, ty)
     | texp.Cast(x, ty) ->
         texp.Cast(optimize x, ty)
     | texp.Ctor(ci, args, ty) ->
