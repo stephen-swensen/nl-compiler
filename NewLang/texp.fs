@@ -24,10 +24,16 @@ type texp =
     | Bool          of bool
     | Null          of Type
     | Typeof        of Type
+    | Var           of string * Type
+    | Default       of Type
+    | Nop
+    | Break         
+    | Continue
+    | Error         of Type
+
     | NumericBinop  of numericBinop * texp * texp * Type
     | UMinus        of texp * Type
     | Let           of string * texp * texp * Type
-    | Var           of string * Type
     //primitive coersion
     | Coerce        of texp * Type
     ///box / box value type or down / up cast ref type
@@ -37,17 +43,12 @@ type texp =
     | Sequential    of texp * texp * Type
     | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
     ///Default value of ValueType ("zero") or Ref type (null)
-    | Default       of Type
     | LogicalNot    of texp
     | IfThen        of texp * texp
     | IfThenElse    of texp * texp * texp * Type
     | ComparisonBinop  of tcomparisonBinop * texp * texp
-    | Nop
     | VarSet        of string * texp
     | WhileLoop     of texp * texp
-    | Break         
-    | Continue
-    | Error         of Type
 //    | Xor           of texp * texp
     with 
         member this.Type =

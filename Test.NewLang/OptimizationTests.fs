@@ -196,3 +196,7 @@ let ``optimize if/then/else then and else branches`` () =
 [<Fact>]
 let ``optimize if/then then branch`` () =
     test <@ C.parseFromString "if datetime.isLeapYear(1) then 1 + 2; ()" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then 3;()" @>
+
+[<Fact>]
+let ``optimize cast subexpression`` () =
+    test <@ C.parseFromString "(1 + 1)[object]" |> O.optimize = C.parseFromString "2[object]" @>
