@@ -240,7 +240,8 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             match meth, op with
             | Some(meth), _ ->
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
-            | None, (rcomparisonBinop.Eq | rcomparisonBinop.Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> //reference equals
+            //reference equals
+            | None, (rcomparisonBinop.Eq | rcomparisonBinop.Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> 
                 texp.mkComparisonBinop(op, x, y)    
             | None, _ ->
                 EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name

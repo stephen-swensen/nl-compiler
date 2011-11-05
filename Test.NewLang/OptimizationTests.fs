@@ -1,4 +1,5 @@
-﻿module Tests.OptimizationTests
+﻿//we strive for 100% code coverage
+module Tests.OptimizationTests
 
 open Xunit
 open Swensen.Unquote
@@ -256,3 +257,10 @@ let ``while loop body is optimized`` () =
 [<Fact>]
 let ``varset assign is optimized`` () =
     test <@ C.parseFromString "x = 1 in x <- 1 + 1; x" |> O.optimize = C.parseFromString "x = 1 in x <- 2; x" @>
+
+[<Fact>]
+let ``can't optimize Error case`` () =
+    raises<exn> <@ texp.Error(typeof<System.Boolean>) |> O.optimize @>
+
+
+
