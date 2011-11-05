@@ -101,7 +101,6 @@ let rec optimize (exp:texp) =
     | Default _
     | Nop
     | Break         
-    | Continue  -> exp //atomic expressions
+    | Continue -> exp //atomic expressions
     | Error _ ->
         failwith "Should not be optimizing an ast with errors"
-    | _ -> exp //fall through; these expressions will not be optimized at all
