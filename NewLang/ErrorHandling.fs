@@ -26,18 +26,29 @@ type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:Err
     ///The filename corresponding to Range.Start
     member __.Filename = errorRange.Start.FileName
     member __.Code = errorCode
+    member __.CodeName =
+        let errorCodeString = errorCode.ToString()
+        let leadingZeros = 
+            match errorCodeString.Length with
+            | 1 -> "000"
+            | 2 -> "00"
+            | 3 -> "0"
+            | 4 -> ""
+            | _ -> failwith "error code out of range: %i" errorCode
+        sprintf "NL%s%i" leadingZeros errorCode
     member __.StackTrace = stackTrace
     override this.ToString() =
         let posMsg = 
-            if errorRange.Start = errorRange.End then
-                sprintf "at line %i, column %i" errorRange.Start.Line errorRange.Start.Column
+            if errorRange.Start.Line = errorRange.End.Line && errorRange.Start.Column = errorRange.Start.Column then
+                sprintf "at Line %i, Column %i" errorRange.Start.Line errorRange.Start.Column
             else
-                sprintf "from line %i, column %i to line %i, column %i"  errorRange.Start.Line errorRange.Start.Column  errorRange.End.Line errorRange.End.Column
+                sprintf "from Line %i, Column %i to Line %i, Column %i"  errorRange.Start.Line errorRange.Start.Column  errorRange.End.Line (errorRange.End.Column-1)
 
-        sprintf "%A %s (%i) %s%s%s"
+
+        sprintf "%A %s (%s) %s%s%s"
             errorType
             ((sprintf "%A" errorLevel).ToLower())
-            errorCode
+            this.CodeName
             posMsg
             (if String.IsNullOrWhiteSpace this.Filename then "" else " in " + this.Filename)
             (if String.IsNullOrWhiteSpace msg then "" else ": " + msg)
@@ -102,8 +113,7 @@ and ConsoleErrorLogger() =
         
         writer.WriteLine(sprintf "|%s|" (ce.ToString()))
 
-/// Type holds thread-static globals for use by the compile
-
+//error messages may be inspired and or copied entirely from C# and F#
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ErrorMessage = 
@@ -114,13 +124,13 @@ module ErrorMessage =
     //error code -1 stands for unspecified error
     
     let Could_not_resolve_type pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 1 pos "Could not resolve type: '%s'"
+        mk ErrorLevel.Error ErrorType.Semantic 1 pos "Could not resolve type '%s'"
     
     let Could_not_resolve_types pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 2 pos "Could not resolve types: '%s'"
+        mk ErrorLevel.Error ErrorType.Semantic 2 pos "Could not resolve types '%s'"
 
     let No_overload_found_for_binary_operator pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 3 pos "No overload found for binary operator '%s' with left-hand-side type '%s' and right-hand-side type '%s'"
+        mk ErrorLevel.Error ErrorType.Semantic 3 pos "Operator '%s' cannot be applied to operands of type '%s' and '%s'"
     
     let Variable_set_type_mismatch pos = //todo: rewrite to make clearer
         mk ErrorLevel.Error ErrorType.Semantic 4 pos "Type mismatch: variable '%s' of type '%s' cannot be assigned a value of the different type '%s'"
