@@ -105,12 +105,12 @@ type rexp =
     ///reference a variable
     | Var              of string * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
-    | NameCall         of string * tySig list * rexp list * PositionRange
+    | NameCall         of string * (tySig list * PositionRange) * rexp list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
-    | GenericTypeStaticCall of string * tySig list * string * tySig list * rexp list * PositionRange
+    | GenericTypeStaticCall of string * (tySig list * PositionRange) * string * tySig list * rexp list * PositionRange
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
-    | ExpCall          of rexp * string * tySig list * rexp list * PositionRange
+    | ExpCall          of rexp * string * (tySig list * PositionRange) * rexp list * PositionRange
     ///discard left hand side, return right hand side
     | Sequential       of rexp * (rexp * PositionRange)
     ///open a namespace

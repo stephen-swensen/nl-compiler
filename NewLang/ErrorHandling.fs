@@ -136,7 +136,7 @@ module ErrorMessage =
         mk ErrorLevel.Error ErrorType.Semantic 1 pos "Could not resolve type '%s'"
     
     let Could_not_resolve_types pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 2 pos "Could not resolve types '%s'"
+        mk ErrorLevel.Error ErrorType.Semantic 2 pos "Could not resolve types: '%s'"
 
     let No_overload_found_for_binary_operator pos = 
         mk ErrorLevel.Error ErrorType.Semantic 3 pos "Operator '%s' cannot be applied to operands of type '%s' and '%s'"
