@@ -314,13 +314,13 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             abort()
         | Some(meth) ->
             texp.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-    | rexp.Let(name, assign, body, pos) ->
+    | rexp.Let(name, (assign, pos), body) ->
         let assign = tycheck assign
         if assign.Type = typeof<Void> then
             EM.Void_invalid_in_let_binding pos
         
         let body = tycheckWith {env with Variables=env.Variables |> Map.add name assign.Type} body
-        texp.Let(name,assign, body, body.Type)
+        texp.Let(name, assign, body, body.Type)
     | rexp.Var(name, pos) ->
         match Map.tryFind name env.Variables with
         | Some(ty) -> 

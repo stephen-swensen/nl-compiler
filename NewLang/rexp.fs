@@ -83,6 +83,9 @@ type tySig =
                 | TySig(name, xl) -> name + "[" + (xl |> List.map build |> String.concat ",") + "]"
             build x
 
+//n.b. PositionRange convention is: 1) if position range applies to the entire expression,
+//     then it is the last element in the tupled case, 2) if position range applies to a pariticular
+//     sub-expression or token, then it is tupled with the subexpression or token
 ///Raw (untyped) parsed expression
 type rexp =
     | Double           of float
@@ -94,10 +97,11 @@ type rexp =
     | Typeof           of tySig * PositionRange
     | NumericBinop     of numericBinop * rexp * rexp * PositionRange
     | Pow              of rexp * rexp * PositionRange
+    //TODO: implement semantic analysis
     | UMinus           of rexp * PositionRange
     //| Fact             of rexp * PositionRange
     ///bind a variable
-    | Let              of string * rexp * rexp * PositionRange
+    | Let              of string * (rexp * PositionRange) * rexp
     ///reference a variable
     | Var              of string * PositionRange
     ///call instance method on a variable or call a static method or call a constructor

@@ -155,7 +155,7 @@ rexp:
     
     //bind variable
     | longName EQ rexp IN rexp                
-       { rexp.Let($1,$3,$5, range parseState 1 1) }
+       { rexp.Let($1, ($3, range parseState 3 3), $5) }
     //var expression
     | longName                                     
         { rexp.Var($1, range parseState 1 1)}
