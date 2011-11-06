@@ -180,24 +180,25 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
 //        else
 //            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
 //            texp.StaticCall(meth, [x], meth.ReturnType)
-    | rexp.Pow((x,xpos), (y,ypos)) ->
-        let floatHeight = (NumericTower.heightInTower typeof<float>).Value //assert?
-        let tycheckPowArg arg pos = //TODO: UNIT TEST THESE CASES
-            let arg = tycheck arg
-            match NumericTower.heightInTower arg.Type with
-            | Some(argheight) when argheight <= floatHeight -> arg
-            | _ ->
-                EM.Expected_type_but_got_type pos typeof<float>.Name arg.Type.Name //better error message?
-                texp.Error(typeof<float>)
-        
-        let x,y = tycheckPowArg x xpos, tycheckPowArg y ypos
+    | rexp.Pow(x, y, pos) ->        
+        let x,y = tycheck x, tycheck y
         //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
         match tryResolveMethod typeof<System.Math> "Pow" staticFlags [||] [|typeof<float>;typeof<float>|] with
         | None -> 
-            EM.Internal_error (PositionRange(xpos, ypos)) "Failed to resolve 'System.Math.Pow(float,float)' for synthetic operator '**'"
+            EM.Internal_error pos "Failed to resolve 'System.Math.Pow(float,float)' for synthetic operator '**'"
             Error(typeof<float>)
         | Some(meth) ->
-            texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
+            let canCoerceToFloat (arg:texp) = //TODO: UNIT TEST THESE CASES
+                let floatHeight = (NumericTower.heightInTower typeof<float>).Value //assert?
+                match NumericTower.heightInTower arg.Type with
+                | Some(argheight) when argheight <= floatHeight -> true
+                | _ -> false
+
+            if canCoerceToFloat x && canCoerceToFloat y then
+                texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
+            else
+                EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
+                texp.Error(typeof<float>)
     | rexp.NumericBinop(op,x,y,pos) ->
         let x, y = tycheck x, tycheck y
         
