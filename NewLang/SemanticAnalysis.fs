@@ -328,10 +328,10 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         | None -> 
             EM.Variable_not_found pos name
             abort()
-    | rexp.Sequential((rexp.Break(_)|rexp.Continue(_)), _, pos) ->
+    | rexp.Sequential((rexp.Break(_)|rexp.Continue(_)) as x, (_,pos)) ->
         EM.Unreachable_code_detected pos
-        abort() //not sure what the best error recovery might be
-    | rexp.Sequential(x,y, pos) ->
+        tycheck x //error recovery
+    | rexp.Sequential(x,(y,_)) ->
         let x, y = tycheck x, tycheck y
         texp.Sequential(x,y,y.Type)
     | rexp.OpenNamespace(name, x, pos) ->
@@ -439,7 +439,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 texp.IfThen(condition,thenBranch)
             else
                 texp.IfThenElse(condition, thenBranch, texp.Default(thenBranch.Type), thenBranch.Type)
-    | rexp.Nop _ ->
+    | rexp.Nop ->
         texp.Nop
     | rexp.VarSet(name, x, pos) ->
         let x = tycheck x

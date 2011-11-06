@@ -128,7 +128,7 @@ rexp:
     | MINUS rexp %prec UMINUS                    
         { rexp.UMinus($2, range parseState 1 2) }
     | BANG rexp                                    
-        { rexp.LogicalNot($2, range parseState 1 2) }
+        { rexp.LogicalNot($2, range parseState 2 2) }
 
     //-- literal values --
 
@@ -147,7 +147,7 @@ rexp:
     | TYPE LBRACKET tySig RBRACKET            
         { rexp.Typeof($3, range parseState 3 3) }
     | LPAREN RPAREN
-        { rexp.Nop(range parseState 1 2) }
+        { rexp.Nop }
     
     //enclosed expression
     | LPAREN rexp RPAREN                      
@@ -198,7 +198,7 @@ rexp:
     
     //sequential expression 
     | rexp SEMICOLON rexp                     
-        { rexp.Sequential($1,$3, range parseState 3 3) }
+        { rexp.Sequential($1,($3, range parseState 3 3)) }
     
     //open namespace
     | OPEN longName IN rexp                    
