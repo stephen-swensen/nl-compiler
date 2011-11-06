@@ -441,7 +441,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 texp.IfThenElse(condition, thenBranch, texp.Default(thenBranch.Type), thenBranch.Type)
     | rexp.Nop ->
         texp.Nop
-    | rexp.VarSet(name, x, pos) ->
+    | rexp.VarSet((name, namePos), x, pos) ->
         let x = tycheck x
         match Map.tryFind name env.Variables with
         | Some(ty) -> 
@@ -451,7 +451,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             else
                 texp.VarSet(name, x)
         | None -> 
-            EM.Variable_not_found pos name
+            EM.Variable_not_found namePos name
             texp.Error(typeof<Void>)
     | rexp.WhileLoop(condition, body, pos) ->
         let condition = 

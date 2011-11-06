@@ -122,7 +122,7 @@ type rexp =
     | IfThenElse       of (rexp * PositionRange) * rexp * rexp option * PositionRange //should be pos for each!
     | ComparisonBinop  of rcomparisonBinop * rexp * rexp * PositionRange
     | Nop
-    | VarSet           of string * rexp * PositionRange
+    | VarSet           of (string * PositionRange) * rexp * PositionRange
     | WhileLoop        of rexp * rexp * PositionRange
     | Break            of PositionRange
     | Continue         of PositionRange
