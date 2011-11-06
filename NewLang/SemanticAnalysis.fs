@@ -453,11 +453,11 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         | None -> 
             EM.Variable_not_found namePos name
             texp.Error(typeof<Void>)
-    | rexp.WhileLoop(condition, body, pos) ->
+    | rexp.WhileLoop((condition, conditionPos), body) ->
         let condition = 
             let condition = tycheck condition
             if condition.Type <> typeof<bool> then
-                EM.Expected_type_but_got_type pos "System.Boolean" condition.Type.Name //todo: NEED PRECISE POSITION INFO HERE!
+                EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
                 texp.Error(typeof<bool>)
             else
                 condition
