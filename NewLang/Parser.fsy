@@ -178,23 +178,23 @@ rexp:
 
     //non-generic constructor or static call or instance call on var
     | longName LPAREN rexpList RPAREN                                            
-        { rexp.NameCall($1, [], $3, range parseState 1 1) }
+        { rexp.NameCall($1, ([], range parseState 1 4), $3, range parseState 1 4) }
     //generic constructor or static call or instance call on var
     | longName LBRACKET tySigList RBRACKET LPAREN rexpList RPAREN            
-        { rexp.NameCall($1, $3, $6, range parseState 1 1) }
+        { rexp.NameCall($1, ($3, range parseState 3 3), $6, range parseState 1 7) }
     //generic type non-generic static call
     | longName LBRACKET tySigList RBRACKET DOT NAME LPAREN rexpList RPAREN
-        { rexp.GenericTypeStaticCall($1, $3, $6, [], $8, range parseState 1 1) }
+        { rexp.GenericTypeStaticCall($1, ($3, range parseState 3 3), $6, [], $8, range parseState 1 9) }
     //generic type generic static call
     | longName LBRACKET tySigList RBRACKET DOT NAME LBRACKET tySigList RBRACKET LPAREN rexpList RPAREN    
-        { rexp.GenericTypeStaticCall($1, $3, $6, $8, $11, range parseState 1 1) }
+        { rexp.GenericTypeStaticCall($1, ($3, range parseState 3 3), $6, $8, $11, range parseState 1 12) }
     
     //non-generic method call on expression
     | rexp DOT NAME LPAREN rexpList RPAREN        
-        { rexp.ExpCall($1,$3,[],$5, range parseState 1 1) }
+        { rexp.ExpCall($1,$3,([], range parseState 1 6),$5, range parseState 1 6) }
     //generic method call on expression
     | rexp DOT NAME LBRACKET tySigList RBRACKET LPAREN rexpList RPAREN        
-        { rexp.ExpCall($1,$3,$5,$8, range parseState 1 1) }
+        { rexp.ExpCall($1,$3,($5, range parseState 1 9),$8, range parseState 1 9) }
     
     //sequential expression 
     | rexp SEMICOLON rexp                     

@@ -247,7 +247,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             | None, _ ->
                 EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                 texp.Error(typeof<bool>)
-    | rexp.NameCall(longName, genericArgs, args, pos) -> //todo: need more position info for different tokens
+    | rexp.NameCall(longName, (genericArgs, genericArgsPos), args, pos) -> //todo: need more position info for different tokens
         let namePrefix, methodName =
             let split = longName.Split('.')
             String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
@@ -256,7 +256,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
 
         match Map.tryFind namePrefix env.Variables with //N.B. vars always supercede open names
         | Some(ty:Type) -> //instance method call on variable
-            match tryResolveMethodWithGenericArgs ty methodName instanceFlags (genericArgs |> List.toArray) argTys pos with
+            match tryResolveMethodWithGenericArgs ty methodName instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
             | None -> 
                 EM.Invalid_instance_method pos methodName ty.Name (sprintTypes argTys)
                 abort()
@@ -265,7 +265,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         | None ->
             match tryResolveType (TySig(namePrefix,[])) with
             | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                match  tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys pos with
+                match  tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
                 | None -> 
                     EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
                     abort()
@@ -290,7 +290,7 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                             texp.Error(ty)
                         | ctor -> 
                             texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
-    | rexp.GenericTypeStaticCall(tyName, tyGenericArgs, methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
+    | rexp.GenericTypeStaticCall(tyName, (tyGenericArgs, genericArgsPos), methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
         match tryResolveType (TySig(tyName, tyGenericArgs)) with
         | None -> 
             EM.Could_not_resolve_type pos (TySig(tyName,tyGenericArgs).Name)
@@ -298,17 +298,17 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         | Some(ty) ->
             let args = args |> List.map (tycheck)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-            match tryResolveMethodWithGenericArgs ty methodName staticFlags (methodGenericArgs |> List.toArray) argTys pos with
+            match tryResolveMethodWithGenericArgs ty methodName staticFlags (methodGenericArgs |> List.toArray) argTys genericArgsPos with
             | None -> 
                 EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
                 abort()
             | Some(meth) -> 
                 texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-    | rexp.ExpCall(instance, methodName, methodGenericArgs, args, pos) ->
+    | rexp.ExpCall(instance, methodName, (methodGenericArgs, genericArgsPos), args, pos) ->
         let instance = tycheck instance
         let args = args |> List.map (tycheck)
         let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-        match tryResolveMethodWithGenericArgs instance.Type methodName instanceFlags (methodGenericArgs |> List.toArray) argTys pos with
+        match tryResolveMethodWithGenericArgs instance.Type methodName instanceFlags (methodGenericArgs |> List.toArray) argTys genericArgsPos with
         | None -> 
             EM.Invalid_instance_method pos methodName instance.Type.Name (sprintTypes argTys)
             abort()
