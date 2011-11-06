@@ -14,9 +14,15 @@ type ErrorType =
     | Internal
 
 type PositionRange(posStart:Position, posEnd:Position) =
-    member __.Start = posStart
-    member __.End = posEnd
-    new(posRangeStart:PositionRange,posRangeEnd:PositionRange) = PositionRange(posRangeStart.Start, posRangeEnd.End)
+//    new(posRangeStart:PositionRange,posRangeEnd:PositionRange) = 
+//        new PositionRange(posRangeStart.Start, posRangeEnd.End)
+    member __.StartLine = posStart.Line
+    member __.EndLine = posEnd.Line
+    member __.StartColumn = posStart.Column
+    member __.EndColumn = posEnd.Column-1
+    //assume error cannot span more than one file
+    member __.FileName = posStart.FileName
+    
 
 type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:ErrorLevel, errorCode:int, msg:string, stackTrace:StackTrace) =
     member __.Type = errorType
@@ -24,25 +30,28 @@ type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:Err
     member __.Level = errorLevel
     member __.Message = msg
     ///The filename corresponding to Range.Start
-    member __.Filename = errorRange.Start.FileName
+    member __.Filename = errorRange.FileName
     member __.Code = errorCode
     member __.CodeName =
-        let errorCodeString = errorCode.ToString()
-        let leadingZeros = 
-            match errorCodeString.Length with
-            | 1 -> "000"
-            | 2 -> "00"
-            | 3 -> "0"
-            | 4 -> ""
-            | _ -> failwith "error code out of range: %i" errorCode
-        sprintf "NL%s%i" leadingZeros errorCode
+        match errorCode with
+        | -1 -> "-1"
+        | _ ->
+            let errorCodeString = errorCode.ToString()
+            let leadingZeros = 
+                match errorCodeString.Length with
+                | 1 -> "000"
+                | 2 -> "00"
+                | 3 -> "0"
+                | 4 -> ""
+                | _ -> failwith "error code out of range: %i" errorCode
+            sprintf "NL%s%i" leadingZeros errorCode
     member __.StackTrace = stackTrace
     override this.ToString() =
         let posMsg = 
-            if errorRange.Start.Line = errorRange.End.Line && errorRange.Start.Column = errorRange.Start.Column then
-                sprintf "at Line %i, Column %i" errorRange.Start.Line errorRange.Start.Column
+            if errorRange.StartLine = errorRange.EndLine && errorRange.StartColumn = errorRange.EndColumn then
+                sprintf "at Line %i, Column %i" errorRange.StartLine errorRange.StartColumn
             else
-                sprintf "from Line %i, Column %i to Line %i, Column %i"  errorRange.Start.Line errorRange.Start.Column  errorRange.End.Line (errorRange.End.Column-1)
+                sprintf "from Line %i, Column %i to Line %i, Column %i"  errorRange.StartLine errorRange.StartColumn  errorRange.EndLine errorRange.EndColumn
 
 
         sprintf "%A %s (%s) %s%s%s"

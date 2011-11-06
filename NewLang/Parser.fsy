@@ -93,42 +93,42 @@ rexp:
     //-- comparison operators --
 
     | rexp EQEQ rexp                             
-        { rexp.ComparisonBinop(Eq, $1, $3, range parseState 2 2) }
+        { rexp.ComparisonBinop(Eq, $1, $3, range parseState 1 3) }
     | rexp NOTEQ rexp                             
-        { rexp.ComparisonBinop(Neq, $1, $3, range parseState 2 2) }
+        { rexp.ComparisonBinop(Neq, $1, $3, range parseState 1 3) }
     | rexp LT rexp                             
-        { rexp.ComparisonBinop(Lt, $1, $3, range parseState 2 2) }
+        { rexp.ComparisonBinop(Lt, $1, $3, range parseState 1 3) }
     | rexp GT rexp                                 
-        { rexp.ComparisonBinop(Gt, $1, $3, range parseState 2 2) }
+        { rexp.ComparisonBinop(Gt, $1, $3, range parseState 1 3) }
     | rexp LTEQ rexp                                 
-        { rexp.ComparisonBinop(LtEq, $1, $3, range parseState 2 2) }
+        { rexp.ComparisonBinop(LtEq, $1, $3, range parseState 1 3) }
     | rexp GTEQ rexp                                 
-        { rexp.ComparisonBinop(GtEq, $1, $3, range parseState 2 2) }
+        { rexp.ComparisonBinop(GtEq, $1, $3, range parseState 1 3) }
 
     //-- numeric binary operators --
 
     | rexp PLUS rexp                             
-        { rexp.NumericBinop(Plus, $1, $3, range parseState 2 2) }
+        { rexp.NumericBinop(Plus, $1, $3, range parseState 1 3) }
     | rexp MINUS rexp                             
-        { rexp.NumericBinop(Minus, $1, $3, range parseState 2 2) }
+        { rexp.NumericBinop(Minus, $1, $3, range parseState 1 3) }
     | rexp TIMES rexp                             
-        { rexp.NumericBinop(Times, $1, $3, range parseState 2 2) }
+        { rexp.NumericBinop(Times, $1, $3, range parseState 1 3) }
     | rexp DIV rexp                                 
-        { rexp.NumericBinop(Div, $1, $3, range parseState 2 2) }
+        { rexp.NumericBinop(Div, $1, $3, range parseState 1 3) }
     | rexp POW rexp                                 
-        { rexp.Pow(($1, range parseState 1 1), ($3, range parseState 3 3)) }
+        { rexp.Pow($1, $3, range parseState 1 3) }
             
     //-- postfix operators --
     
 //    | rexp BANG                                     
-//        { rexp.Fact($1, range parseState 2 2) }
+//        { rexp.Fact($1, range parseState 1 2) }
     
     //-- prefix operators --
     
     | MINUS rexp %prec UMINUS                    
-        { rexp.UMinus($2, range parseState 1 1) }
+        { rexp.UMinus($2, range parseState 1 2) }
     | BANG rexp                                    
-        { rexp.LogicalNot($2, range parseState 1 1) }
+        { rexp.LogicalNot($2, range parseState 1 2) }
 
     //-- literal values --
 
@@ -147,7 +147,7 @@ rexp:
     | TYPE LBRACKET tySig RBRACKET            
         { rexp.Typeof($3, range parseState 3 3) }
     | LPAREN RPAREN
-        { rexp.Nop(range parseState 1 1) }
+        { rexp.Nop(range parseState 1 2) }
     
     //enclosed expression
     | LPAREN rexp RPAREN                      
