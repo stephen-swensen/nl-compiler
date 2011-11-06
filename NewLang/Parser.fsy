@@ -210,9 +210,9 @@ rexp:
 
     //if then else expressions
     | IF rexp THEN rexp
-        { rexp.IfThenElse($2,$4,None, range parseState 1 1) }
+        { rexp.IfThenElse(($2, range parseState 2 2),$4,None, range parseState 1 4) }
     | IF rexp THEN rexp ELSE rexp
-        { rexp.IfThenElse($2,$4,Some($6), range parseState 1 1) }
+        { rexp.IfThenElse(($2, range parseState 2 2), $4, Some($6), range parseState 1 6) }
 
     //-- loops --
     | WHILE rexp DO rexp

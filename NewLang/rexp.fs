@@ -119,7 +119,7 @@ type rexp =
     | OpenAssembly     of (string * PositionRange) * rexp
     | LogicalNot       of rexp * PositionRange
     | Cast             of rexp * (tySig * PositionRange) * PositionRange
-    | IfThenElse       of rexp * rexp * rexp option * PositionRange //should be pos for each!
+    | IfThenElse       of (rexp * PositionRange) * rexp * rexp option * PositionRange //should be pos for each!
     | ComparisonBinop  of rcomparisonBinop * rexp * rexp * PositionRange
     | Nop
     | VarSet           of string * rexp * PositionRange
@@ -127,8 +127,3 @@ type rexp =
     | Break            of PositionRange
     | Continue         of PositionRange
     | LogicBinop       of logicBinop * (rexp * PositionRange) * (rexp * PositionRange)
-//    with
-//        static member Or(lhs:rexp, rhs:rexp, pos:PositionRange) =
-//            rexp.IfThenElse(lhs, rexp.Bool(true), Some(rhs), pos)
-//        static member And(lhs:rexp, rhs:rexp, pos:PositionRange) =
-//            rexp.IfThenElse(lhs, rhs, Some(rexp.Bool(false)), pos)
