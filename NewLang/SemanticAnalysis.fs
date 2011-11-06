@@ -367,11 +367,11 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             texp.Error(typeof<bool>)
         else
             texp.LogicalNot(x)
-    | rexp.Cast(x,ty,pos) ->
+    | rexp.Cast(x, (ty, tyPos), pos) ->
         let x = tycheck x
         match tryResolveType ty with
         | None -> 
-            EM.Could_not_resolve_type pos ty.Name
+            EM.Could_not_resolve_type tyPos ty.Name
             abort()
         | Some(ty) ->
             if ty = typeof<System.Void> then
