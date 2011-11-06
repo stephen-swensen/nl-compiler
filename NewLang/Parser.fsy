@@ -202,11 +202,11 @@ rexp:
     
     //open namespace
     | OPEN longName IN rexp                    
-        { rexp.OpenNamespace($2,$4, range parseState 2 2) }
+        { rexp.OpenNamespace(($2,range parseState 2 2), $4) }
     
     //open assembly reference (by assembly name or file name)
     | OPEN STRING IN rexp                     
-        { rexp.OpenAssembly($2, $4, range parseState 2 2) }
+        { rexp.OpenAssembly(($2, range parseState 2 2), $4) }
 
     //if then else expressions
     | IF rexp THEN rexp
