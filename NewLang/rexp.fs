@@ -123,7 +123,7 @@ type rexp =
     | ComparisonBinop  of rcomparisonBinop * rexp * rexp * PositionRange
     | Nop
     | VarSet           of (string * PositionRange) * rexp * PositionRange
-    | WhileLoop        of rexp * rexp * PositionRange
+    | WhileLoop        of (rexp * PositionRange) * rexp
     | Break            of PositionRange
     | Continue         of PositionRange
     | LogicBinop       of logicBinop * (rexp * PositionRange) * (rexp * PositionRange)
