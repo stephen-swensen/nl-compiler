@@ -108,7 +108,7 @@ type rexp =
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
     | ExpCall          of rexp * string * tySig list * rexp list * PositionRange
     ///discard left hand side, return right hand side
-    | Sequential       of rexp * rexp * PositionRange
+    | Sequential       of rexp * (rexp * PositionRange)
     ///open a namespace
     | OpenNamespace    of string * rexp * PositionRange
     ///reference an assembly by name or dll path
@@ -117,7 +117,7 @@ type rexp =
     | Cast             of rexp * tySig * PositionRange
     | IfThenElse       of rexp * rexp * rexp option * PositionRange //should be pos for each!
     | ComparisonBinop  of rcomparisonBinop * rexp * rexp * PositionRange
-    | Nop              of PositionRange
+    | Nop
     | VarSet           of string * rexp * PositionRange
     | WhileLoop        of rexp * rexp * PositionRange
     | Break            of PositionRange
