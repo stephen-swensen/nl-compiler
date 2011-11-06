@@ -161,7 +161,7 @@ rexp:
         { rexp.Var($1, range parseState 1 1)}
     //set var expression
     | longName SET rexp
-        { rexp.VarSet($1, $3, range parseState 1 1)}
+        { rexp.VarSet(($1, range parseState 1 1), $3, range parseState 1 3)}
 
     //cast on var
     | longName LBRACKET tySigList RBRACKET
