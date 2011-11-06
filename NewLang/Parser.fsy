@@ -39,7 +39,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %left OROR //XOR
 %left ANDAND
 
-%left EQ NOTEQ LT GT GTEQ LTEQ
+%left EQEQ NOTEQ LT GT GTEQ LTEQ
 
 %left PLUS MINUS
 %left TIMES DIV
