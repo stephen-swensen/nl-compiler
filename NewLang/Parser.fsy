@@ -169,12 +169,12 @@ rexp:
             if $3.Length <> 1 then //a bit of a hack here; we need to use tySigList instead of just tySig to disambiguate grammer
                 parseState.RaiseError()
 
-            rexp.Cast(rexp.Var($1, range parseState 1 1), $3.Head, range parseState 3 3) 
+            rexp.Cast(rexp.Var($1, range parseState 1 1), ($3.Head, range parseState 3 3), range parseState 1 4) 
         }
 
     //cast on expression
     | rexp LBRACKET tySig RBRACKET                
-        { rexp.Cast($1, $3, range parseState 3 3) }
+        { rexp.Cast($1, ($3, range parseState 3 3), range parseState 1 4) }
 
     //non-generic constructor or static call or instance call on var
     | longName LPAREN rexpList RPAREN                                            

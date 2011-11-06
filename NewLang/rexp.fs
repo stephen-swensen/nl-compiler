@@ -118,7 +118,7 @@ type rexp =
     ///reference an assembly by name or dll path
     | OpenAssembly     of (string * PositionRange) * rexp
     | LogicalNot       of rexp * PositionRange
-    | Cast             of rexp * tySig * PositionRange
+    | Cast             of rexp * (tySig * PositionRange) * PositionRange
     | IfThenElse       of rexp * rexp * rexp option * PositionRange //should be pos for each!
     | ComparisonBinop  of rcomparisonBinop * rexp * rexp * PositionRange
     | Nop
