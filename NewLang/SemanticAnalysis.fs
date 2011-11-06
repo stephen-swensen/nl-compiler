@@ -416,11 +416,11 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
         match op with
         | And -> texp.IfThenElse(x, y, texp.Bool(false), typeof<bool>)
         | Or -> texp.IfThenElse(x, texp.Bool(true), y, typeof<bool>)
-    | rexp.IfThenElse(condition,thenBranch,elseBranch,pos) ->
+    | rexp.IfThenElse((condition, conditionPos),thenBranch,elseBranch,pos) ->
         let condition = 
             let condition = tycheck condition
             if condition.Type <> typeof<bool> then
-                EM.Expected_type_but_got_type pos "System.Boolean" condition.Type.Name
+                EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
                 texp.Error(typeof<bool>)
             else
                 condition
