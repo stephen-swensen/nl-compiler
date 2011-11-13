@@ -182,15 +182,20 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 texp.Default(ty)
     | rexp.UMinus(x,pos) ->
         let x = tycheck x
-        texp.UMinus(x,x.Type)
-//    | rexp.Fact(x,pos) ->
-//        let x = tycheck x
-//        if x.Type <> typeof<int> then
-//            EM.Expected_type_but_got_type pos "System.Int32" x.Type.Name
-//            texp.Int32(0) //error recovery: return type of Fact is always Int32
-//        else
-//            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
-//            texp.StaticCall(meth, [x], meth.ReturnType)
+        if x.Type = typeof<Int64> ||
+           x.Type = typeof<Int32> ||
+           x.Type = typeof<Int16> ||
+           x.Type = typeof<Double> ||
+           x.Type = typeof<Single> 
+        then
+           texp.UMinus(x, x.Type)
+        else           
+            match x.Type.GetMethod("op_UnaryNegation") with
+            | null ->
+                EM.No_overload_found_for_unary_operator pos "-" x.Type.Name
+                texp.Error(x.Type)
+            | meth ->
+                texp.StaticCall(meth, [x], meth.ReturnType)
     | rexp.Pow(x, y, pos) ->        
         let x,y = tycheck x, tycheck y
         //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
@@ -212,7 +217,6 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
                 texp.Error(typeof<float>)
     | rexp.NumericBinop(op,x,y,pos) ->
         let x, y = tycheck x, tycheck y
-        
         match NumericTower.tallestTy x.Type y.Type with
         | Some(tallestTy) -> //primitive
             texp.NumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
@@ -486,5 +490,12 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             texp.Error(typeof<Void>)
         else
             texp.Continue
-//
-//        
+        
+//    | rexp.Fact(x,pos) ->
+//        let x = tycheck x
+//        if x.Type <> typeof<int> then
+//            EM.Expected_type_but_got_type pos "System.Int32" x.Type.Name
+//            texp.Int32(0) //error recovery: return type of Fact is always Int32
+//        else
+//            let meth = typeof<CoreOps>.GetMethod("Factorial",[|typeof<int>|])
+//            texp.StaticCall(meth, [x], meth.ReturnType)

@@ -139,7 +139,7 @@ module ErrorMessage =
         mk ErrorLevel.Error ErrorType.Semantic 2 pos "Could not resolve types: '%s'"
 
     let No_overload_found_for_binary_operator pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 3 pos "Operator '%s' cannot be applied to operands of type '%s' and '%s'"
+        mk ErrorLevel.Error ErrorType.Semantic 3 pos "Binary operator '%s' cannot be applied to operands of type '%s' and '%s'"
     
     let Variable_set_type_mismatch pos = //todo: rewrite to make clearer
         mk ErrorLevel.Error ErrorType.Semantic 4 pos "Type mismatch: variable '%s' of type '%s' cannot be assigned a value of the different type '%s'"
@@ -201,6 +201,9 @@ module ErrorMessage =
 
     let Internal_error pos =
         mk ErrorLevel.Error ErrorType.Internal 24 pos "%s"
+
+    let No_overload_found_for_unary_operator pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 25 pos "Unary operator '%s' cannot be applied to operand of type '%s'"
 
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
