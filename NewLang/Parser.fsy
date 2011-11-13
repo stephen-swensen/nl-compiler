@@ -27,10 +27,10 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token LPAREN RPAREN
 %token COMMA DOT SEMICOLON
 %token OPEN
-%token LBRACKET RBRACKET
+%token LBRACKET RBRACKET LBRACE RBRACE
 %token IF THEN ELSE
 %token SET
-%token WHILE DO BREAK CONTINUE
+%token WHILE BREAK CONTINUE
 %token EOF
 
 %right SEMICOLON
@@ -209,13 +209,13 @@ rexp:
         { rexp.OpenAssembly(($2, range parseState 2 2), $4) }
 
     //if then else expressions
-    | IF rexp THEN rexp
-        { rexp.IfThenElse(($2, range parseState 2 2),$4,None, range parseState 1 4) }
-    | IF rexp THEN rexp ELSE rexp
-        { rexp.IfThenElse(($2, range parseState 2 2), $4, Some($6), range parseState 1 6) }
+    | IF rexp LBRACE rexp RBRACE
+        { rexp.IfThenElse(($2, range parseState 2 2),$4,None, range parseState 1 5) }
+    | IF rexp LBRACE rexp RBRACE ELSE LBRACE rexp RBRACE
+        { rexp.IfThenElse(($2, range parseState 2 2), $4, Some($8), range parseState 1 9) }
 
     //-- loops --
-    | WHILE rexp DO rexp
+    | WHILE rexp LBRACE rexp RBRACE
         { rexp.WhileLoop(($2, range parseState 2 2),$4) }
     | BREAK LPAREN RPAREN
         { rexp.Break(range parseState 1 1) }

@@ -19,7 +19,6 @@ let keywords =
         "true", BOOL(true)
         "false", BOOL(false)
         "while", WHILE
-        "do", DO
         "break", BREAK
         "continue", CONTINUE
     ] |> Map.ofList
@@ -59,6 +58,8 @@ rule tokenize = parse
 //various
 | "[" { LBRACKET }
 | "]" { RBRACKET }
+| "{" { LBRACE }
+| "}" { RBRACE }
 | "(" { LPAREN }
 | ")" { RPAREN }
 | "." { DOT }
