@@ -205,6 +205,12 @@ module ErrorMessage =
     let No_overload_found_for_unary_operator pos = 
         mk ErrorLevel.Error ErrorType.Semantic 25 pos "Unary operator '%s' cannot be applied to operand of type '%s'"
 
+    let Int32_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 26 pos "'System.Int32' literal must be between %i and %i but is %s" Int32.MinValue Int32.MaxValue
+
+    let Double_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 27 pos "'System.Double' literal must be between %f and %f but is %s" Double.MinValue Double.MaxValue
+
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
 exception EvaluationException of CompilerError[]
