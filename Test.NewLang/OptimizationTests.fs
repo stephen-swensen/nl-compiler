@@ -19,39 +19,39 @@ Swensen.NewLang.ErrorLogger.InstallConsoleLogger()
 
 [<Fact>]
 let ``if/then/else unreachable else branch`` () =
-    test <@ C.parseFromString "if true then 1 else 0" |> O.optimize = C.parseFromString "1" @>
+    test <@ C.parseFromString "if true { 1 } else { 0 }" |> O.optimize = C.parseFromString "1" @>
 
 [<Fact>]
 let ``if/then/else unreachable then branch`` () =
-    test <@ C.parseFromString "if false then 1 else 0" |> O.optimize = C.parseFromString "0" @>
+    test <@ C.parseFromString "if false { 1 } else { 0 }" |> O.optimize = C.parseFromString "0" @>
 
 [<Fact>]
 let ``if/then/else unreachable else branch condition recursively optimized`` () =
-    test <@ C.parseFromString "if (if true then true else false) then 1 else 0" |> O.optimize = C.parseFromString "1" @>
+    test <@ C.parseFromString "if if true { true } else { false } { 1 } else { 0 }" |> O.optimize = C.parseFromString "1" @>
 
 [<Fact>]
 let ``if/then/else unreachable then branch condition recursively optimized`` () =
-    test <@ C.parseFromString "if (if false then true else false) then 1 else 0" |> O.optimize = C.parseFromString "0" @>
+    test <@ C.parseFromString "if if false { true } else { false } { 1 } else { 0 }" |> O.optimize = C.parseFromString "0" @>
 
 [<Fact>]
 let ``if/then unreachable else branch`` () = //note the expectation of the implicit default[int] in the else branch
-    test <@ C.parseFromString "if true then 1;()" |> O.optimize = C.parseFromString "1;()" @>
+    test <@ C.parseFromString "if true { 1;() }" |> O.optimize = C.parseFromString "1;()" @>
 
 [<Fact>]
 let ``if/then unreachable then branch`` () =
-    test <@ C.parseFromString "if false then 1;()" |> O.optimize = C.parseFromString "()" @>
+    test <@ C.parseFromString "if false { 1;() }" |> O.optimize = C.parseFromString "()" @>
 
 [<Fact>]
 let ``if/then unreachable else branch condition recursively optimized`` () =
-    test <@ C.parseFromString "if (1+1)==2 then ()" |> O.optimize = C.parseFromString "()" @>
+    test <@ C.parseFromString "if (1+1)==2 { () }" |> O.optimize = C.parseFromString "()" @>
 
 [<Fact>]
 let ``if/then unreachable then branch condition recursively optimized`` () =
-    test <@ C.parseFromString "if (1+1)==3 then ()" |> O.optimize = C.parseFromString "()" @>
+    test <@ C.parseFromString "if (1+1)==3 { () }" |> O.optimize = C.parseFromString "()" @>
 
 [<Fact>]
 let ``if/then thenBranch is reduced to nop so just give condition`` () =
-    test <@ C.parseFromString "if datetime.isLeapYear(1) then ()" |> O.optimize = C.parseFromString "datetime.isLeapYear(1)" @>
+    test <@ C.parseFromString "if datetime.isLeapYear(1) { () }" |> O.optimize = C.parseFromString "datetime.isLeapYear(1)" @>
 
 //-----do not need to test && and || optimization since they are implemented in terms of if / then / else
 
@@ -69,7 +69,7 @@ let ``static call sub expressions optimized`` () =
 
 [<Fact>]
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
-    test <@ C.parseFromString "if ((true || true).getType() == type[boolean]) then true else false" |> O.optimize = C.parseFromString "if (true.getType() == type[boolean]) then true else false" @>
+    test <@ C.parseFromString "if (true || true).getType() == type[boolean] { true } else { false }" |> O.optimize = C.parseFromString "if true.getType() == type[boolean] { true } else { false }" @>
 
 [<Fact>]
 let ``Int32 constants folding`` () =
@@ -199,19 +199,19 @@ let ``reduce sequence sub expressions`` () =
 
 [<Fact>]
 let ``trim explicit noop if then else branch`` () =
-    test <@ C.parseFromString "if datetime.isLeapYear(1) then () else ()" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then ()" @>
+    test <@ C.parseFromString "if datetime.isLeapYear(1) { () } else { () }" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) { () }" @>
 
 [<Fact>]
 let ``trim explicit sequence of noop if then else branch`` () =
-    test <@ C.parseFromString "if datetime.isLeapYear(1) then () else (();();())" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then ()" @>
+    test <@ C.parseFromString "if datetime.isLeapYear(1) { () } else { (();();()) }" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) { () }" @>
 
 [<Fact>]
 let ``optimize if/then/else then and else branches`` () =
-    test <@ C.parseFromString "if datetime.isLeapYear(1) then 1 + 2 else 3 + 4" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then 3 else 7" @>
+    test <@ C.parseFromString "if datetime.isLeapYear(1) { 1 + 2 } else { 3 + 4 }" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) { 3 } else { 7 }" @>
 
 [<Fact>]
 let ``optimize if/then then branch`` () =
-    test <@ C.parseFromString "if datetime.isLeapYear(1) then 1 + 2; ()" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) then 3;()" @>
+    test <@ C.parseFromString "if datetime.isLeapYear(1) { 1 + 2; () }" |> O.optimize = C.parseFromString "if datetime.isLeapYear(1) { 3; () }" @>
 
 [<Fact>]
 let ``optimize cast subexpression`` () =
@@ -244,15 +244,15 @@ let ``uminus no constant fold but sub optimization`` () =
 
 [<Fact>]
 let ``trim while loop dead code`` () =
-    test <@ C.parseFromString "while false do ()" |> O.optimize = C.parseFromString "()" @>
+    test <@ C.parseFromString "while false { () } " |> O.optimize = C.parseFromString "()" @>
 
 [<Fact>]
 let ``while loop condition is optimized`` () =
-    test <@ C.parseFromString "x = true in while x && (true && true) do break()" |> O.optimize = C.parseFromString "x = true in while x && true do break()" @>
+    test <@ C.parseFromString "x = true in while x && (true && true) { break() }" |> O.optimize = C.parseFromString "x = true in while x && true { break() }" @>
 
 [<Fact>]
 let ``while loop body is optimized`` () =
-    test <@ C.parseFromString "while true do (true && true); break()" |> O.optimize = C.parseFromString "while true do true; break()" @>
+    test <@ C.parseFromString "while true { (true && true); break() }" |> O.optimize = C.parseFromString "while true { true; break() }" @>
 
 [<Fact>]
 let ``varset assign is optimized`` () =
