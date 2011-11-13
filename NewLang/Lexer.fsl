@@ -4,8 +4,13 @@ open System
 open Parser
 open Microsoft.FSharp.Text.Lexing
 
+module EM = ErrorMessage
+
 let lexeme lexbuf =
     LexBuffer<char>.LexemeString lexbuf
+
+let range (lexbuf:LexBuffer<char>) =
+    PositionRange(lexbuf.StartPos,lexbuf.EndPos)
 
 let keywords =
     [
@@ -76,8 +81,24 @@ rule tokenize = parse
 | ''' _ ''' { CHAR (let s = lexeme lexbuf in s.[1]) }
 
 // Numeric constants
-| digit+							  { INT32 (lexeme lexbuf |> int) }
-| digit+('.'digit+)?(['e''E']digit+)? { DOUBLE (lexeme lexbuf |> float) }
+| digit+							  
+    {
+        let input = lexeme lexbuf
+        match System.Int32.TryParse(input) with
+        | true, value -> INT32 (value)
+        | _ ->
+            EM.Int32_literal_out_of_range (range lexbuf) input
+            INT32 (0) //error recovery
+    }
+| digit+('.'digit+)?(['e''E']digit+)? 
+    { 
+        let input = lexeme lexbuf
+        match System.Double.TryParse(input) with
+        | true, value -> DOUBLE (value)
+        | _ ->
+            EM.Double_literal_out_of_range (range lexbuf) input
+            DOUBLE (0.0) //error recovery
+    }
 
 // Names
 | (alpha | '_')+(digit | alpha | '_')* 
