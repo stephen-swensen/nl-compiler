@@ -96,3 +96,33 @@ let ``/ method overload`` () =
 [<Fact>]
 let ``String concat`` () =
     test <@ C.eval "\"hello \" + \"world\"" = "hello world" @>
+
+[<Fact>]
+let ``uminus primitive int64`` () =
+    test <@ C.eval "-int64.parse(\"1\") == int64.parse(\"-1\")" @>
+
+[<Fact>]
+let ``uminus primitive int32`` () =
+    test <@ C.eval "-int32.parse(\"1\") == int32.parse(\"-1\")" @>
+
+[<Fact>]
+let ``uminus primitive int16`` () =
+    test <@ C.eval "-int16.parse(\"1\") == int16.parse(\"-1\")" @>
+
+[<Fact>]
+let ``uminus primitive double`` () =
+    test <@ C.eval "-double.parse(\"1\") == double.parse(\"-1\")" @>
+
+[<Fact>]
+let ``uminus primitive single`` () =
+    test <@ C.eval "-single.parse(\"1\") == single.parse(\"-1\")" @>
+
+[<Fact>]
+let ``uminus non primitive biginteger`` () =
+    test <@ C.eval "-biginteger.parse(\"1\") == biginteger.parse(\"-1\")" @>
+
+[<Fact>]
+let ``uminus error`` () =
+    raisesWith
+        <@ C.eval "-'c'" @>
+        (expectedErrors [|25|])
