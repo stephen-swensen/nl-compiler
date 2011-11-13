@@ -95,6 +95,7 @@ type rexp =
     | Bool             of bool
     | Null             of tySig * PositionRange
     | Typeof           of tySig * PositionRange
+    | Default          of tySig * PositionRange
     | NumericBinop     of numericBinop * rexp * rexp * PositionRange
     | Pow              of rexp * rexp * PositionRange
     //TODO: implement semantic analysis

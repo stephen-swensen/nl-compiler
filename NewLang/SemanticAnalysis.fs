@@ -169,6 +169,17 @@ let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) op
             texp.Typeof(typeof<obj>) //error recovery: this is a runtime value that won't hurt us error 
         | Some(ty) -> 
             texp.Typeof(ty)
+    | rexp.Default(name, pos)   -> 
+        match tryResolveType name with
+        | None -> 
+            EM.Could_not_resolve_type pos name.Name
+            abort()
+        | Some(ty) -> 
+            if ty = typeof<System.Void> then
+                EM.Void_cannot_be_instantiated pos
+                texp.Default(ty) //error recovery
+            else
+                texp.Default(ty)
     | rexp.UMinus(x,pos) ->
         let x = tycheck x
         texp.UMinus(x,x.Type)

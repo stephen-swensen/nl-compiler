@@ -18,7 +18,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token <string> STRING
 %token <char> CHAR
 %token <bool> BOOL
-%token NULL TYPE
+%token NULL TYPE DEFAULT
 %token ANDAND OROR //XOR
 %token EQEQ NOTEQ LT GT GTEQ LTEQ
 %token PLUS MINUS TIMES DIV POW BANG NOT
@@ -146,6 +146,8 @@ rexp:
         { rexp.Null($3, range parseState 3 3) }
     | TYPE LBRACKET tySig RBRACKET            
         { rexp.Typeof($3, range parseState 3 3) }
+    | DEFAULT LBRACKET tySig RBRACKET            
+        { rexp.Default($3, range parseState 3 3) }
     | LPAREN RPAREN
         { rexp.Nop }
     

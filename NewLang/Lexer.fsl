@@ -21,6 +21,7 @@ let keywords =
         "while", WHILE
         "break", BREAK
         "continue", CONTINUE
+        "default", DEFAULT
     ] |> Map.ofList
 }
 
