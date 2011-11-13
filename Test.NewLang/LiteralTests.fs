@@ -59,3 +59,17 @@ let ``resolve simple fully qualified generic signature in null expression`` () =
 [<Fact>]
 let ``literal nop`` () =
     test <@ C.eval "()" = null @>
+
+[<Fact>]
+let ``literal default value type`` () =
+    test <@ C.eval "default[int32]" = 0 @>
+
+[<Fact>]
+let ``literal default ref type`` () =
+    test <@ C.eval "default[string]" = null @>
+
+[<Fact>]
+let ``literal default void is invalid`` () =
+    raisesWith 
+        <@ C.eval "default[system.void]" @>
+        (expectedErrors [|14|])
