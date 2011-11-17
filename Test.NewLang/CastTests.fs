@@ -80,3 +80,10 @@ let ``casting to Void will always fail`` () =
     raisesWith 
         <@ C.eval "3[object][System.Void]" @>
         (expectedErrors [|20|])
+
+[<Fact>]
+let ``could not resolve cast type`` () =
+    raisesWith 
+        <@ C.eval "3[invalid]" @>
+        (expectedErrors [|1|])
+

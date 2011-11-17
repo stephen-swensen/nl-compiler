@@ -126,3 +126,9 @@ let ``uminus error`` () =
     raisesWith
         <@ C.eval "-'c'" @>
         (expectedErrors [|25|])
+
+[<Fact>]
+let ``could not resolve binary operator overload`` () =
+    raisesWith
+        <@ C.eval "biginteger.parse(\"1\") + 1" @>
+        (expectedErrors [|3|])
