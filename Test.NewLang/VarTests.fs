@@ -49,6 +49,14 @@ let ``var not found`` () =
         <@ C.eval "x; ()" @>
         (expectedErrors [|5|])
 
-//[<Fact>]
-//let ``Var set weaker precedence than fact`` () =
-//    test <@ C.eval "x = 3 in x <- 2! ; x" = 2 @>
+[<Fact>]
+let ``var set type mismatch error`` () =
+    raisesWith 
+        <@ C.eval "x = 3 in x <- 'c'" @>
+        (expectedErrors [|4|])
+
+[<Fact>]
+let ``var set var not found error`` () =
+    raisesWith 
+        <@ C.eval "x <- 'c'" @>
+        (expectedErrors [|5|])
