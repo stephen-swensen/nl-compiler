@@ -37,16 +37,16 @@ let staticFlags = BindingFlags.Static ||| BindingFlags.Public ||| BindingFlags.I
 let coerceIfNeeded expectedTy (targetExp:texp) =
     if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
 
-let coerceEachIfNeeded expectedTys targetExps =
-    List.zip expectedTys targetExps
-    |> List.map (fun (targetTy, targetExp) -> coerceIfNeeded targetTy targetExp)
+//let coerceEachIfNeeded expectedTys targetExps =
+//    List.zip expectedTys targetExps
+//    |> List.map (fun (targetTy, targetExp) -> coerceIfNeeded targetTy targetExp)
 
 let castIfNeeded expectedTy (targetExp:texp) =
     if targetExp.Type <> expectedTy then Cast(targetExp,expectedTy) else targetExp
 
-let castEachIfNeeded expectedTys targetExps =
-    List.zip expectedTys targetExps
-    |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
+//let castEachIfNeeded expectedTys targetExps =
+//    List.zip expectedTys targetExps
+//    |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
 
 let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
     List.zip (expectedParameters |> Seq.map (fun p -> p.ParameterType) |> Seq.toList)  targetExps
@@ -81,9 +81,9 @@ let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[])
         | _ -> None
 
 
-let tryResolveBinaryOp opName (xty:Type) (yty:Type) = 
-    seq { yield xty.GetMethod(opName, [|xty;yty|])
-          yield yty.GetMethod(opName, [|xty;yty|]) } |> Seq.tryFind ((<>)null)
+//let tryResolveBinaryOp opName (xty:Type) (yty:Type) = 
+//    seq { yield xty.GetMethod(opName, [|xty;yty|])
+//          yield yty.GetMethod(opName, [|xty;yty|]) } |> Seq.tryFind ((<>)null)
 
 let tryResolveOpImplicit, tryResolveOpExplicit =
     let tryResolveConversionOp name (onty:Type) fromty toty =
