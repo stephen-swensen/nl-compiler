@@ -108,3 +108,9 @@ let ``not false`` () =
 [<Fact>]
 let ``not not false`` () =
     test <@ C.eval "!!false" = false @>
+
+[<Fact>]
+let ``logical not type must be boolean`` () =
+    raisesWith 
+        <@ C.eval "!'c'" @>
+        (expectedErrors [|6|])
