@@ -47,3 +47,21 @@ let ``nested breaks`` () =
 [<Fact>]
 let ``nested continue`` () =
     test <@ C.eval "y=0 in while true { x=0 in while x<5 { x<-x+1; if x == 3 { continue() } else { y<-y+1 } } ; break() }; y" = 4 @>
+
+[<Fact>]
+let ``unreachable break error`` () =
+    raisesWith 
+        <@ C.eval "while false { break(); () }" @>
+        (expectedErrors [|17|])
+
+[<Fact>]
+let ``unreachable continue error`` () =
+    raisesWith 
+        <@ C.eval "while false { continue(); () }" @>
+        (expectedErrors [|17|])
+
+[<Fact>]
+let ``condition is not boolean error`` () =
+    raisesWith 
+        <@ C.eval "while 'c' { () }" @>
+        (expectedErrors [|6|])
