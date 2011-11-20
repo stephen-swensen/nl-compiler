@@ -1,4 +1,4 @@
-﻿namespace Swensen.NewLang
+﻿namespace Swensen.NL
 open System.Reflection
 open System
 

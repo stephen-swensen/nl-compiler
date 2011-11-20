@@ -58,7 +58,7 @@
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
     <FsYacc Include="Parser.fsy">
-      <OtherFlags>--module Swensen.NewLang.Parser</OtherFlags>
+      <OtherFlags>--module Swensen.NL.Parser</OtherFlags>
     </FsYacc>
     <Compile Include="texp.fs" />
     <Compile Include="SemanticEnvironment.fs" />

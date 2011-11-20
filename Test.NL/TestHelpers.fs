@@ -1,5 +1,5 @@
 ﻿namespace Tests
-open Swensen.NewLang
+open Swensen.NL
 
 [<AutoOpen>]
 module Helpers =
@@ -7,7 +7,7 @@ module Helpers =
     let openAsm = sprintf "open \"%s\" in " (System.Reflection.Assembly.GetExecutingAssembly().Location)
     ///code fragment to open the root namespace of this assembly for testing with types defined within this assembly
     let openNamespace = "open Tests in "
-    ///prefix used to reference this assembly and this namespace in dynamic NewLang tests
+    ///prefix used to reference this assembly and this namespace in dynamic NL tests
     let openPrefix = openAsm + openNamespace
 
     let expectedErrors codes = 

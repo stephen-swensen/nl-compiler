@@ -1,6 +1,6 @@
 ﻿%{
 
-open Swensen.NewLang
+open Swensen.NL
 open Microsoft.FSharp.Text.Parsing
 
 //let parse_error msg =

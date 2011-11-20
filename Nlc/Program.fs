@@ -1,5 +1,5 @@
-﻿module Swensen.NewLang.StaticCompiler
-open Swensen.NewLang
+﻿module Swensen.NL.Nlc
+open Swensen.NL
 
 [<EntryPoint>]
 let main args =

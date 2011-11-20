@@ -2,7 +2,7 @@
 
 open Xunit
 open Swensen.Unquote
-open Swensen.NewLang
+open Swensen.NL
 module C = Compilation
 
 [<Fact>]
