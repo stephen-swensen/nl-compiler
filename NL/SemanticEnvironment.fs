@@ -5,7 +5,7 @@ open System
 ///Environmental context passed to each recursive expression process during semantic analysis
 type SemanticEnvironment = 
     {
-        ///Indicates that the current expression is parse of a loop body expression (e.g. while loop)
+        ///Indicates that the current expression is inside a loop body
         IsLoopBody: bool
         ///All the visible referenced assemblies
         Assemblies: Assembly list
