@@ -3,7 +3,7 @@
 open System
 open Microsoft.FSharp.Text.Lexing
 
+//represents a "raw" top level language element
 type rnl =
     | Exp              of rexp
-    | Stmt             of rstmt
     | StmtList         of rstmt list
