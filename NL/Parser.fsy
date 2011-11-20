@@ -50,9 +50,13 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 //%nonassoc NOT
 
 %start start
-%type <rexp> start
+%type <rnl> start
+
 %type <rexp> rexp
 %type <rexp list> rexpList
+
+%type <rstmt> rstmt
+%type <rstmt list> rstmtList
 
 %type <tySig> tySig
 %type <tySig list> tySigList
@@ -60,12 +64,8 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %%
 
 start:
-    | rexp EOF { $1 }
+    | rnl EOF { $1 }
 
-rexpList:
-    | rexp { [$1] }
-    | rexp COMMA rexpList { $1::$3 }
-    | { [] }
 
 longName:
     | NAME { $1 }
@@ -78,8 +78,12 @@ tySigList:
 tySig:
     | longName LBRACKET tySigList RBRACKET { TySig($1,$3) }
     | longName { TySig($1,[]) } 
-    
 
+rexpList:
+    | rexp { [$1] }
+    | rexp COMMA rexpList { $1::$3 }
+    | { [] }
+    
 rexp: 
     //-- logical binary operators --
 
@@ -223,3 +227,36 @@ rexp:
         { rexp.Break(range parseState 1 1) }
     | CONTINUE LPAREN RPAREN
         { rexp.Continue(range parseState 1 1) }
+
+rstmtList:
+    | rstmt { [$1] }
+    | rstmt rstmtList { $1::$2 }
+    | { [] }
+
+rstmt:
+    //open namespace
+    | OPEN longName SEMICOLON SEMICOLON
+        { rstmt.OpenNamespace($2, range parseState 2 2) }
+    
+    //open assembly reference (by assembly name or file name)
+    | OPEN STRING SEMICOLON SEMICOLON
+        { rstmt.OpenAssembly($2, range parseState 2 2) }
+
+    //
+    | longName EQ rexp SEMICOLON SEMICOLON
+       { rstmt.Let($1, ($3, range parseState 3 3)) }
+
+    | rexp SEMICOLON SEMICOLON
+       { rstmt.Do($1) }
+
+rnl:
+    | rstmtList
+        { 
+            match $1 with
+            | [x] ->
+                rnl.Stmt(x) 
+            | xl ->
+                rnl.StmtList(xl) 
+        }
+    | rexp
+        { rnl.Exp($1) }
