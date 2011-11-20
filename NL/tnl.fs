@@ -3,8 +3,8 @@
 open System
 open Microsoft.FSharp.Text.Lexing
 
+//represents a semantically checked top level language element
 type tnl =
     | Exp              of texp
-    | Stmt             of tstmt
     | StmtList         of tstmt list
     //Nlc

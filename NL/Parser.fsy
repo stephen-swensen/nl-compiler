@@ -251,12 +251,6 @@ rstmt:
 
 rnl:
     | rstmtList
-        { 
-            match $1 with
-            | [x] ->
-                rnl.Stmt(x) 
-            | xl ->
-                rnl.StmtList(xl) 
-        }
+        { rnl.StmtList($1) }
     | rexp
         { rnl.Exp($1) }
