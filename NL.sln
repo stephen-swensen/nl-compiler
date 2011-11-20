@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NL", "NewLang\NL.fsproj", "{E25F2830-8E94-4680-882B-39E30CE3D586}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NL", "NL\NL.fsproj", "{E25F2830-8E94-4680-882B-39E30CE3D586}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.NL", "Test.NewLang\Test.NL.fsproj", "{82730E14-DF66-4FE8-9EB6-BDB35C4FCA65}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.NL", "Test.NL\Test.NL.fsproj", "{82730E14-DF66-4FE8-9EB6-BDB35C4FCA65}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Nlc", "NewLang.StaticCompiler\Nlc.fsproj", "{EF46D00D-9B1C-468B-8020-319B8AF0BB03}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Nlc", "Nlc\Nlc.fsproj", "{EF46D00D-9B1C-468B-8020-319B8AF0BB03}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Nli", "NewLang.InteractiveCompiler\Nli.fsproj", "{ABD56F8C-A0B9-4285-9825-8176A5A50EB2}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Nli", "Nli\Nli.fsproj", "{ABD56F8C-A0B9-4285-9825-8176A5A50EB2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

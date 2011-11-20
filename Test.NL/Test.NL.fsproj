@@ -7,8 +7,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{82730e14-df66-4fe8-9eb6-bdb35c4fca65}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Test.NewLang.Compiler</RootNamespace>
-    <AssemblyName>Test.NewLang.Compiler</AssemblyName>
+    <RootNamespace>Test.NL</RootNamespace>
+    <AssemblyName>Test.NL</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <Name>Test.NL</Name>
   </PropertyGroup>
@@ -20,7 +20,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\Test.NewLang.Compiler.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\Test.NL.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,7 +29,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\Test.NewLang.Compiler.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Test.NL.xml</DocumentationFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
@@ -67,7 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NewLang\NL.fsproj">
+    <ProjectReference Include="..\NL\NL.fsproj">
       <Name>NL</Name>
       <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
       <Private>True</Private>
