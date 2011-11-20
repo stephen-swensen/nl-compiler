@@ -97,53 +97,57 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
     (fun onty fromty toto -> tryResolveConversionOp "op_Implicit" onty fromty toto), 
     (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
+///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
+let rec tryResolveType env gsig =
+    match gsig with
+    | TySig("",_) -> None
+    | TySig(name,args) ->
+        seq {
+            for possibleName in (name::(env.Namespaces |> List.map (fun n -> n + "." + name))) do
+                for possibleAsm in env.Assemblies do
+                    if args = [] then
+                        let possibleFullName = possibleName + ", " + possibleAsm.FullName
+                        let ty = Type.GetType(possibleFullName,false, true)
+                        yield Option.fromNullable ty
+                    else
+                        let argTys = args |> List.map (tryResolveType env)
+                        if List.exists ((=)None) argTys then
+                            yield None //todo: would like to convey exactly which sub types failed to resolve
+                        else
+                            let possibleFullName = 
+                                sprintf "%s`%i[%s], %s" 
+                                    possibleName 
+                                    args.Length 
+                                    (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) (List.choose id argTys)))
+                                    possibleAsm.FullName
+                            let ty = Type.GetType(possibleFullName,false, true)
+                            yield Option.fromNullable ty
+        } |> Seq.tryPick id
+
+//todo: make cleaner, either wait to convert to reflection friendly arrays till last moment, or convert to arrays up front
+let tryResolveGenericArgTys env genericArgs =        
+    let genericArgTys = genericArgs |> Seq.map (tryResolveType env)
+    if Seq.exists ((=)None) genericArgTys then None
+    else Some(genericArgTys |> Seq.choose id |> Seq.toArray)
+
+//todo: don't like passing in pos here too much
+let tryResolveMethodWithGenericArgs env ty methodName bindingFlags genericArgs argTys pos =
+    match genericArgs with
+    | [||] ->
+        tryResolveMethod ty methodName bindingFlags [||] argTys
+    | genericArgs -> 
+        match tryResolveGenericArgTys env genericArgs with
+        | None -> 
+            EM.Could_not_resolve_types pos (sprintTySigs genericArgs)
+            abort()
+        | Some(genericArgTys) -> tryResolveMethod ty methodName bindingFlags genericArgTys argTys
+
 ///Symantic analysis (type checking)
 let rec tycheckWith env rawExpression = // isLoopBody (refAsms:Assembly list) openNames varEnv rawExpression =
     let tycheck = tycheckWith env
-    ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
-    let rec tryResolveType gsig =
-        match gsig with
-        | TySig("",_) -> None
-        | TySig(name,args) ->
-            seq {
-                for possibleName in (name::(env.Namespaces |> List.map (fun n -> n + "." + name))) do
-                    for possibleAsm in env.Assemblies do
-                        if args = [] then
-                            let possibleFullName = possibleName + ", " + possibleAsm.FullName
-                            let ty = Type.GetType(possibleFullName,false, true)
-                            yield Option.fromNullable ty
-                        else
-                            let argTys = List.map tryResolveType args
-                            if List.exists ((=)None) argTys then
-                                yield None //todo: would like to convey exactly which sub types failed to resolve
-                            else
-                                let possibleFullName = 
-                                    sprintf "%s`%i[%s], %s" 
-                                        possibleName 
-                                        args.Length 
-                                        (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) (List.choose id argTys)))
-                                        possibleAsm.FullName
-                                let ty = Type.GetType(possibleFullName,false, true)
-                                yield Option.fromNullable ty
-            } |> Seq.tryPick id
-
-    //todo: make cleaner, either wait to convert to reflection friendly arrays till last moment, or convert to arrays up front
-    let tryResolveGenericArgTys genericArgs =        
-        let genericArgTys = genericArgs |> Seq.map tryResolveType
-        if Seq.exists ((=)None) genericArgTys then None
-        else Some(genericArgTys |> Seq.choose id |> Seq.toArray)
-
-    //todo: don't like passing in pos here too much
-    let tryResolveMethodWithGenericArgs ty methodName bindingFlags genericArgs argTys pos =
-        match genericArgs with
-        | [||] ->
-            tryResolveMethod ty methodName bindingFlags [||] argTys
-        | genericArgs -> 
-            match tryResolveGenericArgTys genericArgs with
-            | None -> 
-                EM.Could_not_resolve_types pos (sprintTySigs genericArgs)
-                abort()
-            | Some(genericArgTys) -> tryResolveMethod ty methodName bindingFlags genericArgTys argTys
+    let tryResolveType = tryResolveType env
+    let tryResolveGenericArgTys = tryResolveGenericArgTys env
+    let tryResolveMethodWithGenericArgs = tryResolveMethodWithGenericArgs env
 
     match rawExpression with
     | rexp.Double x -> texp.Double x
