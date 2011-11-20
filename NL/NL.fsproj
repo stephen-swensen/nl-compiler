@@ -46,6 +46,8 @@
     <Compile Include="Utils.fs" />
     <Compile Include="ErrorHandling.fs" />
     <Compile Include="rexp.fs" />
+    <Compile Include="rstmt.fs" />
+    <Compile Include="rnl.fs" />
     <Compile Include="$(IntermediateOutputPath)\Parser.fs">
       <Visible>false</Visible>
       <Link>Parser.fs</Link>
@@ -61,6 +63,8 @@
       <OtherFlags>--module Swensen.NL.Parser</OtherFlags>
     </FsYacc>
     <Compile Include="texp.fs" />
+    <Compile Include="tstmt.fs" />
+    <Compile Include="tnl.fs" />
     <Compile Include="SemanticEnvironment.fs" />
     <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="Optimization.fs" />

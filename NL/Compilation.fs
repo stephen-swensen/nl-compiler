@@ -40,7 +40,7 @@ let emitOpCodes (il:ILGenerator) ast =
             | Eq -> il.Emit(OpCodes.Ceq)
             | Lt -> il.Emit(OpCodes.Clt)
             | Gt -> il.Emit(OpCodes.Cgt)
-        | Let(name, assign, body,_) ->
+        | texp.Let(name, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit assign
             il.Emit(OpCodes.Stloc, local)
@@ -167,8 +167,13 @@ let emitOpCodes (il:ILGenerator) ast =
 ///parse from the lexbuf with the given semantic environment
 let parseWith env lexbuf =
     try 
-        Parser.start Lexer.tokenize lexbuf 
-        |> SemanticAnalysis.tycheckWith env
+        let x = Parser.start Lexer.tokenize lexbuf 
+        let x =
+            match x with
+            | rnl.Exp(x) -> x
+            | _ -> failwithf "%A" x
+        
+        x |> SemanticAnalysis.tycheckWith env
     with
     | CompilerInterruptException ->
         texp.Error(typeof<Void>)
