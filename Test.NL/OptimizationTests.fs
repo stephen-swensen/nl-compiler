@@ -3,14 +3,14 @@ module Tests.OptimizationTests
 
 open Xunit
 open Swensen.Unquote
-open Swensen.NewLang
+open Swensen.NL
 open System.Collections.Generic
 
 module O = Optimization
 module C = Compilation
 
 //so that we see error details in console output while doing parse operations which don't install their own error loggers
-Swensen.NewLang.ErrorLogger.InstallConsoleLogger()
+Swensen.NL.ErrorLogger.InstallConsoleLogger()
 
 //N.B. we use parseFromString to obtain a texp tree for convienence and readability, but we are really only testing 
 //texp -> texp transformations for optimization. (this does make me a little nervous, of course, but hand constructing

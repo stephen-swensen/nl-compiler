@@ -1,4 +1,4 @@
-﻿module Swensen.NewLang.Optimization
+﻿module Swensen.NL.Optimization
 
 let rec optimize (exp:texp) = 
     match exp with

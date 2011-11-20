@@ -1,4 +1,4 @@
-﻿module Swensen.NewLang.Compilation
+﻿module Swensen.NL.Compilation
 
 open System
 open System.Reflection

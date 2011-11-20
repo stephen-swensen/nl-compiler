@@ -1,4 +1,4 @@
-﻿namespace Swensen.NewLang
+﻿namespace Swensen.NL
 
 module Option =
     let fromNullable nullable =
