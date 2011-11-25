@@ -5,7 +5,7 @@ open Microsoft.FSharp.Text.Lexing
 
 type numericBinop = Plus | Minus | Times | Div
     with
-        ///get the .NET method name corresponding to this op
+        ///get the .NET method name corresponding to this op (used to get MethodInfo for non-primitive operands, excluding string concat which is handled separately)
         member x.Name =
             match x with
             | Plus -> "op_Addition"
@@ -13,7 +13,7 @@ type numericBinop = Plus | Minus | Times | Div
             | Div -> "op_Division"
             | Times -> "op_Multiply"
 
-        ///get the NL textual symbol of this op
+        ///get the NL textual symbol of this op (used for error messages)
         member x.Symbol =
             match x with
             | Plus -> "+"
@@ -21,7 +21,7 @@ type numericBinop = Plus | Minus | Times | Div
             | Times -> "*"
             | Div -> "/"
         
-        ///Call the F# analog to this operator on the operands
+        ///Call the F# analog to this operator on the operands (used for constants folding during optimization)
         member inline x.Call(lhs:'a,rhs:'a):'a =
             let fsop =
                 match x with
