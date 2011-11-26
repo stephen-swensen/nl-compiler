@@ -159,7 +159,7 @@ let emitOpCodes (il:ILGenerator) ast =
 //        | Xor(x,y) ->
 //            emitAll [x;y]
 //            il.Emit(OpCodes.Xor)
-        | Error _ ->
+        | texp.Error _ ->
             failwith "Should not be emitting opcodes for an ast with errors"
 
     emitWith None Map.empty ast |> ignore
@@ -167,25 +167,20 @@ let emitOpCodes (il:ILGenerator) ast =
 ///parse from the lexbuf with the given semantic environment
 let parseWith env lexbuf =
     try 
-        let x = Parser.start Lexer.tokenize lexbuf 
-        let x =
-            match x with
-            | rnl.Exp(x) -> x
-            | _ -> failwithf "%A" x
-        
-        x |> SemanticAnalysis.tycheckWith env
+        Parser.start Lexer.tokenize lexbuf 
+        |> SemanticAnalysis.tycheckWith env
     with
     | CompilerInterruptException ->
-        texp.Error(typeof<Void>)
+        tnl.Error
     //fslex/yacc do not use specific exception types
     | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
         EL.ActiveLogger.Log
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Syntactic, ErrorLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
-        texp.Error(typeof<Void>)
+        tnl.Error
     | e ->
         EL.ActiveLogger.Log
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Internal, ErrorLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
-        texp.Error(typeof<Void>)
+        tnl.Error
 
 ///parse from the string with the given semantic environment
 let parseFromStringWith env code =
@@ -202,27 +197,37 @@ let parseFromStringWith env code =
 ///parseFromString with the "default" environment
 let parseFromString = parseFromStringWith SemanticEnvironment.Default
 
-///Create a dynamic method from a typed expression using the default environment
-let dmFromAst (ast:texp) =
-    let dm = DynamicMethod("Eval", ast.Type, null)
-    let il = dm.GetILGenerator()
-    emitOpCodes il ast
-    il.Emit(OpCodes.Ret)
-    dm
+
 
 //should have "tryEval" which doesn't throw?
 
 ///Evaluate an NL code string using the default environment.
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let eval<'a> code : 'a = 
+    ///Create a dynamic method from a typed expression using the default environment
+    let dmFromAst (ast:texp) =
+        let dm = DynamicMethod("Eval", ast.Type, null)
+        let il = dm.GetILGenerator()
+        emitOpCodes il ast
+        il.Emit(OpCodes.Ret)
+        dm
+
     EL.InstallDefaultLogger() //may want to switch back to previous logger when exiting eval
-    let ast = parseFromString code
+
+    let ast = parseFromString code 
     match EL.ActiveLogger.ErrorCount with
     | 0 ->
-        let dm = (dmFromAst ast)
+        let ast =
+            match ast with
+            | tnl.Exp(x) -> x
+            | tnl.StmtList([tstmt.Do(x)]) -> x
+            | _ -> 
+                raise (EvaluationException("not a valid eval expression", [||]))
+
+        let dm = dmFromAst ast
         dm.Invoke(null,null) |> unbox
     | _ ->
-        raise (EvaluationException(EL.ActiveLogger.Errors |> Seq.toArray))
+        raise (EvaluationException("compiler errors", EL.ActiveLogger.Errors |> Seq.toArray))
 
 //TODO: the following methods are used for nlc.exe and nli.exe. in the future we will have 
 //specialized methodss for the Compiler service, vs. nlc.exe, vs. nli.exe with APPRORPIATE ERRORLOGGERS installed.
@@ -237,6 +242,13 @@ let compileFromAst ast asmName =
     let tyBuilder = modBuilder.DefineType(asmName + ".Application", TypeAttributes.Public)
     let methBuilder = tyBuilder.DefineMethod("Run", MethodAttributes.Public ||| MethodAttributes.Static, typeof<System.Void>, null)
     
+    let ast =
+        match ast with
+        | tnl.Exp(x) -> x
+        | tnl.StmtList([tstmt.Do(x)]) -> x
+        | _ -> 
+            raise (EvaluationException("not a valid eval expression", [||])) //todo: remove
+
     let il = methBuilder.GetILGenerator()
     emitOpCodes il ast
     il.Emit(OpCodes.Ret)
