@@ -211,10 +211,14 @@ module ErrorMessage =
     let Double_literal_out_of_range pos = 
         mk ErrorLevel.Error ErrorType.Semantic 27 pos "'System.Double' literal must be between %f and %f but is %s" Double.MinValue Double.MaxValue
 
+    let Invalid_identifier pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 28 pos "Identifier '%s' cannot contain any '%s' characters"
+
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
-exception EvaluationException of CompilerError[]
-    with 
-        member this.Errors = this.Data0
+
+type EvaluationException(msg:string, errors:CompilerError[]) =
+    inherit Exception(msg)
+    member this.Errors = errors
 
 exception CompilerInternalErrorException

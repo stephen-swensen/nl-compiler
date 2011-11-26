@@ -231,11 +231,11 @@ let ``optimize body of var binding`` () =
 
 [<Fact>]
 let ``constant fold uminus of int`` () =
-    test <@ texp.UMinus(texp.Int32(1), typeof<int32>) |> O.optimize = texp.Int32(-1) @>
+    test <@ tnl.Exp(texp.UMinus(texp.Int32(1), typeof<int32>)) |> O.optimize = tnl.Exp(texp.Int32(-1)) @>
 
 [<Fact>]
 let ``constant fold uminus of double`` () =
-    test <@ texp.UMinus(texp.Double(1.), typeof<double>) |> O.optimize = texp.Double(-1.) @>
+    test <@ tnl.Exp(texp.UMinus(texp.Double(1.), typeof<double>)) |> O.optimize = tnl.Exp(texp.Double(-1.)) @>
 
 [<Fact>]
 let ``uminus no constant fold but sub optimization`` () =
@@ -260,7 +260,7 @@ let ``varset assign is optimized`` () =
 
 [<Fact>]
 let ``can't optimize Error case`` () =
-    raises<exn> <@ texp.Error(typeof<System.Boolean>) |> O.optimize @>
+    raises<exn> <@ texp.Error(typeof<System.Boolean>) |> tnl.Exp |> O.optimize @>
 
 
 

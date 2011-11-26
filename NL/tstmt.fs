@@ -5,7 +5,6 @@ open Microsoft.FSharp.Text.Lexing
 
 type tstmt =
     //variable stmt
-    | Let               of string * rexp * Type
+    | Let               of string * texp
     //expression stmt
-    | Do                of rexp * Type
-
+    | Do                of texp

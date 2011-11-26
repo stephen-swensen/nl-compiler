@@ -5,6 +5,7 @@ open Microsoft.FSharp.Text.Lexing
 
 //represents a semantically checked top level language element
 type tnl =
-    | Exp              of texp
-    | StmtList         of tstmt list
+    | Exp               of texp
+    | StmtList          of tstmt list
+    | Error
     //Nlc
