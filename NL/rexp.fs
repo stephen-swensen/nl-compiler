@@ -128,3 +128,8 @@ type rexp =
     | Break            of PositionRange
     | Continue         of PositionRange
     | LogicBinop       of logicBinop * (rexp * PositionRange) * (rexp * PositionRange)
+
+//type Identifier(nameParts) =
+//    let parts = name.Split('.')
+//    member this.Qualifier =
+//        if parts
