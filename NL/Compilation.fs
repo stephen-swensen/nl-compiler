@@ -31,10 +31,10 @@ let emitOpCodes (il:ILGenerator) ilExpr =
         | NumericBinop(op,x,y,_) -> 
             emitAll [x;y]
             match op with
-            | Ast.SynNumericBinop.Plus  -> il.Emit(OpCodes.Add)
-            | Ast.SynNumericBinop.Minus -> il.Emit(OpCodes.Sub)
-            | Ast.SynNumericBinop.Times -> il.Emit(OpCodes.Mul)
-            | Ast.SynNumericBinop.Div   -> il.Emit(OpCodes.Div)
+            | ILNumericBinop.Plus  -> il.Emit(OpCodes.Add)
+            | ILNumericBinop.Minus -> il.Emit(OpCodes.Sub)
+            | ILNumericBinop.Times -> il.Emit(OpCodes.Mul)
+            | ILNumericBinop.Div   -> il.Emit(OpCodes.Div)
         | ComparisonBinop(op,x,y) -> 
             emitAll [x;y]
             match op with

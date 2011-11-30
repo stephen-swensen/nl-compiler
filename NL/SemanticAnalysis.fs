@@ -228,7 +228,7 @@ let rec tycheckWith env synNlFragment =
             let x, y = tycheckExp x, tycheckExp y
             match NumericTower.tallestTy x.Type y.Type with
             | Some(tallestTy) -> //primitive
-                ILExpr.NumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
+                ILExpr.mkNumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
             | None when op = Ast.SynNumericBinop.Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string
                 let meth = tryResolveMethod typeof<System.String> "Concat" staticFlags [||] [|x.Type; y.Type|]
                 match meth with
