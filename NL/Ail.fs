@@ -3,6 +3,19 @@ module Swensen.NL.Ail
 
 open System
 
+type ILNumericBinop = Plus | Minus | Times | Div
+    with
+        ///Call the F# analog to this operator on the operands (used for constants folding during optimization)
+        member inline x.Call(lhs:'a,rhs:'a):'a =
+            let fsop =
+                match x with
+                | Plus -> (+)
+                | Div -> (/)
+                | Minus -> (-)
+                | Times -> (*)
+
+            fsop lhs rhs
+
 ///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
 type ILComparisonBinop = Eq | Lt | Gt
     with
@@ -32,7 +45,7 @@ type ILExpr =
     | Continue
     | Error         of Type
 
-    | NumericBinop  of Ast.SynNumericBinop * ILExpr * ILExpr * Type
+    | NumericBinop  of ILNumericBinop * ILExpr * ILExpr * Type
     | UMinus        of ILExpr * Type
     | Let           of string * ILExpr * ILExpr * Type
     //primitive coersion
@@ -88,18 +101,29 @@ type ILExpr =
             | Error(ty)
                 -> ty
         
-        ///make a comparison binop case using a Ast.SynComparisonBinop
+        ///make a comparison binop case using an Ast.SynComparisonBinop
         static member mkComparisonBinop(op:Ast.SynComparisonBinop, x:ILExpr, y:ILExpr) = 
             match op with
             | Ast.SynComparisonBinop.Eq -> ILExpr.ComparisonBinop(ILComparisonBinop.Eq,x,y)
             | Ast.SynComparisonBinop.Lt -> ILExpr.ComparisonBinop(ILComparisonBinop.Lt,x,y)
             | Ast.SynComparisonBinop.Gt -> ILExpr.ComparisonBinop(ILComparisonBinop.Gt,x,y)
             | Ast.SynComparisonBinop.Neq -> 
-                ILExpr.LogicalNot(ComparisonBinop(ILComparisonBinop.Eq,x,y))
+                ILExpr.LogicalNot(ILExpr.ComparisonBinop(ILComparisonBinop.Eq,x,y))
             | Ast.SynComparisonBinop.LtEq ->
-                ILExpr.LogicalNot(ComparisonBinop(ILComparisonBinop.Gt,x,y))
+                ILExpr.LogicalNot(ILExpr.ComparisonBinop(ILComparisonBinop.Gt,x,y))
             | Ast.SynComparisonBinop.GtEq ->
-                ILExpr.LogicalNot(ComparisonBinop(ILComparisonBinop.Lt,x,y))
+                ILExpr.LogicalNot(ILExpr.ComparisonBinop(ILComparisonBinop.Lt,x,y))
+
+        ///make a comparison binop case using an Ast.SynNumericBinop
+        static member mkNumericBinop(op:Ast.SynNumericBinop, x:ILExpr, y:ILExpr, ty:Type) = 
+            let op =
+                match op with
+                | Ast.SynNumericBinop.Div -> ILNumericBinop.Div
+                | Ast.SynNumericBinop.Plus -> ILNumericBinop.Plus
+                | Ast.SynNumericBinop.Times -> ILNumericBinop.Times
+                | Ast.SynNumericBinop.Minus -> ILNumericBinop.Minus
+
+            ILExpr.NumericBinop(op, x, y, ty)
 
 ///represents a top level statement
 type ILStmt =
