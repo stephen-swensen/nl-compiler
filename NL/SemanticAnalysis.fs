@@ -2,6 +2,7 @@
 
 open System
 open System.Reflection
+open Swensen.NL.Ail
 
 ///Functions for calculating primitive type widening
 module NumericTower =
@@ -34,10 +35,10 @@ let sprintAssemblies (tarr:Assembly seq) =
 let instanceFlags = BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
 let staticFlags = BindingFlags.Static ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
 
-let coerceIfNeeded expectedTy (targetExp:texp) =
+let coerceIfNeeded expectedTy (targetExp:ILExpr) =
     if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
 
-let castIfNeeded expectedTy (targetExp:texp) =
+let castIfNeeded expectedTy (targetExp:ILExpr) =
     if targetExp.Type <> expectedTy then Cast(targetExp,expectedTy) else targetExp
 
 let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
@@ -145,20 +146,20 @@ let tryLoadAssembly (name:string) =
             None
 
 ///Symantic analysis (type checking)
-let rec tycheckWith env rawNL =
-    let rec tycheckExpWith (env:SemanticEnvironment) (rawExpression:Ast.SynExpr) : texp=
+let rec tycheckWith env synNlFragment =
+    let rec tycheckExpWith env synExpr=
         let tycheckExp = tycheckExpWith env
         let tryResolveType = tryResolveType env
         let tryResolveGenericArgTys = tryResolveGenericArgTys env
         let tryResolveMethodWithGenericArgs = tryResolveMethodWithGenericArgs env
 
 
-        match rawExpression with
-        | Ast.SynExpr.Double x -> texp.Double x
-        | Ast.SynExpr.Int32 x  -> texp.Int32 x
-        | Ast.SynExpr.String x -> texp.String x
-        | Ast.SynExpr.Char x   -> texp.Char x
-        | Ast.SynExpr.Bool x   -> texp.Bool x
+        match synExpr with
+        | Ast.SynExpr.Double x -> ILExpr.Double x
+        | Ast.SynExpr.Int32 x  -> ILExpr.Int32 x
+        | Ast.SynExpr.String x -> ILExpr.String x
+        | Ast.SynExpr.Char x   -> ILExpr.Char x
+        | Ast.SynExpr.Bool x   -> ILExpr.Bool x
         | Ast.SynExpr.Null(name, pos)   -> 
             match tryResolveType name with
             | None -> 
@@ -167,16 +168,16 @@ let rec tycheckWith env rawNL =
             | Some(ty) ->
                 if ty.IsValueType then
                     EM.Null_is_invalid_for_value_types pos ty.Name
-                    texp.Null(ty) //error recovery: use wants to use a ValueType, but incorrectly wanted to use null for it
+                    ILExpr.Null(ty) //error recovery: use wants to use a ValueType, but incorrectly wanted to use null for it
                 else
-                    texp.Null(ty)
+                    ILExpr.Null(ty)
         | Ast.SynExpr.Typeof(name, pos)   -> 
             match tryResolveType name with
             | None -> 
                 EM.Could_not_resolve_type pos name.Name
-                texp.Typeof(typeof<obj>) //error recovery: this is a runtime value that won't hurt us error 
+                ILExpr.Typeof(typeof<obj>) //error recovery: this is a runtime value that won't hurt us error 
             | Some(ty) -> 
-                texp.Typeof(ty)
+                ILExpr.Typeof(ty)
         | Ast.SynExpr.Default(name, pos)   -> 
             match tryResolveType name with
             | None -> 
@@ -185,9 +186,9 @@ let rec tycheckWith env rawNL =
             | Some(ty) -> 
                 if ty = typeof<System.Void> then
                     EM.Void_cannot_be_instantiated pos
-                    texp.Default(ty) //error recovery
+                    ILExpr.Default(ty) //error recovery
                 else
-                    texp.Default(ty)
+                    ILExpr.Default(ty)
         | Ast.SynExpr.UMinus(x,pos) ->
             let x = tycheckExp x
             if x.Type = typeof<Int64> ||
@@ -196,47 +197,47 @@ let rec tycheckWith env rawNL =
                x.Type = typeof<Double> ||
                x.Type = typeof<Single> 
             then
-               texp.UMinus(x, x.Type)
+               ILExpr.UMinus(x, x.Type)
             else           
                 match x.Type.GetMethod("op_UnaryNegation") with
                 | null ->
                     EM.No_overload_found_for_unary_operator pos "-" x.Type.Name
-                    texp.Error(x.Type)
+                    ILExpr.Error(x.Type)
                 | meth ->
-                    texp.StaticCall(meth, [x], meth.ReturnType)
+                    ILExpr.StaticCall(meth, [x], meth.ReturnType)
         | Ast.SynExpr.Pow(x, y, pos) ->        
             let x,y = tycheckExp x, tycheckExp y
             //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
             match tryResolveMethod typeof<System.Math> "Pow" staticFlags [||] [|typeof<float>;typeof<float>|] with
             | None -> 
                 EM.Internal_error pos "Failed to resolve 'System.Math.Pow(float,float)' for synthetic operator '**'"
-                texp.Error(typeof<float>)
+                ILExpr.Error(typeof<float>)
             | Some(meth) ->
-                let canCoerceToFloat (arg:texp) = //TODO: UNIT TEST THESE CASES
+                let canCoerceToFloat (arg:ILExpr) = //TODO: UNIT TEST THESE CASES
                     let floatHeight = (NumericTower.heightInTower typeof<float>).Value //assert?
                     match NumericTower.heightInTower arg.Type with
                     | Some(argheight) when argheight <= floatHeight -> true
                     | _ -> false
 
                 if canCoerceToFloat x && canCoerceToFloat y then
-                    texp.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
+                    ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
                 else
                     EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
-                    texp.Error(typeof<float>)
+                    ILExpr.Error(typeof<float>)
         | Ast.SynExpr.NumericBinop(op,x,y,pos) ->
             let x, y = tycheckExp x, tycheckExp y
             match NumericTower.tallestTy x.Type y.Type with
             | Some(tallestTy) -> //primitive
-                texp.NumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
+                ILExpr.NumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
             | None when op = Ast.SynNumericBinop.Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string
                 let meth = tryResolveMethod typeof<System.String> "Concat" staticFlags [||] [|x.Type; y.Type|]
                 match meth with
                 | None ->
                     //there should always be a String.Concat(obj,obj) overload
                     EM.Internal_error pos (sprintf "Could not resolve 'String.Concat' synthetic '+' overload for argument types %s" (sprintTypes [x.Type; y.Type]))
-                    texp.Error(typeof<string>) //error recovery
+                    ILExpr.Error(typeof<string>) //error recovery
                 | Some(meth) ->
-                    texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
             | None -> //static "op_*" overloads
                 let meth = seq {
                     yield tryResolveMethod x.Type op.Name staticFlags [||] [|x.Type; y.Type|]
@@ -245,16 +246,16 @@ let rec tycheckWith env rawNL =
                 match meth with
                 | None ->
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
-                    texp.Error(x.Type) //error recovery: best guess of intended return type
+                    ILExpr.Error(x.Type) //error recovery: best guess of intended return type
                 | Some(meth) ->
-                    texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType) 
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType) 
         | Ast.SynExpr.ComparisonBinop(op, x, y, pos) ->
             let x, y = tycheckExp x, tycheckExp y
                         
             //first numeric tower value type cases
             match NumericTower.tallestTy x.Type y.Type with
             | Some(tallestTy) ->
-                texp.mkComparisonBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y)
+                ILExpr.mkComparisonBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y)
             | None ->
                 //next operator overloads
                 let meth = seq {
@@ -263,13 +264,13 @@ let rec tycheckWith env rawNL =
 
                 match meth, op with
                 | Some(meth), _ ->
-                    texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
                 //reference equals
                 | None, (Ast.SynComparisonBinop.Eq | Ast.SynComparisonBinop.Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> 
-                    texp.mkComparisonBinop(op, x, y)    
+                    ILExpr.mkComparisonBinop(op, x, y)    
                 | None, _ ->
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
-                    texp.Error(typeof<bool>)
+                    ILExpr.Error(typeof<bool>)
         | Ast.SynExpr.NameCall(longName, (genericArgs, genericArgsPos), args, pos) -> //todo: need more position info for different tokens
             let namePrefix, methodName =
                 let split = longName.Split('.')
@@ -284,7 +285,7 @@ let rec tycheckWith env rawNL =
                     EM.Invalid_instance_method pos methodName ty.Name (sprintTypes argTys)
                     abort()
                 | Some(meth) -> 
-                    texp.InstanceCall(Var(namePrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                    ILExpr.InstanceCall(Var(namePrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
             | None ->
                 match tryResolveType (Ast.TySig(namePrefix,[])) with
                 | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
@@ -293,7 +294,7 @@ let rec tycheckWith env rawNL =
                         EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
                         abort()
                     | Some(meth) -> 
-                        texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                 | None -> //constructors
                     match tryResolveType (Ast.TySig(longName,genericArgs)) with
                     | None -> 
@@ -303,16 +304,16 @@ let rec tycheckWith env rawNL =
                         if ty.IsValueType && args.Length = 0 then
                             if ty = typeof<System.Void> then
                                 EM.Void_cannot_be_instantiated pos
-                                texp.Error(ty)
+                                ILExpr.Error(ty)
                             else
-                                texp.Default(ty)
+                                ILExpr.Default(ty)
                         else
                             match ty.GetConstructor(argTys) with
                             | null -> 
                                 EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
-                                texp.Error(ty)
+                                ILExpr.Error(ty)
                             | ctor -> 
-                                texp.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
+                                ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
         | Ast.SynExpr.GenericTypeStaticCall(tyName, (tyGenericArgs, genericArgsPos), methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
             match tryResolveType (Ast.TySig(tyName, tyGenericArgs)) with
             | None -> 
@@ -326,7 +327,7 @@ let rec tycheckWith env rawNL =
                     EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
                     abort()
                 | Some(meth) -> 
-                    texp.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | Ast.SynExpr.ExpCall(instance, methodName, (methodGenericArgs, genericArgsPos), args, pos) ->
             let instance = tycheckExp instance
             let args = args |> List.map (tycheckExp)
@@ -336,18 +337,18 @@ let rec tycheckWith env rawNL =
                 EM.Invalid_instance_method pos methodName instance.Type.Name (sprintTypes argTys)
                 abort()
             | Some(meth) ->
-                texp.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | Ast.SynExpr.Let(name, (assign, assignPos), body) ->
             let assign = tycheckExp assign
             if assign.Type = typeof<Void> then
                 EM.Void_invalid_in_let_binding assignPos
         
             let body = tycheckExpWith {env with Variables=env.Variables |> Map.add name assign.Type} body
-            texp.Let(name, assign, body, body.Type)
+            ILExpr.Let(name, assign, body, body.Type)
         | Ast.SynExpr.Var(name, pos) ->
             match Map.tryFind name env.Variables with
             | Some(ty) -> 
-                texp.Var(name,ty)
+                ILExpr.Var(name,ty)
             | None -> 
                 EM.Variable_not_found pos name
                 abort()
@@ -356,7 +357,7 @@ let rec tycheckWith env rawNL =
             tycheckExp x //error recovery
         | Ast.SynExpr.Sequential(x,(y,_)) ->
             let x, y = tycheckExp x, tycheckExp y
-            texp.Sequential(x,y,y.Type)
+            ILExpr.Sequential(x,y,y.Type)
         | Ast.SynExpr.OpenNamespace((name,pos), x) ->
             let exists = namespaceExists env.Assemblies name
             if not exists then
@@ -375,9 +376,9 @@ let rec tycheckWith env rawNL =
             let x = tycheckExp x
             if x.Type <> typeof<bool> then
                 EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
-                texp.Error(typeof<bool>)
+                ILExpr.Error(typeof<bool>)
             else
-                texp.LogicalNot(x)
+                ILExpr.LogicalNot(x)
         | Ast.SynExpr.Cast(x, (ty, tyPos), pos) ->
             let x = tycheckExp x
             match tryResolveType ty with
@@ -387,14 +388,14 @@ let rec tycheckWith env rawNL =
             | Some(ty) ->
                 if ty = typeof<System.Void> then
                     EM.Casting_to_void_invalid pos
-                    texp.Error(ty)
+                    ILExpr.Error(ty)
                 elif x.Type = ty then
                     EM.Casting_noop pos x.Type.Name
                     x
                 elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
-                    texp.Cast(x,ty)
+                    ILExpr.Cast(x,ty)
                 elif (x.Type = typeof<int> && ty = typeof<float>) || (x.Type = typeof<float> && ty = typeof<int>) then
-                    texp.Coerce(x,ty) 
+                    ILExpr.Coerce(x,ty) 
                 else
                     let meth = seq {
                         //giver implicit conversion op from either type over explicit ops; next prefer conversion op defined on lhs type over rhs type
@@ -405,34 +406,34 @@ let rec tycheckWith env rawNL =
 
                     match meth with
                     | Some(meth) -> 
-                        texp.StaticCall(meth, [x], meth.ReturnType)    
+                        ILExpr.StaticCall(meth, [x], meth.ReturnType)    
                     | None -> 
                         EM.Casting_from_type_to_type_always_invalid pos x.Type.Name ty.Name
-                        texp.Error(ty)
+                        ILExpr.Error(ty)
         | Ast.SynExpr.LogicBinop(op,(x,xpos),(y,ypos)) ->
             let x =
                 match tycheckExp x with
                 | x when x.Type <> typeof<bool> -> 
                     EM.Expected_type_but_got_type xpos "System.Boolean" x.Type.Name
-                    texp.Error(typeof<bool>)
+                    ILExpr.Error(typeof<bool>)
                 | x -> x
 
             let y = 
                 match tycheckExp y with
                 | y when y.Type <> typeof<bool> ->
                     EM.Expected_type_but_got_type ypos "System.Boolean" y.Type.Name
-                    texp.Error(typeof<bool>)
+                    ILExpr.Error(typeof<bool>)
                 | y -> y
         
             match op with
-            | Ast.SynLogicBinop.And -> texp.IfThenElse(x, y, texp.Bool(false), typeof<bool>)
-            | Ast.SynLogicBinop.Or -> texp.IfThenElse(x, texp.Bool(true), y, typeof<bool>)
+            | Ast.SynLogicBinop.And -> ILExpr.IfThenElse(x, y, ILExpr.Bool(false), typeof<bool>)
+            | Ast.SynLogicBinop.Or -> ILExpr.IfThenElse(x, ILExpr.Bool(true), y, typeof<bool>)
         | Ast.SynExpr.IfThenElse((condition, conditionPos),thenBranch,elseBranch,pos) ->
             let condition = 
                 let condition = tycheckExp condition
                 if condition.Type <> typeof<bool> then
                     EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
-                    texp.Error(typeof<bool>)
+                    ILExpr.Error(typeof<bool>)
                 else
                     condition
             let thenBranch = tycheckExp thenBranch
@@ -442,85 +443,85 @@ let rec tycheckWith env rawNL =
                 if thenBranch.Type <> elseBranch.Type then
                     //maybe could use 
                     EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
-                    texp.IfThenElse(condition,thenBranch, texp.Error(thenBranch.Type), thenBranch.Type)
+                    ILExpr.IfThenElse(condition,thenBranch, ILExpr.Error(thenBranch.Type), thenBranch.Type)
                 else
-                    texp.IfThenElse(condition,thenBranch,elseBranch,thenBranch.Type)
+                    ILExpr.IfThenElse(condition,thenBranch,elseBranch,thenBranch.Type)
             | None ->
                 if thenBranch.Type = typeof<Void> then
-                    texp.IfThen(condition,thenBranch)
+                    ILExpr.IfThen(condition,thenBranch)
                 else
-                    texp.IfThenElse(condition, thenBranch, texp.Default(thenBranch.Type), thenBranch.Type)
+                    ILExpr.IfThenElse(condition, thenBranch, ILExpr.Default(thenBranch.Type), thenBranch.Type)
         | Ast.SynExpr.Nop ->
-            texp.Nop
+            ILExpr.Nop
         | Ast.SynExpr.VarSet((name, namePos), x, pos) ->
             let x = tycheckExp x
             match Map.tryFind name env.Variables with
             | Some(ty) -> 
                 if x.Type <> ty then
                     EM.Variable_set_type_mismatch pos name ty.Name x.Type.Name
-                    texp.Error(typeof<Void>)
+                    ILExpr.Error(typeof<Void>)
                 else
-                    texp.VarSet(name, x)
+                    ILExpr.VarSet(name, x)
             | None -> 
                 EM.Variable_not_found namePos name
-                texp.Error(typeof<Void>)
+                ILExpr.Error(typeof<Void>)
         | Ast.SynExpr.WhileLoop((condition, conditionPos), body) ->
             let condition = 
                 let condition = tycheckExp condition
                 if condition.Type <> typeof<bool> then
                     EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
-                    texp.Error(typeof<bool>)
+                    ILExpr.Error(typeof<bool>)
                 else
                     condition
             let body = tycheckExpWith {env with IsLoopBody=true} body
-            texp.WhileLoop(condition, body)
+            ILExpr.WhileLoop(condition, body)
         | Ast.SynExpr.Break(pos) ->
             if not env.IsLoopBody then
                 EM.Break_outside_of_loop pos
-                texp.Error(typeof<Void>)
+                ILExpr.Error(typeof<Void>)
             else
-                texp.Break
+                ILExpr.Break
         | Ast.SynExpr.Continue(pos) ->
             if not env.IsLoopBody then
                 EM.Continue_outside_of_loop pos
-                texp.Error(typeof<Void>)
+                ILExpr.Error(typeof<Void>)
             else
-                texp.Continue
+                ILExpr.Continue
 
-    match rawNL with
+    match synNlFragment with
     | Ast.SynNlFragment.StmtList(xl) ->
-        let rec loop env rstatements tstatements =
-            match rstatements with
-            | [] -> tstatements
-            | rstatement::rstatements ->
-                match rstatement with
+        let rec loop env synStmts ilStmts =
+            match synStmts with
+            | [] -> ilStmts
+            | synStmt::synStmts ->
+                match synStmt with
                 | Ast.SynStmt.Do x ->
-                    let tstatement = tstmt.Do(tycheckExpWith env x)
-                    loop env rstatements (tstatement::tstatements)                
+                    let ilStmt = ILStmt.Do(tycheckExpWith env x)
+                    loop env synStmts (ilStmt::ilStmts)                
                 | Ast.SynStmt.Let(name, (assign,assignPos)) ->
                     let assign = tycheckExpWith env assign
                     if assign.Type = typeof<Void> then
                         EM.Void_invalid_in_let_binding assignPos
 
-                    let tstatement = tstmt.Let(name, assign)
+                    let ilStmt = ILStmt.Let(name, assign)
                     let env = {env with Variables=env.Variables |> Map.add name assign.Type}
                 
-                    loop env rstatements (tstatement::tstatements)
+                    loop env synStmts (ilStmt::ilStmts)
                 | Ast.SynStmt.OpenAssembly(name, pos) ->
                     let asm = tryLoadAssembly name
                     match asm with
                     | None -> 
                         EM.Could_not_resolve_assembly pos name
-                        loop env rstatements tstatements //error recovery
+                        loop env synStmts ilStmts //error recovery
                     | Some(asm) -> 
-                        loop { env with Assemblies=asm::env.Assemblies } rstatements tstatements
+                        loop { env with Assemblies=asm::env.Assemblies } synStmts ilStmts
                 | Ast.SynStmt.OpenNamespace(name, pos) ->
                     let exists = namespaceExists env.Assemblies name
                     if not exists then
                         EM.Namespace_not_found pos name (sprintAssemblies env.Assemblies)
-                        loop env rstatements tstatements //error recovery
+                        loop env synStmts ilStmts //error recovery
                     else
-                        loop { env with Namespaces=name::env.Namespaces } rstatements tstatements
-        tnl.StmtList(loop env xl [])
+                        loop { env with Namespaces=name::env.Namespaces } synStmts ilStmts
+        ILNlFragment.StmtList(loop env xl [])
     | Ast.SynNlFragment.Expr(x) ->
-        tnl.Exp(tycheckExpWith env x)
+        ILNlFragment.Exp(tycheckExpWith env x)

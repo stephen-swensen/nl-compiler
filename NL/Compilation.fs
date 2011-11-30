@@ -1,4 +1,5 @@
 ﻿module Swensen.NL.Compilation
+open Swensen.NL.Ail
 
 open System
 open System.Reflection
@@ -10,14 +11,14 @@ open Parser
 
 type EL = ErrorLogger
 
-let emitOpCodes (il:ILGenerator) ast =
-    let rec emitWith loopLabel lenv ast =
+let emitOpCodes (il:ILGenerator) ilExpr =
+    let rec emitWith loopLabel lenv ilExpr =
         let emit = emitWith loopLabel lenv
         let emitAll exps =
             for arg in exps do 
                 emit arg
 
-        match ast with
+        match ilExpr with
         | Int32 x  -> il.Emit(OpCodes.Ldc_I4, x)
         | Double x -> il.Emit(OpCodes.Ldc_R8, x)
         | String x -> il.Emit(OpCodes.Ldstr, x)
@@ -40,7 +41,7 @@ let emitOpCodes (il:ILGenerator) ast =
             | Eq -> il.Emit(OpCodes.Ceq)
             | Lt -> il.Emit(OpCodes.Clt)
             | Gt -> il.Emit(OpCodes.Cgt)
-        | texp.Let(name, assign, body,_) ->
+        | ILExpr.Let(name, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             emit assign
             il.Emit(OpCodes.Stloc, local)
@@ -100,13 +101,13 @@ let emitOpCodes (il:ILGenerator) ast =
         | Default(ty) ->
             //start with primitive optimizations
             if ty = typeof<int32> then
-                emit <| texp.Int32(Unchecked.defaultof<int32>)
+                emit <| ILExpr.Int32(Unchecked.defaultof<int32>)
             elif ty = typeof<double> then
-                emit <| texp.Double(Unchecked.defaultof<double>)
+                emit <| ILExpr.Double(Unchecked.defaultof<double>)
             elif ty = typeof<bool> then
-                emit <| texp.Bool(Unchecked.defaultof<bool>)
+                emit <| ILExpr.Bool(Unchecked.defaultof<bool>)
             elif ty = typeof<char> then
-                emit <| texp.Char(Unchecked.defaultof<char>)
+                emit <| ILExpr.Char(Unchecked.defaultof<char>)
             else //http://source.db4o.com/db4o/trunk/db4o.net/Libs/compact-3.5/System.Linq.Expressions/System.Linq.Expressions/EmitContext.cs
                 let loc = il.DeclareLocal(ty)
                 il.Emit(OpCodes.Ldloca, loc)
@@ -159,10 +160,10 @@ let emitOpCodes (il:ILGenerator) ast =
 //        | Xor(x,y) ->
 //            emitAll [x;y]
 //            il.Emit(OpCodes.Xor)
-        | texp.Error _ ->
-            failwith "Should not be emitting opcodes for an ast with errors"
+        | ILExpr.Error _ ->
+            failwith "Should not be emitting opcodes for an ilExpr with errors"
 
-    emitWith None Map.empty ast |> ignore
+    emitWith None Map.empty ilExpr |> ignore
 
 ///parse from the lexbuf with the given semantic environment
 let parseWith env lexbuf =
@@ -171,16 +172,16 @@ let parseWith env lexbuf =
         |> SemanticAnalysis.tycheckWith env
     with
     | CompilerInterruptException ->
-        tnl.Error
+        ILNlFragment.Error
     //fslex/yacc do not use specific exception types
     | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
         EL.ActiveLogger.Log
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Syntactic, ErrorLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
-        tnl.Error
+        ILNlFragment.Error
     | e ->
         EL.ActiveLogger.Log
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Internal, ErrorLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
-        tnl.Error
+        ILNlFragment.Error
 
 ///parse from the string with the given semantic environment
 let parseFromStringWith env code =
@@ -205,26 +206,26 @@ let parseFromString = parseFromStringWith SemanticEnvironment.Default
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let eval<'a> code : 'a = 
     ///Create a dynamic method from a typed expression using the default environment
-    let dmFromAst (ast:texp) =
-        let dm = DynamicMethod("Eval", ast.Type, null)
+    let mkDm (ilExpr:ILExpr) =
+        let dm = DynamicMethod("Eval", ilExpr.Type, null)
         let il = dm.GetILGenerator()
-        emitOpCodes il ast
+        emitOpCodes il ilExpr
         il.Emit(OpCodes.Ret)
         dm
 
     EL.InstallDefaultLogger() //may want to switch back to previous logger when exiting eval
 
-    let ast = parseFromString code 
+    let ilNlFragment = parseFromString code 
     match EL.ActiveLogger.ErrorCount with
     | 0 ->
-        let ast =
-            match ast with
-            | tnl.Exp(x) -> x
-            | tnl.StmtList([tstmt.Do(x)]) -> x
+        let ilExpr =
+            match ilNlFragment with
+            | ILNlFragment.Exp(x) -> x
+            | ILNlFragment.StmtList([ILStmt.Do(x)]) -> x
             | _ -> 
                 raise (EvaluationException("not a valid eval expression", [||]))
 
-        let dm = dmFromAst ast
+        let dm = mkDm ilExpr
         dm.Invoke(null,null) |> unbox
     | _ ->
         raise (EvaluationException("compiler errors", EL.ActiveLogger.Errors |> Seq.toArray))
@@ -235,22 +236,22 @@ let eval<'a> code : 'a =
 //todo: currently this function compilies an expression to a single method
 //      set as the entry point of an assembly, obviously this needs to evolve.
 ///ast -> assemblyName -> unit
-let compileFromAst ast asmName =
+let compileFromAil ail asmName =
     let asmFileName = asmName + ".exe"
     let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
     let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".netmodule", asmFileName, false) //need to specify asmFileName here!
     let tyBuilder = modBuilder.DefineType(asmName + ".Application", TypeAttributes.Public)
     let methBuilder = tyBuilder.DefineMethod("Run", MethodAttributes.Public ||| MethodAttributes.Static, typeof<System.Void>, null)
     
-    let ast =
-        match ast with
-        | tnl.Exp(x) -> x
-        | tnl.StmtList([tstmt.Do(x)]) -> x
+    let ilExpr =
+        match ail with
+        | ILNlFragment.Exp(x) -> x
+        | ILNlFragment.StmtList([ILStmt.Do(x)]) -> x
         | _ -> 
             raise (EvaluationException("not a valid eval expression", [||])) //todo: remove
 
     let il = methBuilder.GetILGenerator()
-    emitOpCodes il ast
+    emitOpCodes il ilExpr
     il.Emit(OpCodes.Ret)
 
     tyBuilder.CreateType() |> ignore
@@ -259,7 +260,7 @@ let compileFromAst ast asmName =
 
 ///Compile the given source code string into an assembly
 ///code -> assemblyName -> unit
-let compileFromString = parseFromString>>compileFromAst
+let compileFromString = parseFromString>>compileFromAil
 
 ///Compile all the given source code files into a single assembly
 ///fileNames -> assemblyName -> unit

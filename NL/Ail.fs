@@ -1,9 +1,10 @@
-﻿namespace Swensen.NL
+﻿///Abstract IL datatypes
+module Swensen.NL.Ail
 
 open System
 
 ///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
-type tcomparisonBinop = Eq | Lt | Gt
+type ILComparisonBinop = Eq | Lt | Gt
     with
         ///Call the F# analog to this operator on the operands
         member inline x.Call(lhs:'a,rhs:'a):bool =
@@ -16,7 +17,7 @@ type tcomparisonBinop = Eq | Lt | Gt
             fsop lhs rhs
 
 ///Typed expression
-type texp =
+type ILExpr =
     | Double        of float
     | Int32         of int
     | String        of string
@@ -31,25 +32,25 @@ type texp =
     | Continue
     | Error         of Type
 
-    | NumericBinop  of Ast.SynNumericBinop * texp * texp * Type
-    | UMinus        of texp * Type
-    | Let           of string * texp * texp * Type
+    | NumericBinop  of Ast.SynNumericBinop * ILExpr * ILExpr * Type
+    | UMinus        of ILExpr * Type
+    | Let           of string * ILExpr * ILExpr * Type
     //primitive coersion
-    | Coerce        of texp * Type
+    | Coerce        of ILExpr * Type
     ///box / box value type or down / up cast ref type
-    | Cast          of texp * Type
-    | StaticCall    of System.Reflection.MethodInfo * texp list * Type
-    | InstanceCall  of texp * System.Reflection.MethodInfo * texp list * Type
-    | Sequential    of texp * texp * Type
-    | Ctor          of System.Reflection.ConstructorInfo * texp list * Type
+    | Cast          of ILExpr * Type
+    | StaticCall    of System.Reflection.MethodInfo * ILExpr list * Type
+    | InstanceCall  of ILExpr * System.Reflection.MethodInfo * ILExpr list * Type
+    | Sequential    of ILExpr * ILExpr * Type
+    | Ctor          of System.Reflection.ConstructorInfo * ILExpr list * Type
     ///Default value of ValueType ("zero") or Ref type (null)
-    | LogicalNot    of texp
-    | IfThen        of texp * texp
-    | IfThenElse    of texp * texp * texp * Type
-    | ComparisonBinop  of tcomparisonBinop * texp * texp
-    | VarSet        of string * texp
-    | WhileLoop     of texp * texp
-//    | Xor           of texp * texp
+    | LogicalNot    of ILExpr
+    | IfThen        of ILExpr * ILExpr
+    | IfThenElse    of ILExpr * ILExpr * ILExpr * Type
+    | ComparisonBinop  of ILComparisonBinop * ILExpr * ILExpr
+    | VarSet        of string * ILExpr
+    | WhileLoop     of ILExpr * ILExpr
+//    | Xor           of ILExpr * ILExpr
     with 
         member this.Type =
             match this with
@@ -88,14 +89,27 @@ type texp =
                 -> ty
         
         ///make a comparison binop case using a Ast.SynComparisonBinop
-        static member mkComparisonBinop(op:Ast.SynComparisonBinop, x:texp, y:texp) = 
+        static member mkComparisonBinop(op:Ast.SynComparisonBinop, x:ILExpr, y:ILExpr) = 
             match op with
-            | Ast.SynComparisonBinop.Eq -> texp.ComparisonBinop(tcomparisonBinop.Eq,x,y)
-            | Ast.SynComparisonBinop.Lt -> texp.ComparisonBinop(tcomparisonBinop.Lt,x,y)
-            | Ast.SynComparisonBinop.Gt -> texp.ComparisonBinop(tcomparisonBinop.Gt,x,y)
+            | Ast.SynComparisonBinop.Eq -> ILExpr.ComparisonBinop(ILComparisonBinop.Eq,x,y)
+            | Ast.SynComparisonBinop.Lt -> ILExpr.ComparisonBinop(ILComparisonBinop.Lt,x,y)
+            | Ast.SynComparisonBinop.Gt -> ILExpr.ComparisonBinop(ILComparisonBinop.Gt,x,y)
             | Ast.SynComparisonBinop.Neq -> 
-                texp.LogicalNot(ComparisonBinop(tcomparisonBinop.Eq,x,y))
+                ILExpr.LogicalNot(ComparisonBinop(ILComparisonBinop.Eq,x,y))
             | Ast.SynComparisonBinop.LtEq ->
-                texp.LogicalNot(ComparisonBinop(tcomparisonBinop.Gt,x,y))
+                ILExpr.LogicalNot(ComparisonBinop(ILComparisonBinop.Gt,x,y))
             | Ast.SynComparisonBinop.GtEq ->
-                texp.LogicalNot(ComparisonBinop(tcomparisonBinop.Lt,x,y))
+                ILExpr.LogicalNot(ComparisonBinop(ILComparisonBinop.Lt,x,y))
+
+///represents a top level statement
+type ILStmt =
+    //variable stmt
+    | Let               of string * ILExpr
+    //expression stmt
+    | Do                of ILExpr
+
+///represents a semantically checked top level language element
+type ILNlFragment =
+    | Exp               of ILExpr
+    | StmtList          of ILStmt list
+    | Error

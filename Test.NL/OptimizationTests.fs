@@ -1,5 +1,6 @@
 ﻿//we strive for 100% code coverage
 module Tests.OptimizationTests
+open Swensen.NL.Ail
 
 open Xunit
 open Swensen.Unquote
@@ -12,8 +13,8 @@ module C = Compilation
 //so that we see error details in console output while doing parse operations which don't install their own error loggers
 Swensen.NL.ErrorLogger.InstallConsoleLogger()
 
-//N.B. we use parseFromString to obtain a texp tree for convienence and readability, but we are really only testing 
-//texp -> texp transformations for optimization. (this does make me a little nervous, of course, but hand constructing
+//N.B. we use parseFromString to obtain a ILExpr tree for convienence and readability, but we are really only testing 
+//ILExpr -> ILExpr transformations for optimization. (this does make me a little nervous, of course, but hand constructing
 //all these ASTs would be tedious to say the least. we can use code coverage analysis tools like NCover to give us 
 //more confidence that we are indeed following all paths).
 
@@ -231,11 +232,11 @@ let ``optimize body of var binding`` () =
 
 [<Fact>]
 let ``constant fold uminus of int`` () =
-    test <@ tnl.Exp(texp.UMinus(texp.Int32(1), typeof<int32>)) |> O.optimize = tnl.Exp(texp.Int32(-1)) @>
+    test <@ ILNlFragment.Exp(ILExpr.UMinus(ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILNlFragment.Exp(ILExpr.Int32(-1)) @>
 
 [<Fact>]
 let ``constant fold uminus of double`` () =
-    test <@ tnl.Exp(texp.UMinus(texp.Double(1.), typeof<double>)) |> O.optimize = tnl.Exp(texp.Double(-1.)) @>
+    test <@ ILNlFragment.Exp(ILExpr.UMinus(ILExpr.Double(1.), typeof<double>)) |> O.optimize = ILNlFragment.Exp(ILExpr.Double(-1.)) @>
 
 [<Fact>]
 let ``uminus no constant fold but sub optimization`` () =
@@ -260,7 +261,7 @@ let ``varset assign is optimized`` () =
 
 [<Fact>]
 let ``can't optimize Error case`` () =
-    raises<exn> <@ texp.Error(typeof<System.Boolean>) |> tnl.Exp |> O.optimize @>
+    raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> ILNlFragment.Exp |> O.optimize @>
 
 
 
