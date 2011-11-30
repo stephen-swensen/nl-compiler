@@ -62,19 +62,6 @@ type SynComparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
             | GtEq -> "op_GreaterThanOrEqual"
             | Neq -> "op_Inequality"
 
-//        ///Call the F# analog to this operator on the operands
-//        member inline x.Call(lhs:'a,rhs:'a):bool =
-//            let fsop =
-//                match x with
-//                | Eq -> (=)
-//                | Lt -> (<)
-//                | Gt -> (>)
-//                | LtEq -> (<=)
-//                | GtEq -> (>=)
-//                | Neq -> (<>)
-//
-//            fsop lhs rhs
-
 type TySig(genericName:string, genericArgs: TySig list) =
     ///i.e. Dictionary in Dictionary<'T, 'R>
     member x.GenericName = genericName
@@ -90,7 +77,6 @@ type TySig with
             | TySig(name, xl) -> name + "[" + (xl |> List.map build |> String.concat ",") + "]"
         build x
     
-
 //n.b. PositionRange convention is: 1) if position range applies to the entire expression,
 //     then it is the last element in the tupled case, 2) if position range applies to a pariticular
 //     sub-expression or token, then it is tupled with the subexpression or token
