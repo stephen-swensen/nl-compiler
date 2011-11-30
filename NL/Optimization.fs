@@ -1,96 +1,97 @@
 ﻿module Swensen.NL.Optimization
+open Swensen.NL.Ail
 
-let optimize (tn:tnl) =
+let optimize (tn:ILNlFragment) =
     let rec optimizeExp exp = 
         match exp with
-        | texp.IfThenElse(condition, thenBranch, elseBranch, ty) -> //unreachable code elimination
+        | ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty) -> //unreachable code elimination
             let condition, thenBranch, elseBranch = optimizeExp condition, optimizeExp thenBranch, optimizeExp elseBranch
             match condition with
-            | texp.Bool(true) -> thenBranch
-            | texp.Bool(false) -> elseBranch
+            | ILExpr.Bool(true) -> thenBranch
+            | ILExpr.Bool(false) -> elseBranch
             | _ -> 
                 match thenBranch with
-                | texp.Nop -> texp.IfThen(condition, thenBranch) //asser ty = typeof<void>
+                | ILExpr.Nop -> ILExpr.IfThen(condition, thenBranch) //asser ty = typeof<void>
                 | _ ->
-                    texp.IfThenElse(condition, thenBranch, elseBranch, ty)
-        | texp.IfThen(condition, thenBranch) -> //unreachable code elimination
+                    ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty)
+        | ILExpr.IfThen(condition, thenBranch) -> //unreachable code elimination
             let condition, thenBranch = optimizeExp condition, optimizeExp thenBranch
             match condition with
-            | texp.Bool(true) -> thenBranch
-            | texp.Bool(false) -> texp.Nop
+            | ILExpr.Bool(true) -> thenBranch
+            | ILExpr.Bool(false) -> ILExpr.Nop
             | _ -> 
                 match thenBranch with
-                | texp.Nop -> condition
+                | ILExpr.Nop -> condition
                 | _ ->
-                    texp.IfThen(condition, thenBranch)
-        | texp.NumericBinop(op, x, y, ty) -> //numeric constants folding
+                    ILExpr.IfThen(condition, thenBranch)
+        | ILExpr.NumericBinop(op, x, y, ty) -> //numeric constants folding
             let x, y = optimizeExp x, optimizeExp y
             match x, y with
-            | texp.Int32(xval), texp.Int32(yval) ->
-                texp.Int32(op.Call(xval, yval))
-            | texp.Double(xval), texp.Double(yval) ->
-                texp.Double((op.Call(xval, yval)))
-            | _ -> texp.NumericBinop(op, x, y, ty)    
-        | texp.StaticCall(mi, args, ty) ->
+            | ILExpr.Int32(xval), ILExpr.Int32(yval) ->
+                ILExpr.Int32(op.Call(xval, yval))
+            | ILExpr.Double(xval), ILExpr.Double(yval) ->
+                ILExpr.Double((op.Call(xval, yval)))
+            | _ -> ILExpr.NumericBinop(op, x, y, ty)    
+        | ILExpr.StaticCall(mi, args, ty) ->
             let args = args |> List.map optimizeExp
             match args with
-            | [texp.String(xval); texp.String(yval)] when mi.DeclaringType = typeof<string> && mi.Name = "Concat" -> //i.e. "asdf" + "asdf" (can refactor this better?)
-                texp.String(xval + yval)
+            | [ILExpr.String(xval); ILExpr.String(yval)] when mi.DeclaringType = typeof<string> && mi.Name = "Concat" -> //i.e. "asdf" + "asdf" (can refactor this better?)
+                ILExpr.String(xval + yval)
             | _ ->
-                texp.StaticCall(mi, args, ty)
-        | texp.InstanceCall(instance, mi, args, ty) ->
+                ILExpr.StaticCall(mi, args, ty)
+        | ILExpr.InstanceCall(instance, mi, args, ty) ->
             let instance = optimizeExp instance
             let args = args |> List.map optimizeExp
-            texp.InstanceCall(instance, mi, args, ty)
-        | texp.ComparisonBinop(op, x, y) -> //comparison constants folding
+            ILExpr.InstanceCall(instance, mi, args, ty)
+        | ILExpr.ComparisonBinop(op, x, y) -> //comparison constants folding
             let x, y = optimizeExp x, optimizeExp y
             match x, y with
-            | texp.Int32(xval), texp.Int32(yval) ->
-                texp.Bool(op.Call(xval, yval))
-            | texp.Double(xval), texp.Double(yval) ->
-                texp.Bool(op.Call(xval, yval))
-            | texp.Bool(xval), texp.Bool(yval) ->
-                texp.Bool(op.Call(xval, yval))
-            | _ -> texp.ComparisonBinop(op, x, y)
-        | texp.Coerce(x, ty) -> //mostly for implicit coersions to improve constants folding
+            | ILExpr.Int32(xval), ILExpr.Int32(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+            | ILExpr.Double(xval), ILExpr.Double(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+            | ILExpr.Bool(xval), ILExpr.Bool(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+            | _ -> ILExpr.ComparisonBinop(op, x, y)
+        | ILExpr.Coerce(x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExp x
             match x with
             | Int32(x) -> Double(float x)
-            | _ -> texp.Coerce(x, ty)
-        | texp.LogicalNot(x) ->
+            | _ -> ILExpr.Coerce(x, ty)
+        | ILExpr.LogicalNot(x) ->
             let x = optimizeExp x
             match x with
-            | texp.Bool(true) -> texp.Bool(false)
-            | texp.Bool(false) -> texp.Bool(true)
-            | _ -> texp.LogicalNot(x)
-        | texp.Sequential(x,y,ty) ->
+            | ILExpr.Bool(true) -> ILExpr.Bool(false)
+            | ILExpr.Bool(false) -> ILExpr.Bool(true)
+            | _ -> ILExpr.LogicalNot(x)
+        | ILExpr.Sequential(x,y,ty) ->
             let x,y = optimizeExp x, optimizeExp y
             match x, y with
-            | texp.Nop, texp.Nop -> texp.Nop //();() -> ()
-            | texp.Nop, _ -> y // (); exp -> exp
-            | _,_ -> texp.Sequential(x,y,ty)
-        | texp.UMinus(x, ty) ->
+            | ILExpr.Nop, ILExpr.Nop -> ILExpr.Nop //();() -> ()
+            | ILExpr.Nop, _ -> y // (); exp -> exp
+            | _,_ -> ILExpr.Sequential(x,y,ty)
+        | ILExpr.UMinus(x, ty) ->
             let x = optimizeExp x
             match x with
-            | texp.Int32(xval) -> texp.Int32(-xval)
-            | texp.Double(xval) -> texp.Double(-xval)
-            | _ -> texp.UMinus(x, ty)
-        | texp.WhileLoop(cond, body) ->
+            | ILExpr.Int32(xval) -> ILExpr.Int32(-xval)
+            | ILExpr.Double(xval) -> ILExpr.Double(-xval)
+            | _ -> ILExpr.UMinus(x, ty)
+        | ILExpr.WhileLoop(cond, body) ->
             let cond = optimizeExp cond
             match cond with
-            | texp.Bool(false) ->
-                texp.Nop
+            | ILExpr.Bool(false) ->
+                ILExpr.Nop
             | _ ->
                 let body = optimizeExp body
-                texp.WhileLoop(cond, body)
-        | texp.Cast(x, ty) ->
-            texp.Cast(optimizeExp x, ty)
-        | texp.Ctor(ci, args, ty) ->
-            texp.Ctor(ci, List.map optimizeExp args, ty)
-        | texp.Let(name, assign, body, ty) ->
-            texp.Let(name, optimizeExp assign, optimizeExp body, ty)
-        | texp.VarSet(name, assign) ->
-            texp.VarSet(name, optimizeExp assign)
+                ILExpr.WhileLoop(cond, body)
+        | ILExpr.Cast(x, ty) ->
+            ILExpr.Cast(optimizeExp x, ty)
+        | ILExpr.Ctor(ci, args, ty) ->
+            ILExpr.Ctor(ci, List.map optimizeExp args, ty)
+        | ILExpr.Let(name, assign, body, ty) ->
+            ILExpr.Let(name, optimizeExp assign, optimizeExp body, ty)
+        | ILExpr.VarSet(name, assign) ->
+            ILExpr.VarSet(name, optimizeExp assign)
         | Double _
         | Int32 _
         | String _
@@ -103,19 +104,19 @@ let optimize (tn:tnl) =
         | Nop
         | Break         
         | Continue -> exp //atomic expressions
-        | texp.Error _ ->
+        | ILExpr.Error _ ->
             failwith "Should not be optimizing an expression with errors"
 
     match tn with
-    | tnl.Exp(x) -> optimizeExp x |> tnl.Exp
-    | tnl.StmtList(xl) ->
+    | ILNlFragment.Exp(x) -> optimizeExp x |> ILNlFragment.Exp
+    | ILNlFragment.StmtList(xl) ->
         xl 
         |> List.map (fun x ->
             match x with
-            | tstmt.Do(x) -> optimizeExp x |> tstmt.Do
-            | tstmt.Let(name, x) -> 
+            | ILStmt.Do(x) -> optimizeExp x |> ILStmt.Do
+            | ILStmt.Let(name, x) -> 
                 let x = optimizeExp x
-                tstmt.Let(name, x))
-        |> tnl.StmtList
-    | tnl.Error _ ->
+                ILStmt.Let(name, x))
+        |> ILNlFragment.StmtList
+    | ILNlFragment.Error _ ->
         failwith "Should not be optimizing an NL fragment with errors"
