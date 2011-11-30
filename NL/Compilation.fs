@@ -30,10 +30,10 @@ let emitOpCodes (il:ILGenerator) ast =
         | NumericBinop(op,x,y,_) -> 
             emitAll [x;y]
             match op with
-            | Plus  -> il.Emit(OpCodes.Add)
-            | Minus -> il.Emit(OpCodes.Sub)
-            | Times -> il.Emit(OpCodes.Mul)
-            | Div   -> il.Emit(OpCodes.Div)
+            | Ast.SynNumericBinop.Plus  -> il.Emit(OpCodes.Add)
+            | Ast.SynNumericBinop.Minus -> il.Emit(OpCodes.Sub)
+            | Ast.SynNumericBinop.Times -> il.Emit(OpCodes.Mul)
+            | Ast.SynNumericBinop.Div   -> il.Emit(OpCodes.Div)
         | ComparisonBinop(op,x,y) -> 
             emitAll [x;y]
             match op with

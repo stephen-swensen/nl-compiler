@@ -12,7 +12,7 @@ type SemanticEnvironment =
         ///All the open namespaces
         Namespaces: string list
         ///All the visible variables
-        Variables: (string,Type) Map
+        Variables: Map<string,Type>
     }
 
 [<RequireQualifiedAccess>]
