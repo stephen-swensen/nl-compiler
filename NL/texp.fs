@@ -31,7 +31,7 @@ type texp =
     | Continue
     | Error         of Type
 
-    | NumericBinop  of numericBinop * texp * texp * Type
+    | NumericBinop  of Ast.SynNumericBinop * texp * texp * Type
     | UMinus        of texp * Type
     | Let           of string * texp * texp * Type
     //primitive coersion
@@ -87,15 +87,15 @@ type texp =
             | Error(ty)
                 -> ty
         
-        ///make a comparison binop case using a rcomparisonBinop
-        static member mkComparisonBinop(op:rcomparisonBinop, x:texp, y:texp) = 
+        ///make a comparison binop case using a Ast.SynComparisonBinop
+        static member mkComparisonBinop(op:Ast.SynComparisonBinop, x:texp, y:texp) = 
             match op with
-            | rcomparisonBinop.Eq -> ComparisonBinop(Eq,x,y)
-            | rcomparisonBinop.Lt -> ComparisonBinop(Lt,x,y)
-            | rcomparisonBinop.Gt -> ComparisonBinop(Gt,x,y)
-            | rcomparisonBinop.Neq -> 
-                LogicalNot(ComparisonBinop(Eq,x,y))
-            | rcomparisonBinop.LtEq ->
-                LogicalNot(ComparisonBinop(Gt,x,y))
-            | rcomparisonBinop.GtEq ->
-                LogicalNot(ComparisonBinop(Lt,x,y))
+            | Ast.SynComparisonBinop.Eq -> texp.ComparisonBinop(tcomparisonBinop.Eq,x,y)
+            | Ast.SynComparisonBinop.Lt -> texp.ComparisonBinop(tcomparisonBinop.Lt,x,y)
+            | Ast.SynComparisonBinop.Gt -> texp.ComparisonBinop(tcomparisonBinop.Gt,x,y)
+            | Ast.SynComparisonBinop.Neq -> 
+                texp.LogicalNot(ComparisonBinop(tcomparisonBinop.Eq,x,y))
+            | Ast.SynComparisonBinop.LtEq ->
+                texp.LogicalNot(ComparisonBinop(tcomparisonBinop.Gt,x,y))
+            | Ast.SynComparisonBinop.GtEq ->
+                texp.LogicalNot(ComparisonBinop(tcomparisonBinop.Lt,x,y))

@@ -1,9 +1,9 @@
-﻿namespace Swensen.NL
+﻿module Swensen.NL.Ast
 
 open System
 open Microsoft.FSharp.Text.Lexing
 
-type numericBinop = Plus | Minus | Times | Div
+type SynNumericBinop = Plus | Minus | Times | Div
     with
         ///get the .NET method name corresponding to this op (used to get MethodInfo for non-primitive operands, excluding string concat which is handled separately)
         member x.Name =
@@ -25,15 +25,15 @@ type numericBinop = Plus | Minus | Times | Div
         member inline x.Call(lhs:'a,rhs:'a):'a =
             let fsop =
                 match x with
-                | numericBinop.Plus -> (+)
-                | numericBinop.Div -> (/)
-                | numericBinop.Minus -> (-)
-                | numericBinop.Times -> (*)
+                | Plus -> (+)
+                | Div -> (/)
+                | Minus -> (-)
+                | Times -> (*)
 
             fsop lhs rhs
 
 
-type logicBinop = And | Or
+type SynLogicBinop = And | Or
     with
         member x.Symbol =
             match x with
@@ -41,7 +41,7 @@ type logicBinop = And | Or
             | Or -> "||"
 
 ///For semantic analysis, we enumerate each case instead of making LtEq, GtEq, and Neq merely syntactic compound forms.
-type rcomparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
+type SynComparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
     with
         member x.Symbol =
             match x with
@@ -74,60 +74,78 @@ type rcomparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
 //
 //            fsop lhs rhs
 
-type tySig =
-    | TySig of string * tySig list
-    with 
-        member x.Name =
-            let rec build = function
-                | TySig(name, []) -> name
-                | TySig(name, xl) -> name + "[" + (xl |> List.map build |> String.concat ",") + "]"
-            build x
+type TySig(genericName:string, genericArgs: TySig list) =
+    ///i.e. Dictionary in Dictionary<'T, 'R>
+    member x.GenericName = genericName
+    ///i.e. String and Int in Dictionary<String, Int>
+    member x.GenericArgs = genericArgs
+let (|TySig|) (tySig:TySig) =
+    (tySig.GenericName, tySig.GenericArgs)
+type TySig with
+    ///i.e. Dictionary<String,Int>
+    member x.Name =
+        let rec build = function
+            | TySig(name, []) -> name
+            | TySig(name, xl) -> name + "[" + (xl |> List.map build |> String.concat ",") + "]"
+        build x
+    
 
 //n.b. PositionRange convention is: 1) if position range applies to the entire expression,
 //     then it is the last element in the tupled case, 2) if position range applies to a pariticular
 //     sub-expression or token, then it is tupled with the subexpression or token
 ///Raw (untyped) parsed expression
-type rexp =
+type SynExpr =
     | Double           of float
     | Int32            of int
     | String           of string
     | Char             of char
     | Bool             of bool
-    | Null             of tySig * PositionRange
-    | Typeof           of tySig * PositionRange
-    | Default          of tySig * PositionRange
-    | NumericBinop     of numericBinop * rexp * rexp * PositionRange
-    | Pow              of rexp * rexp * PositionRange
+    | Null             of TySig * PositionRange
+    | Typeof           of TySig * PositionRange
+    | Default          of TySig * PositionRange
+    | NumericBinop     of SynNumericBinop * SynExpr * SynExpr * PositionRange
+    | Pow              of SynExpr * SynExpr * PositionRange
     //TODO: implement semantic analysis
-    | UMinus           of rexp * PositionRange
-    //| Fact             of rexp * PositionRange
+    | UMinus           of SynExpr * PositionRange
+    //| Fact             of SynExpr * PositionRange
     ///bind a variable
-    | Let              of string * (rexp * PositionRange) * rexp
+    | Let              of string * (SynExpr * PositionRange) * SynExpr
     ///reference a variable
     | Var              of string * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
-    | NameCall         of string * (tySig list * PositionRange) * rexp list * PositionRange
+    | NameCall         of string * (TySig list * PositionRange) * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
-    | GenericTypeStaticCall of string * (tySig list * PositionRange) * string * tySig list * rexp list * PositionRange
+    | GenericTypeStaticCall of string * (TySig list * PositionRange) * string * TySig list * SynExpr list * PositionRange
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
-    | ExpCall          of rexp * string * (tySig list * PositionRange) * rexp list * PositionRange
+    | ExpCall          of SynExpr * string * (TySig list * PositionRange) * SynExpr list * PositionRange
     ///discard left hand side, return right hand side
-    | Sequential       of rexp * (rexp * PositionRange)
+    | Sequential       of SynExpr * (SynExpr * PositionRange)
     ///open a namespace
-    | OpenNamespace    of (string * PositionRange) * rexp 
+    | OpenNamespace    of (string * PositionRange) * SynExpr 
     ///reference an assembly by name or dll path
-    | OpenAssembly     of (string * PositionRange) * rexp
-    | LogicalNot       of rexp * PositionRange
-    | Cast             of rexp * (tySig * PositionRange) * PositionRange
-    | IfThenElse       of (rexp * PositionRange) * rexp * rexp option * PositionRange //should be pos for each!
-    | ComparisonBinop  of rcomparisonBinop * rexp * rexp * PositionRange
+    | OpenAssembly     of (string * PositionRange) * SynExpr
+    | LogicalNot       of SynExpr * PositionRange
+    | Cast             of SynExpr * (TySig * PositionRange) * PositionRange
+    | IfThenElse       of (SynExpr * PositionRange) * SynExpr * SynExpr option * PositionRange //should be pos for each!
+    | ComparisonBinop  of SynComparisonBinop * SynExpr * SynExpr * PositionRange
     | Nop
-    | VarSet           of (string * PositionRange) * rexp * PositionRange
-    | WhileLoop        of (rexp * PositionRange) * rexp
+    | VarSet           of (string * PositionRange) * SynExpr * PositionRange
+    | WhileLoop        of (SynExpr * PositionRange) * SynExpr
     | Break            of PositionRange
     | Continue         of PositionRange
-    | LogicBinop       of logicBinop * (rexp * PositionRange) * (rexp * PositionRange)
+    | LogicBinop       of SynLogicBinop * (SynExpr * PositionRange) * (SynExpr * PositionRange)
+
+type SynStmt =
+    | Let               of string * (SynExpr * PositionRange)
+    | OpenNamespace     of string * PositionRange
+    | OpenAssembly      of string * PositionRange
+    | Do                of SynExpr
+
+//represents a "raw" top level language element
+type SynNlFragment =
+    | Expr          of SynExpr
+    | StmtList      of SynStmt list
 
 //type Identifier(nameParts) =
 //    let parts = name.Split('.')
