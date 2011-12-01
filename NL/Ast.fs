@@ -130,7 +130,7 @@ type SynStmt =
     | Do                of SynExpr
 
 //represents a "raw" top level language element
-type SynNlFragment =
+type SynTopLevel =
     | Expr          of SynExpr
     | StmtList      of SynStmt list
 

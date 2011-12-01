@@ -146,7 +146,7 @@ let tryLoadAssembly (name:string) =
             None
 
 ///Symantic analysis (type checking)
-let rec tycheckWith env synNlFragment =
+let rec tycheckWith env synTopLevel =
     let rec tycheckExpWith env synExpr=
         let tycheckExp = tycheckExpWith env
         let tryResolveType = tryResolveType env
@@ -488,8 +488,8 @@ let rec tycheckWith env synNlFragment =
             else
                 ILExpr.Continue
 
-    match synNlFragment with
-    | Ast.SynNlFragment.StmtList(xl) ->
+    match synTopLevel with
+    | Ast.SynTopLevel.StmtList(xl) ->
         let rec loop env synStmts ilStmts =
             match synStmts with
             | [] -> ilStmts
@@ -522,6 +522,6 @@ let rec tycheckWith env synNlFragment =
                         loop env synStmts ilStmts //error recovery
                     else
                         loop { env with Namespaces=name::env.Namespaces } synStmts ilStmts
-        ILNlFragment.StmtList(loop env xl [])
-    | Ast.SynNlFragment.Expr(x) ->
-        ILNlFragment.Exp(tycheckExpWith env x)
+        ILTopLevel.StmtList(loop env xl [])
+    | Ast.SynTopLevel.Expr(x) ->
+        ILTopLevel.Exp(tycheckExpWith env x)

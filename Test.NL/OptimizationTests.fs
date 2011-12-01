@@ -232,11 +232,11 @@ let ``optimize body of var binding`` () =
 
 [<Fact>]
 let ``constant fold uminus of int`` () =
-    test <@ ILNlFragment.Exp(ILExpr.UMinus(ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILNlFragment.Exp(ILExpr.Int32(-1)) @>
+    test <@ ILTopLevel.Exp(ILExpr.UMinus(ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILTopLevel.Exp(ILExpr.Int32(-1)) @>
 
 [<Fact>]
 let ``constant fold uminus of double`` () =
-    test <@ ILNlFragment.Exp(ILExpr.UMinus(ILExpr.Double(1.), typeof<double>)) |> O.optimize = ILNlFragment.Exp(ILExpr.Double(-1.)) @>
+    test <@ ILTopLevel.Exp(ILExpr.UMinus(ILExpr.Double(1.), typeof<double>)) |> O.optimize = ILTopLevel.Exp(ILExpr.Double(-1.)) @>
 
 [<Fact>]
 let ``uminus no constant fold but sub optimization`` () =
@@ -261,7 +261,7 @@ let ``varset assign is optimized`` () =
 
 [<Fact>]
 let ``can't optimize Error case`` () =
-    raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> ILNlFragment.Exp |> O.optimize @>
+    raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> ILTopLevel.Exp |> O.optimize @>
 
 
 
