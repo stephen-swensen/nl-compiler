@@ -289,31 +289,39 @@ let rec tycheckWith env synTopLevel =
             | None ->
                 match tryResolveType (Ast.TySig(namePrefix,[])) with
                 | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                    match  tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                    match tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
                     | None -> 
                         EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
                         abort()
                     | Some(meth) -> 
                         ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-                | None -> //constructors
-                    match tryResolveType (Ast.TySig(longName,genericArgs)) with
-                    | None -> 
-                        EM.Could_not_resolve_possible_method_call_or_contructor_type pos namePrefix longName
-                        abort()
-                    | Some(ty) ->
-                        if ty.IsValueType && args.Length = 0 then
-                            if ty = typeof<System.Void> then
-                                EM.Void_cannot_be_instantiated pos
-                                ILExpr.Error(ty)
+                | None -> //give static methods of an open type a shot!
+                    let openMeth =
+                        env.Classes
+                        |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
+                        
+                    match openMeth with
+                    | Some(meth) ->
+                        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                    | None -> //constructors
+                        match tryResolveType (Ast.TySig(longName,genericArgs)) with
+                        | None -> 
+                            EM.Could_not_resolve_possible_method_call_or_contructor_type pos namePrefix longName
+                            abort()
+                        | Some(ty) ->
+                            if ty.IsValueType && args.Length = 0 then
+                                if ty = typeof<System.Void> then
+                                    EM.Void_cannot_be_instantiated pos
+                                    ILExpr.Error(ty)
+                                else
+                                    ILExpr.Default(ty)
                             else
-                                ILExpr.Default(ty)
-                        else
-                            match ty.GetConstructor(argTys) with
-                            | null -> 
-                                EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
-                                ILExpr.Error(ty)
-                            | ctor -> 
-                                ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
+                                match ty.GetConstructor(argTys) with
+                                | null -> 
+                                    EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
+                                    ILExpr.Error(ty)
+                                | ctor -> 
+                                    ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
         | Ast.SynExpr.GenericTypeStaticCall(tyName, (tyGenericArgs, genericArgsPos), methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
             match tryResolveType (Ast.TySig(tyName, tyGenericArgs)) with
             | None -> 
@@ -358,13 +366,17 @@ let rec tycheckWith env synTopLevel =
         | Ast.SynExpr.Sequential(x,(y,_)) ->
             let x, y = tycheckExp x, tycheckExp y
             ILExpr.Sequential(x,y,y.Type)
-        | Ast.SynExpr.OpenNamespace((name,pos), x) ->
-            let exists = namespaceExists env.Assemblies name
-            if not exists then
-                EM.Namespace_not_found pos name (sprintAssemblies env.Assemblies)
-                tycheckExp x
-            else
-                tycheckExpWith {env with Namespaces=name::env.Namespaces} x
+        | Ast.SynExpr.OpenNamespaceOrType((tySig,pos), x) ->
+            match tySig with
+            | Ast.TySig(name,[]) when namespaceExists env.Assemblies name ->
+                tycheckExpWith { env with Namespaces=name::env.Namespaces } x
+            | _ ->
+                match tryResolveType tySig with
+                | Some(ty) ->
+                    tycheckExpWith { env with Classes=ty::env.Classes } x
+                | None ->
+                    EM.Namespace_or_type_not_found pos tySig.Name (sprintAssemblies env.Assemblies)
+                    tycheckExp x
         | Ast.SynExpr.OpenAssembly((name,pos), x) ->
             let asm = tryLoadAssembly name
             match asm with
@@ -515,13 +527,17 @@ let rec tycheckWith env synTopLevel =
                         loop env synStmts ilStmts //error recovery
                     | Some(asm) -> 
                         loop { env with Assemblies=asm::env.Assemblies } synStmts ilStmts
-                | Ast.SynStmt.OpenNamespace(name, pos) ->
-                    let exists = namespaceExists env.Assemblies name
-                    if not exists then
-                        EM.Namespace_not_found pos name (sprintAssemblies env.Assemblies)
-                        loop env synStmts ilStmts //error recovery
-                    else
+                | Ast.SynStmt.OpenNamespaceOrType(tySig, pos) ->
+                    match tySig with
+                    | Ast.TySig(name,[]) when namespaceExists env.Assemblies name ->
                         loop { env with Namespaces=name::env.Namespaces } synStmts ilStmts
+                    | _ ->
+                        match tryResolveType env tySig with
+                        | Some(ty) ->
+                            loop { env with Classes=ty::env.Classes } synStmts ilStmts
+                        | None ->
+                            EM.Namespace_or_type_not_found pos tySig.Name (sprintAssemblies env.Assemblies)
+                            loop env synStmts ilStmts //error recovery    
         ILTopLevel.StmtList(loop env xl [])
     | Ast.SynTopLevel.Expr(x) ->
         ILTopLevel.Exp(tycheckExpWith env x)

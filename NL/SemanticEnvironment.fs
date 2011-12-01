@@ -13,13 +13,15 @@ type SemanticEnvironment =
         Namespaces: string list
         ///All the visible variables
         Variables: Map<string,Type>
+        ///All open classes
+        Classes: Type list
     }
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
 module SemanticEnvironment =
     ///The "empty" semantic environment
-    let Empty = { IsLoopBody=false; Assemblies=[]; Namespaces=[]; Variables= Map.empty }
+    let Empty = { IsLoopBody=false; Assemblies=[]; Namespaces=[]; Variables= Map.empty; Classes=[] }
     ///The "default" / initial semantic environment
     let Default =
         { Empty with 
