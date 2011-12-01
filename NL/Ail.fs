@@ -133,7 +133,7 @@ type ILStmt =
     | Do                of ILExpr
 
 ///represents a semantically checked top level language element
-type ILNlFragment =
+type ILTopLevel =
     | Exp               of ILExpr
     | StmtList          of ILStmt list
     | Error

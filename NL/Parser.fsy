@@ -50,7 +50,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 //%nonassoc NOT
 
 %start start
-%type <Ast.SynNlFragment> start
+%type <Ast.SynTopLevel> start
 
 %type <Ast.SynExpr> expr
 %type <Ast.SynExpr list> exprList
@@ -64,7 +64,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %%
 
 start:
-    | nlFragment EOF { $1 }
+    | topLevel EOF { $1 }
 
 
 longName:
@@ -253,8 +253,8 @@ stmt:
     | expr SEMICOLON SEMICOLON
         { Ast.SynStmt.Do($1) }
 
-nlFragment:
+topLevel:
     | stmtList
-        { Ast.SynNlFragment.StmtList($1) }
+        { Ast.SynTopLevel.StmtList($1) }
     | expr
-        { Ast.SynNlFragment.Expr($1) }
+        { Ast.SynTopLevel.Expr($1) }

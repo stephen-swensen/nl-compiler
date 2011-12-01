@@ -1,7 +1,7 @@
 ﻿module Swensen.NL.Optimization
 open Swensen.NL.Ail
 
-let optimize (tn:ILNlFragment) =
+let optimize (tn:ILTopLevel) =
     let rec optimizeExp exp = 
         match exp with
         | ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty) -> //unreachable code elimination
@@ -108,8 +108,8 @@ let optimize (tn:ILNlFragment) =
             failwith "Should not be optimizing an expression with errors"
 
     match tn with
-    | ILNlFragment.Exp(x) -> optimizeExp x |> ILNlFragment.Exp
-    | ILNlFragment.StmtList(xl) ->
+    | ILTopLevel.Exp(x) -> optimizeExp x |> ILTopLevel.Exp
+    | ILTopLevel.StmtList(xl) ->
         xl 
         |> List.map (fun x ->
             match x with
@@ -117,6 +117,6 @@ let optimize (tn:ILNlFragment) =
             | ILStmt.Let(name, x) -> 
                 let x = optimizeExp x
                 ILStmt.Let(name, x))
-        |> ILNlFragment.StmtList
-    | ILNlFragment.Error _ ->
+        |> ILTopLevel.StmtList
+    | ILTopLevel.Error _ ->
         failwith "Should not be optimizing an NL fragment with errors"

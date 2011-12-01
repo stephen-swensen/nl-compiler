@@ -172,16 +172,16 @@ let parseWith env lexbuf =
         |> SemanticAnalysis.tycheckWith env
     with
     | CompilerInterruptException ->
-        ILNlFragment.Error
+        ILTopLevel.Error
     //fslex/yacc do not use specific exception types
     | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
         EL.ActiveLogger.Log
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Syntactic, ErrorLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
-        ILNlFragment.Error
+        ILTopLevel.Error
     | e ->
         EL.ActiveLogger.Log
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Internal, ErrorLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
-        ILNlFragment.Error
+        ILTopLevel.Error
 
 ///parse from the string with the given semantic environment
 let parseFromStringWith env code =
@@ -215,13 +215,13 @@ let eval<'a> code : 'a =
 
     EL.InstallDefaultLogger() //may want to switch back to previous logger when exiting eval
 
-    let ilNlFragment = parseFromString code 
+    let ilTopLevel = parseFromString code 
     match EL.ActiveLogger.ErrorCount with
     | 0 ->
         let ilExpr =
-            match ilNlFragment with
-            | ILNlFragment.Exp(x) -> x
-            | ILNlFragment.StmtList([ILStmt.Do(x)]) -> x
+            match ilTopLevel with
+            | ILTopLevel.Exp(x) -> x
+            | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
             | _ -> 
                 raise (EvaluationException("not a valid eval expression", [||]))
 
@@ -245,8 +245,8 @@ let compileFromAil ail asmName =
     
     let ilExpr =
         match ail with
-        | ILNlFragment.Exp(x) -> x
-        | ILNlFragment.StmtList([ILStmt.Do(x)]) -> x
+        | ILTopLevel.Exp(x) -> x
+        | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
         | _ -> 
             raise (EvaluationException("not a valid eval expression", [||])) //todo: remove
 
