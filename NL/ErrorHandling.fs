@@ -181,8 +181,8 @@ module ErrorMessage =
     let Unreachable_code_detected pos = 
         mk ErrorLevel.Error ErrorType.Semantic 17 pos "Unreachable code detected"
 
-    let Namespace_not_found pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 18 pos "Namespace '%s' does not exist in any currently open assemblies %s"
+    let Namespace_or_type_not_found pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 18 pos "Namespace or type '%s' does not exist in any currently open assemblies %s"
 
     let Could_not_resolve_assembly pos = 
         mk ErrorLevel.Error ErrorType.Semantic 19 pos "Could not resolve assembly reference '%s'"

@@ -207,8 +207,8 @@ expr:
         { Ast.SynExpr.Sequential($1,($3, range parseState 3 3)) }
     
     //open namespace
-    | OPEN longName IN expr                    
-        { Ast.SynExpr.OpenNamespace(($2,range parseState 2 2), $4) }
+    | OPEN tySig IN expr                    
+        { Ast.SynExpr.OpenNamespaceOrType(($2,range parseState 2 2), $4) }
     
     //open assembly reference (by assembly name or file name)
     | OPEN STRING IN expr                     
@@ -234,8 +234,8 @@ stmtList:
 
 stmt:
     //open namespace
-    | OPEN longName SEMICOLON SEMICOLON
-        { Ast.SynStmt.OpenNamespace($2, range parseState 2 2) }
+    | OPEN tySig SEMICOLON SEMICOLON
+        { Ast.SynStmt.OpenNamespaceOrType($2, range parseState 2 2) }
     
     //open assembly reference (by assembly name or file name)
     | OPEN STRING SEMICOLON SEMICOLON

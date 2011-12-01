@@ -109,7 +109,7 @@ type SynExpr =
     ///discard left hand side, return right hand side
     | Sequential       of SynExpr * (SynExpr * PositionRange)
     ///open a namespace
-    | OpenNamespace    of (string * PositionRange) * SynExpr 
+    | OpenNamespaceOrType    of (TySig * PositionRange) * SynExpr 
     ///reference an assembly by name or dll path
     | OpenAssembly     of (string * PositionRange) * SynExpr
     | LogicalNot       of SynExpr * PositionRange
@@ -125,7 +125,7 @@ type SynExpr =
 
 type SynStmt =
     | Let               of string * (SynExpr * PositionRange)
-    | OpenNamespace     of string * PositionRange
+    | OpenNamespaceOrType     of TySig * PositionRange
     | OpenAssembly      of string * PositionRange
     | Do                of SynExpr
 

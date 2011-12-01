@@ -46,11 +46,12 @@
     <Compile Include="LogicOpTests.fs" />
     <Compile Include="ComparisonOpTests.fs" />
     <Compile Include="CastTests.fs" />
-    <Compile Include="OpenNamespaceTests.fs" />
     <Compile Include="RefAssemblyTests.fs" />
     <Compile Include="WhileLoopTests.fs" />
     <Compile Include="TySigTests.fs" />
     <Compile Include="OptimizationTests.fs" />
+    <Compile Include="OpenNamespaceTests.fs" />
+    <Compile Include="OpenTypeTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
