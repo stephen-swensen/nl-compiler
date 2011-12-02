@@ -52,6 +52,7 @@
     <Compile Include="OptimizationTests.fs" />
     <Compile Include="OpenNamespaceTests.fs" />
     <Compile Include="OpenTypeTests.fs" />
+    <Compile Include="IdentifierTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
