@@ -134,7 +134,21 @@ type SynTopLevel =
     | Expr          of SynExpr
     | StmtList      of SynStmt list
 
-//type Identifier(nameParts) =
-//    let parts = name.Split('.')
-//    member this.Qualifier =
-//        if parts
+type Identifier(ident:string) =
+    do
+        if ident |> String.IsNullOrEmpty then
+            invalidArg "ident" "can't be null or empty"
+
+    let isLong, longPrefix, shortSuffix =
+        let split = ident.Split('.')
+        match split.Length with
+        | 1 -> false, "", ident
+        | _ ->
+            true, String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
+    
+    member this.LongPrefix = longPrefix
+    member this.ShortSuffix = shortSuffix
+    member this.IsLong = isLong
+    member this.Full = ident
+    override this.ToString() = ident
+
