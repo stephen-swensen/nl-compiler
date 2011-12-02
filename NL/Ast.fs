@@ -62,7 +62,29 @@ type SynComparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
             | GtEq -> "op_GreaterThanOrEqual"
             | Neq -> "op_Inequality"
 
+type Identifier(ident:string) =
+    do
+        if ident |> String.IsNullOrEmpty then
+            invalidArg "ident" "can't be null or empty"
+
+    let isLong, longPrefix, shortSuffix =
+        let split = ident.Split('.')
+        match split.Length with
+        | 1 -> false, "", ident
+        | _ ->
+            true, String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
+    
+    member this.LongPrefix = longPrefix
+    member this.ShortSuffix = shortSuffix
+    member this.IsLong = isLong
+    member this.Full = ident
+    override this.ToString() = ident
+
 type TySig(genericName:string, genericArgs: TySig list) =
+    new (genericName:string) = TySig(genericName,[])
+    new (genericName:Identifier, genericArgs) = TySig(genericName.Full, genericArgs)
+    new (genericName:Identifier) = TySig(genericName.Full,[])
+    
     ///i.e. Dictionary in Dictionary<'T, 'R>
     member x.GenericName = genericName
     ///i.e. String and Int in Dictionary<String, Int>
@@ -133,22 +155,4 @@ type SynStmt =
 type SynTopLevel =
     | Expr          of SynExpr
     | StmtList      of SynStmt list
-
-type Identifier(ident:string) =
-    do
-        if ident |> String.IsNullOrEmpty then
-            invalidArg "ident" "can't be null or empty"
-
-    let isLong, longPrefix, shortSuffix =
-        let split = ident.Split('.')
-        match split.Length with
-        | 1 -> false, "", ident
-        | _ ->
-            true, String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
-    
-    member this.LongPrefix = longPrefix
-    member this.ShortSuffix = shortSuffix
-    member this.IsLong = isLong
-    member this.Full = ident
-    override this.ToString() = ident
 
