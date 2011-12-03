@@ -2,6 +2,7 @@
 
 open System
 open System.Reflection
+open Swensen.NL.Ast
 open Swensen.NL.Ail
 
 ///Functions for calculating primitive type widening
@@ -366,11 +367,12 @@ let rec tycheckWith env synTopLevel =
         | Ast.SynExpr.Sequential(x,(y,_)) ->
             let x, y = tycheckExp x, tycheckExp y
             ILExpr.Sequential(x,y,y.Type)
-        | Ast.SynExpr.OpenNamespaceOrType((tySig,pos), x) ->
-            match tySig with
-            | Ast.TySig(name,[]) when namespaceExists env.Assemblies name ->
-                tycheckExpWith { env with Namespaces=name::env.Namespaces } x
+        | Ast.SynExpr.OpenNamespaceOrType((ident, tySigs,pos), x) ->
+            match tySigs with
+            | [] when namespaceExists env.Assemblies ident.Full ->
+                tycheckExpWith { env with Namespaces=ident.Full::env.Namespaces } x
             | _ ->
+                let tySig = TySig(ident, tySigs)
                 match tryResolveType tySig with
                 | Some(ty) ->
                     tycheckExpWith { env with Classes=ty::env.Classes } x
@@ -527,11 +529,12 @@ let rec tycheckWith env synTopLevel =
                         loop env synStmts ilStmts //error recovery
                     | Some(asm) -> 
                         loop { env with Assemblies=asm::env.Assemblies } synStmts ilStmts
-                | Ast.SynStmt.OpenNamespaceOrType(tySig, pos) ->
-                    match tySig with
-                    | Ast.TySig(name,[]) when namespaceExists env.Assemblies name ->
-                        loop { env with Namespaces=name::env.Namespaces } synStmts ilStmts
+                | Ast.SynStmt.OpenNamespaceOrType(ident, tySigs, pos) ->
+                    match tySigs with
+                    | [] when namespaceExists env.Assemblies ident.Full ->
+                        loop { env with Namespaces=ident.Full::env.Namespaces } synStmts ilStmts
                     | _ ->
+                        let tySig = TySig(ident,tySigs)
                         match tryResolveType env tySig with
                         | Some(ty) ->
                             loop { env with Classes=ty::env.Classes } synStmts ilStmts

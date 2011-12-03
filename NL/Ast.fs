@@ -131,7 +131,7 @@ type SynExpr =
     ///discard left hand side, return right hand side
     | Sequential       of SynExpr * (SynExpr * PositionRange)
     ///open a namespace
-    | OpenNamespaceOrType    of (TySig * PositionRange) * SynExpr 
+    | OpenNamespaceOrType    of (Identifier * TySig list * PositionRange) * SynExpr 
     ///reference an assembly by name or dll path
     | OpenAssembly     of (string * PositionRange) * SynExpr
     | LogicalNot       of SynExpr * PositionRange
@@ -146,10 +146,10 @@ type SynExpr =
     | LogicBinop       of SynLogicBinop * (SynExpr * PositionRange) * (SynExpr * PositionRange)
 
 type SynStmt =
-    | Let               of string * (SynExpr * PositionRange)
-    | OpenNamespaceOrType     of TySig * PositionRange
-    | OpenAssembly      of string * PositionRange
-    | Do                of SynExpr
+    | Let                   of string * (SynExpr * PositionRange)
+    | OpenNamespaceOrType   of Identifier * TySig list * PositionRange
+    | OpenAssembly          of string * PositionRange
+    | Do                    of SynExpr
 
 //represents a "raw" top level language element
 type SynTopLevel =
