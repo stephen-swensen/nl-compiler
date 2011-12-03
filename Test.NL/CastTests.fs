@@ -25,7 +25,7 @@ let ``downcast and updown cast ref type`` () =
 
 [<Fact>]
 let ``downcast and upcast ref type to and from interface`` () =
-    test <@ C.eval<obj> "arraylist()[ienumerable][arraylist]" |> ignore; true @>
+    test <@ C.eval<obj> "open system.collections in arraylist()[ienumerable][arraylist]" |> ignore; true @>
 
 [<Fact>]
 let ``downcast and upcast value type to and from interface`` () =

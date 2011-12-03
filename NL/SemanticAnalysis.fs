@@ -93,7 +93,7 @@ let rec tryResolveType (env:SemanticEnvironment) gsig =
     | Ast.TySig("",_) -> None
     | Ast.TySig(name,args) ->
         seq {
-            for possibleName in (name::(env.Namespaces |> List.map (fun n -> n + "." + name))) do
+            for possibleName in env.Namespaces |> List.map (fun n -> n + "." + name) do
                 for possibleAsm in env.Assemblies do
                     if args = [] then
                         let possibleFullName = possibleName + ", " + possibleAsm.FullName

@@ -12,8 +12,8 @@ let ``system open by default`` () =
     test <@ C.eval "string('c',3)" = "ccc" @>
 
 [<Fact>]
-let ``system.collections open by default`` () =
-    test <@ C.eval<obj> "arraylist()" :? System.Collections.ArrayList @>
+let ``system+collections+generic open by default`` () =
+    test <@ C.eval<obj> "list[int32]()" :? System.Collections.Generic.List<int32> @>
 
 [<Fact>]
 let ``open expression`` () =
