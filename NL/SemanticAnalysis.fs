@@ -98,7 +98,7 @@ let rec tryResolveType (env:SemanticEnvironment) gsig =
                     if args = [] then
                         let possibleFullName = possibleName + ", " + possibleAsm.FullName
                         let ty = Type.GetType(possibleFullName,false, true)
-                        yield Option.fromNullable ty
+                        yield Option.ofAllowsNull ty
                     else
                         let argTys = args |> List.map (tryResolveType env)
                         if List.exists ((=)None) argTys then
@@ -111,7 +111,7 @@ let rec tryResolveType (env:SemanticEnvironment) gsig =
                                     (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) (List.choose id argTys)))
                                     possibleAsm.FullName
                             let ty = Type.GetType(possibleFullName,false, true)
-                            yield Option.fromNullable ty
+                            yield Option.ofAllowsNull ty
         } |> Seq.tryPick id
 
 //todo: make cleaner, either wait to convert to reflection friendly arrays till last moment, or convert to arrays up front
@@ -318,6 +318,7 @@ let rec tycheckWith env synTopLevel =
                                     EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
                                     ILExpr.Error(ty)
                                 | ctor -> 
+
                                     ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
         | Ast.SynExpr.GenericTypeStaticCall(tyName, (tyGenericArgs, genericArgsPos), methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
             match tryResolveType env (Ast.TySig(tyName, tyGenericArgs)) with
