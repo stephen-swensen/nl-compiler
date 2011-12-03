@@ -48,6 +48,7 @@ let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
 
 //todo: infer generic type arguments from type parameters (reflection not friendly for this)
 //todo: file bug: name should not need a type constraint
+///Try to resolve to resolve a method with the given parameters
 ///(ty:Type) (name:string) bindingFlags (genericTyArgs:Type[]) (argTys: Type[]) -> MethodInfo option
 let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[]) (argTys: Type[]) =
     //todo: sophisticated overload resolution used both in generic and non-generic methods; note that
@@ -131,11 +132,13 @@ let tryResolveMethodWithGenericArgs env ty methodName bindingFlags genericArgs a
             abort()
         | Some(genericArgTys) -> tryResolveMethod ty methodName bindingFlags genericArgTys argTys
 
+///Tests whethere the given namespace exists in  the list of assemblies
 let namespaceExists (assemblies: Assembly list) name =
     assemblies
     |> Seq.collect (fun asm -> asm.GetTypes() |> Seq.map (fun ty -> let ns = ty.Namespace in if ns = null then "" else ns.ToLower()))
     |> Seq.exists ((=)name)
 
+///try to load the given assembly either by file path or meta name
 let tryLoadAssembly (name:string) =
     try
         Some(Assembly.Load(name))
