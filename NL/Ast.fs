@@ -122,7 +122,7 @@ type SynExpr =
     ///reference a variable
     | Var              of string * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
-    | NameCall         of string * (TySig list * PositionRange) * SynExpr list * PositionRange
+    | NameCall         of Identifier * (TySig list * PositionRange) * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
     | GenericTypeStaticCall of string * (TySig list * PositionRange) * string * TySig list * SynExpr list * PositionRange
     ///call instance method on an expression
