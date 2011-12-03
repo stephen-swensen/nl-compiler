@@ -150,10 +150,6 @@ let tryLoadAssembly (name:string) =
 let rec tycheckWith env synTopLevel =
     let rec tycheckExpWith env synExpr=
         let tycheckExp = tycheckExpWith env
-        let tryResolveType = tryResolveType env
-        let tryResolveGenericArgTys = tryResolveGenericArgTys env
-        let tryResolveMethodWithGenericArgs = tryResolveMethodWithGenericArgs env
-
 
         match synExpr with
         | Ast.SynExpr.Double x -> ILExpr.Double x
@@ -162,7 +158,7 @@ let rec tycheckWith env synTopLevel =
         | Ast.SynExpr.Char x   -> ILExpr.Char x
         | Ast.SynExpr.Bool x   -> ILExpr.Bool x
         | Ast.SynExpr.Null(name, pos)   -> 
-            match tryResolveType name with
+            match tryResolveType env name with
             | None -> 
                 EM.Could_not_resolve_type pos name.Name //todo: specific pos for ty name
                 abort()
@@ -173,14 +169,14 @@ let rec tycheckWith env synTopLevel =
                 else
                     ILExpr.Null(ty)
         | Ast.SynExpr.Typeof(name, pos)   -> 
-            match tryResolveType name with
+            match tryResolveType env name with
             | None -> 
                 EM.Could_not_resolve_type pos name.Name
                 ILExpr.Typeof(typeof<obj>) //error recovery: this is a runtime value that won't hurt us error 
             | Some(ty) -> 
                 ILExpr.Typeof(ty)
         | Ast.SynExpr.Default(name, pos)   -> 
-            match tryResolveType name with
+            match tryResolveType env name with
             | None -> 
                 EM.Could_not_resolve_type pos name.Name
                 abort()
@@ -278,16 +274,16 @@ let rec tycheckWith env synTopLevel =
 
             match Map.tryFind ident.LongPrefix env.Variables with //N.B. vars always supercede open names
             | Some(ty:Type) -> //instance method call on variable
-                match tryResolveMethodWithGenericArgs ty ident.ShortSuffix instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
                 | None -> 
                     EM.Invalid_instance_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
                     abort()
                 | Some(meth) -> 
                     ILExpr.InstanceCall(Var(ident.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
             | None ->
-                match tryResolveType (Ast.TySig(ident.LongPrefix,[])) with
+                match tryResolveType env (Ast.TySig(ident.LongPrefix,[])) with
                 | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                    match tryResolveMethodWithGenericArgs ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                    match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
                     | None -> 
                         EM.Invalid_static_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
                         abort()
@@ -296,13 +292,13 @@ let rec tycheckWith env synTopLevel =
                 | None -> //give static methods of an open type a shot!
                     let openMeth =
                         env.Types
-                        |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
+                        |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
                         
                     match openMeth with
                     | Some(meth) ->
                         ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                     | None -> //constructors
-                        match tryResolveType (Ast.TySig(ident.Full,genericArgs)) with
+                        match tryResolveType env (Ast.TySig(ident.Full,genericArgs)) with
                         | None -> 
                             EM.Could_not_resolve_possible_method_call_or_contructor_type pos ident.LongPrefix ident.Full
                             abort()
@@ -321,14 +317,14 @@ let rec tycheckWith env synTopLevel =
                                 | ctor -> 
                                     ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
         | Ast.SynExpr.GenericTypeStaticCall(tyName, (tyGenericArgs, genericArgsPos), methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
-            match tryResolveType (Ast.TySig(tyName, tyGenericArgs)) with
+            match tryResolveType env (Ast.TySig(tyName, tyGenericArgs)) with
             | None -> 
                 EM.Could_not_resolve_type pos (Ast.TySig(tyName,tyGenericArgs).Name)
                 abort()
             | Some(ty) ->
                 let args = args |> List.map (tycheckExp)
                 let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-                match tryResolveMethodWithGenericArgs ty methodName staticFlags (methodGenericArgs |> List.toArray) argTys genericArgsPos with
+                match tryResolveMethodWithGenericArgs env ty methodName staticFlags (methodGenericArgs |> List.toArray) argTys genericArgsPos with
                 | None -> 
                     EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
                     abort()
@@ -338,7 +334,7 @@ let rec tycheckWith env synTopLevel =
             let instance = tycheckExp instance
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-            match tryResolveMethodWithGenericArgs instance.Type methodName instanceFlags (methodGenericArgs |> List.toArray) argTys genericArgsPos with
+            match tryResolveMethodWithGenericArgs env instance.Type methodName instanceFlags (methodGenericArgs |> List.toArray) argTys genericArgsPos with
             | None -> 
                 EM.Invalid_instance_method pos methodName instance.Type.Name (sprintTypes argTys)
                 abort()
@@ -370,7 +366,7 @@ let rec tycheckWith env synTopLevel =
                 tycheckExpWith (env.ConsNamespace(ident.Full)) x
             | _ ->
                 let tySig = TySig(ident, tySigs)
-                match tryResolveType tySig with
+                match tryResolveType env tySig with
                 | Some(ty) ->
                     tycheckExpWith (env.ConsType(ty)) x
                 | None ->
@@ -392,7 +388,7 @@ let rec tycheckWith env synTopLevel =
                 ILExpr.LogicalNot(x)
         | Ast.SynExpr.Cast(x, (ty, tyPos), pos) ->
             let x = tycheckExp x
-            match tryResolveType ty with
+            match tryResolveType env ty with
             | None -> 
                 EM.Could_not_resolve_type tyPos ty.Name
                 abort()
