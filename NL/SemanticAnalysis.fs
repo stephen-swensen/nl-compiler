@@ -87,7 +87,7 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
     (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
 ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
-let rec tryResolveType env gsig =
+let rec tryResolveType (env:SemanticEnvironment) gsig =
     match gsig with
     | Ast.TySig("",_) -> None
     | Ast.TySig(name,args) ->
@@ -295,7 +295,7 @@ let rec tycheckWith env synTopLevel =
                         ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                 | None -> //give static methods of an open type a shot!
                     let openMeth =
-                        env.Classes
+                        env.Types
                         |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
                         
                     match openMeth with
@@ -349,7 +349,7 @@ let rec tycheckWith env synTopLevel =
             if assign.Type = typeof<Void> then
                 EM.Void_invalid_in_let_binding assignPos
         
-            let body = tycheckExpWith {env with Variables=env.Variables |> Map.add name assign.Type} body
+            let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
         | Ast.SynExpr.Var(name, pos) ->
             match Map.tryFind name env.Variables with
@@ -367,12 +367,12 @@ let rec tycheckWith env synTopLevel =
         | Ast.SynExpr.OpenNamespaceOrType((ident, tySigs,pos), x) ->
             match tySigs with
             | [] when namespaceExists env.Assemblies ident.Full ->
-                tycheckExpWith { env with Namespaces=ident.Full::env.Namespaces } x
+                tycheckExpWith (env.ConsNamespace(ident.Full)) x
             | _ ->
                 let tySig = TySig(ident, tySigs)
                 match tryResolveType tySig with
                 | Some(ty) ->
-                    tycheckExpWith { env with Classes=ty::env.Classes } x
+                    tycheckExpWith (env.ConsType(ty)) x
                 | None ->
                     EM.Namespace_or_type_not_found pos tySig.Name (sprintAssemblies env.Assemblies)
                     tycheckExp x
@@ -515,7 +515,7 @@ let rec tycheckWith env synTopLevel =
                         EM.Void_invalid_in_let_binding assignPos
 
                     let ilStmt = ILStmt.Let(name, assign)
-                    let env = {env with Variables=env.Variables |> Map.add name assign.Type}
+                    let env = env.ConsVariable(name, assign.Type)
                 
                     loop env synStmts (ilStmt::ilStmts)
                 | Ast.SynStmt.OpenAssembly(name, pos) ->
@@ -529,12 +529,12 @@ let rec tycheckWith env synTopLevel =
                 | Ast.SynStmt.OpenNamespaceOrType(ident, tySigs, pos) ->
                     match tySigs with
                     | [] when namespaceExists env.Assemblies ident.Full ->
-                        loop { env with Namespaces=ident.Full::env.Namespaces } synStmts ilStmts
+                        loop (env.ConsNamespace(ident.Full)) synStmts ilStmts
                     | _ ->
                         let tySig = TySig(ident,tySigs)
                         match tryResolveType env tySig with
                         | Some(ty) ->
-                            loop { env with Classes=ty::env.Classes } synStmts ilStmts
+                            loop (env.ConsType(ty)) synStmts ilStmts
                         | None ->
                             EM.Namespace_or_type_not_found pos tySig.Name (sprintAssemblies env.Assemblies)
                             loop env synStmts ilStmts //error recovery    
