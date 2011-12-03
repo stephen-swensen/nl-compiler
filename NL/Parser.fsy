@@ -185,10 +185,10 @@ expr:
 
     //non-generic constructor or static call or instance call on var
     | longName LPAREN exprList RPAREN                                            
-        { Ast.SynExpr.NameCall($1, ([], range parseState 1 4), $3, range parseState 1 4) }
+        { Ast.SynExpr.NameCall(Identifier($1), ([], range parseState 1 4), $3, range parseState 1 4) }
     //generic constructor or static call or instance call on var
     | longName LBRACKET tySigList RBRACKET LPAREN exprList RPAREN            
-        { Ast.SynExpr.NameCall($1, ($3, range parseState 3 3), $6, range parseState 1 7) }
+        { Ast.SynExpr.NameCall(Identifier($1), ($3, range parseState 3 3), $6, range parseState 1 7) }
     //generic type non-generic static call
     | longName LBRACKET tySigList RBRACKET DOT NAME LPAREN exprList RPAREN
         { Ast.SynExpr.GenericTypeStaticCall($1, ($3, range parseState 3 3), $6, [], $8, range parseState 1 9) }

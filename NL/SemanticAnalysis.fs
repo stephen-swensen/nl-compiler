@@ -272,42 +272,39 @@ let rec tycheckWith env synTopLevel =
                 | None, _ ->
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<bool>)
-        | Ast.SynExpr.NameCall(longName, (genericArgs, genericArgsPos), args, pos) -> //todo: need more position info for different tokens
-            let namePrefix, methodName =
-                let split = longName.Split('.')
-                String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
+        | Ast.SynExpr.NameCall(ident, (genericArgs, genericArgsPos), args, pos) -> //todo: need more position info for different tokens
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
 
-            match Map.tryFind namePrefix env.Variables with //N.B. vars always supercede open names
+            match Map.tryFind ident.LongPrefix env.Variables with //N.B. vars always supercede open names
             | Some(ty:Type) -> //instance method call on variable
-                match tryResolveMethodWithGenericArgs ty methodName instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                match tryResolveMethodWithGenericArgs ty ident.ShortSuffix instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
                 | None -> 
-                    EM.Invalid_instance_method pos methodName ty.Name (sprintTypes argTys)
+                    EM.Invalid_instance_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
                     abort()
                 | Some(meth) -> 
-                    ILExpr.InstanceCall(Var(namePrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                    ILExpr.InstanceCall(Var(ident.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
             | None ->
-                match tryResolveType (Ast.TySig(namePrefix,[])) with
+                match tryResolveType (Ast.TySig(ident.LongPrefix,[])) with
                 | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                    match tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                    match tryResolveMethodWithGenericArgs ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
                     | None -> 
-                        EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
+                        EM.Invalid_static_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
                         abort()
                     | Some(meth) -> 
                         ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                 | None -> //give static methods of an open type a shot!
                     let openMeth =
                         env.Classes
-                        |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs ty methodName staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
+                        |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
                         
                     match openMeth with
                     | Some(meth) ->
                         ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                     | None -> //constructors
-                        match tryResolveType (Ast.TySig(longName,genericArgs)) with
+                        match tryResolveType (Ast.TySig(ident.Full,genericArgs)) with
                         | None -> 
-                            EM.Could_not_resolve_possible_method_call_or_contructor_type pos namePrefix longName
+                            EM.Could_not_resolve_possible_method_call_or_contructor_type pos ident.LongPrefix ident.Full
                             abort()
                         | Some(ty) ->
                             if ty.IsValueType && args.Length = 0 then
