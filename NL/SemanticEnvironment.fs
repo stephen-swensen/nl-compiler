@@ -33,8 +33,8 @@ module SemanticEnvironment =
                   "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
                   "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map Assembly.Load)
             NVTs=
-                ["system"
-                 "system.collections"
+                ["" //n.b. System.Type.GetType(".system.string",false,true) IS valid (the leading ".", that is)
+                 "system"
                  "system.collections.generic"
                  "system.numerics"] |> List.map NVT.Namespace }
 
