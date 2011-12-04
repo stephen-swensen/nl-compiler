@@ -42,6 +42,7 @@ let coerceIfNeeded expectedTy (targetExp:ILExpr) =
 let castIfNeeded expectedTy (targetExp:ILExpr) =
     if targetExp.Type <> expectedTy then Cast(targetExp,expectedTy) else targetExp
 
+///SHOULD MAKE A "CAST OR COERCE IF NEEDED" METHOD!! BUG 31 
 let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
     List.zip (expectedParameters |> Seq.map (fun p -> p.ParameterType) |> Seq.toList)  targetExps
     |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
@@ -87,35 +88,42 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
     (fun onty fromty toto -> tryResolveConversionOp "op_Implicit" onty fromty toto), 
     (fun onty fromty toto -> tryResolveConversionOp "op_Explicit" onty fromty toto)
 
-///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
-let rec tryResolveType (env:SemanticEnvironment) gsig =
+///first param is the type name, second parameter is the namesapce to prefix to the type name
+let withNamespace tyName ns =
+    if ns = "" then tyName
+    else ns + "." + tyName
+
+///Try to resolve the given type in the refAsms and openNames context; return null if fail to resolve.
+///If exact is true, does not search for the generic type name among namespaces (though generic type parameters will still be resolved among namespaces)
+let rec tryResolveTypeExact (env:SemanticEnvironment) gsig exact =
     match gsig with
-    | Ast.TySig("",_) -> None //short circuit for performance
     | Ast.TySig(name,args) ->
         seq {
-            for possibleName in env.Namespaces |> List.map (fun n -> n + "." + name) do
+            let nsl = if exact then Seq.singleton name else env.Namespaces |> Seq.map (withNamespace name)
+            for possibleName in nsl do
                 for possibleAsm in env.Assemblies do
                     if args = [] then
                         let possibleFullName = possibleName + ", " + possibleAsm.FullName
                         let ty = Type.GetType(possibleFullName,false, true)
                         yield Option.ofAllowsNull ty
                     else
-                        let argTys = args |> List.map (tryResolveType env)
-                        if List.exists ((=)None) argTys then
-                            yield None //todo: would like to convey exactly which sub types failed to resolve
-                        else
+                        match tryResolveGenericArgTys env args with
+                        | None -> yield None
+                        | Some(argTys) ->
                             let possibleFullName = 
                                 sprintf "%s`%i[%s], %s" 
                                     possibleName 
                                     args.Length 
-                                    (String.concat "," (List.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName) (List.choose id argTys)))
+                                    (String.concat "," (argTys |> Seq.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName)))
                                     possibleAsm.FullName
                             let ty = Type.GetType(possibleFullName,false, true)
                             yield Option.ofAllowsNull ty
         } |> Seq.tryPick id
-
+///Try to resolve the given type in the refAsms and openNames context; return null if fail to resolve.
+and tryResolveType env gsig = tryResolveTypeExact env gsig false
 //todo: make cleaner, either wait to convert to reflection friendly arrays till last moment, or convert to arrays up front
-let tryResolveGenericArgTys env genericArgs =        
+//////Try to resolve the given sequence of generic argument types in the refAsms and openNames context; return null if fail to resolve.
+and tryResolveGenericArgTys env (genericArgs:seq<_>) =        
     let genericArgTys = genericArgs |> Seq.map (tryResolveType env)
     if Seq.exists ((=)None) genericArgTys then None
     else Some(genericArgTys |> Seq.choose id |> Seq.toArray)
@@ -271,55 +279,110 @@ let rec tycheckWith env synTopLevel =
                 | None, _ ->
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<bool>)
-        | Ast.SynExpr.NameCall(ident, (genericArgs, genericArgsPos), args, pos) -> //todo: need more position info for different tokens
+        | Ast.SynExpr.NameCall(ident, (genericArgs, genericArgsPos), args, pos) ->
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
 
-            match Map.tryFind ident.LongPrefix env.Variables with //N.B. vars always supercede open names
-            | Some(ty:Type) -> //instance method call on variable
-                match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
-                | None -> 
-                    EM.Invalid_instance_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
-                    abort()
-                | Some(meth) -> 
-                    ILExpr.InstanceCall(Var(ident.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-            | None ->
-                match tryResolveType env (Ast.TySig(ident.LongPrefix,[])) with
-                | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                    match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
-                    | None -> 
-                        EM.Invalid_static_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
-                        abort()
-                    | Some(meth) -> 
-                        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-                | None -> //give static methods of an open type a shot!
-                    let openMeth =
-                        env.Types
-                        |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
-                        
-                    match openMeth with
-                    | Some(meth) ->
-                        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-                    | None -> //constructors
-                        match tryResolveType env (Ast.TySig(ident.Full,genericArgs)) with
-                        | None -> 
-                            EM.Could_not_resolve_possible_method_call_or_contructor_type pos ident.LongPrefix ident.Full
-                            abort()
-                        | Some(ty) ->
-                            if ty.IsValueType && args.Length = 0 then
-                                if ty = typeof<System.Void> then
-                                    EM.Void_cannot_be_instantiated pos
-                                    ILExpr.Error(ty)
+            let rec loop = function
+                | [] -> 
+                    EM.Could_not_resolve_possible_method_call_or_contructor_type pos ident.LongPrefix ident.Full //TODO: may not be accurate any more!
+                    abort() //need error message too!
+                | hd::tl ->
+                    match hd with
+                    | NVT.Variable(name,ty) -> //instance method call on variable
+                        if name = ident.LongPrefix then
+                            match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                            | None -> 
+                                EM.Invalid_instance_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
+                                abort()
+                            | Some(meth) -> 
+                                ILExpr.InstanceCall(Var(ident.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                        else 
+                            loop tl
+                    | NVT.Namespace(ns) ->
+                        match tryResolveTypeExact env (Ast.TySig(withNamespace ident.LongPrefix ns, [])) true with
+                        | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
+                            match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                            | None -> 
+                                EM.Invalid_static_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
+                                abort()
+                            | Some(meth) -> 
+                                ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                        | None -> //constructors (generic or non-generic)
+                            match tryResolveTypeExact env (Ast.TySig(withNamespace ident.Full ns,genericArgs)) true with
+                            | None -> 
+                                loop tl
+                            | Some(ty) ->
+                                if ty.IsValueType && args.Length = 0 then
+                                    if ty = typeof<System.Void> then
+                                        EM.Void_cannot_be_instantiated pos
+                                        ILExpr.Error(ty)
+                                    else
+                                        ILExpr.Default(ty)
                                 else
-                                    ILExpr.Default(ty)
-                            else
-                                match ty.GetConstructor(argTys) with
-                                | null -> 
-                                    EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
-                                    ILExpr.Error(ty)
-                                | ctor -> 
-
-                                    ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
+                                    match ty.GetConstructor(argTys) with
+                                    | null -> 
+                                        EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
+                                        ILExpr.Error(ty)
+                                    | ctor ->
+                                        ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
+                    | NVT.Type(ty) -> //static methods of an open type
+                        if ident.IsShort then
+                            match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+                            | Some(meth) ->
+                                ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                            | None ->
+                                loop tl
+                        else
+                            loop tl
+            loop env.NVTs
+//                    
+//
+//            match Map.tryFind ident.LongPrefix env.Variables with //N.B. vars always supercede open names
+//            | Some(ty:Type) -> //instance method call on variable
+//                match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix instanceFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+//                | None -> 
+//                    EM.Invalid_instance_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
+//                    abort()
+//                | Some(meth) -> 
+//                    ILExpr.InstanceCall(Var(ident.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+//            | None ->
+//                match tryResolveType env (Ast.TySig(ident.LongPrefix,[])) with
+//                | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
+//                    match tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos with
+//                    | None -> 
+//                        EM.Invalid_static_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
+//                        abort()
+//                    | Some(meth) -> 
+//                        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+//                | None -> //give static methods of an open type a shot!
+//                    let openMeth =
+//                        env.Types
+//                        |> Seq.tryPick (fun ty -> tryResolveMethodWithGenericArgs env ty ident.ShortSuffix staticFlags (genericArgs |> List.toArray) argTys genericArgsPos)
+//                        
+//                    match openMeth with
+//                    | Some(meth) ->
+//                        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+//                    | None -> //constructors
+//                        match tryResolveType env (Ast.TySig(ident.Full,genericArgs)) with
+//                        | None -> 
+//                            EM.Could_not_resolve_possible_method_call_or_contructor_type pos ident.LongPrefix ident.Full
+//                            abort()
+//                        | Some(ty) ->
+//                            if ty.IsValueType && args.Length = 0 then
+//                                if ty = typeof<System.Void> then
+//                                    EM.Void_cannot_be_instantiated pos
+//                                    ILExpr.Error(ty)
+//                                else
+//                                    ILExpr.Default(ty)
+//                            else
+//                                match ty.GetConstructor(argTys) with
+//                                | null -> 
+//                                    EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
+//                                    ILExpr.Error(ty)
+//                                | ctor -> 
+//
+//                                    ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
         | Ast.SynExpr.GenericTypeStaticCall(tyName, (tyGenericArgs, genericArgsPos), methodName, methodGenericArgs, args, pos) -> //todo: need more position info for different tokens
             match tryResolveType env (Ast.TySig(tyName, tyGenericArgs)) with
             | None -> 

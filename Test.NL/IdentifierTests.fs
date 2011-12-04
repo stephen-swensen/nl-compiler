@@ -11,7 +11,7 @@ module C = Compilation
 let ``short`` () =
     let ident = Ast.Identifier("short")
     test <@ ident.Full = "short" @>
-    test <@ ident.IsLong = false @>
+    test <@ ident.IsShort = true @>
     test <@ ident.LongPrefix = "" @>
     test <@ ident.ShortSuffix = "short" @>
 
@@ -19,7 +19,7 @@ let ``short`` () =
 let ``long`` () =
     let ident = Ast.Identifier("one.two.three.four")
     test <@ ident.Full = "one.two.three.four" @>
-    test <@ ident.IsLong = true @>
+    test <@ ident.IsShort = false @>
     test <@ ident.LongPrefix = "one.two.three" @>
     test <@ ident.ShortSuffix = "four" @>
 
