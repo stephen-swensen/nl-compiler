@@ -98,6 +98,8 @@ type TySig with
             | TySig(name, []) -> name
             | TySig(name, xl) -> name + "[" + (xl |> List.map build |> String.concat ",") + "]"
         build x
+    override x.ToString() =
+        x.Name
     
 //n.b. PositionRange convention is: 1) if position range applies to the entire expression,
 //     then it is the last element in the tupled case, 2) if position range applies to a pariticular
