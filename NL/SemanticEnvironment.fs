@@ -56,7 +56,3 @@ type SemanticEnvironment with
     member this.ConsType(ty)            = { this with NVTs= NVT.Type(ty)::this.NVTs }
 
     member this.ConsAssembly(assm)      = { this with Assemblies= assm::this.Assemblies }
-
-
-
-
