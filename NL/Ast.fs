@@ -67,16 +67,16 @@ type Identifier(ident:string) =
         if ident |> String.IsNullOrEmpty then
             invalidArg "ident" "can't be null or empty"
 
-    let isLong, longPrefix, shortSuffix =
+    let isShort, longPrefix, shortSuffix =
         let split = ident.Split('.')
         match split.Length with
-        | 1 -> false, "", ident
+        | 1 -> true, "", ident
         | _ ->
-            true, String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
+            false, String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
     
     member this.LongPrefix = longPrefix
     member this.ShortSuffix = shortSuffix
-    member this.IsLong = isLong
+    member this.IsShort = isShort
     member this.Full = ident
     override this.ToString() = ident
 

@@ -41,15 +41,15 @@ module SemanticEnvironment =
 type SemanticEnvironment with
     member this.Namespaces = 
         this.NVTs 
-        |> List.choose (function NVT.Namespace(ns) -> Some(ns) | _ -> None)
+        |> Seq.choose (function NVT.Namespace(ns) -> Some(ns) | _ -> None)
     
     member this.Variables = 
         this.NVTs 
-        |> List.choose (function NVT.Variable(name,ty) -> Some(name,ty) | _ -> None) |> Map.ofList
+        |> Seq.choose (function NVT.Variable(name,ty) -> Some(name,ty) | _ -> None) |> Map.ofSeq
     
     member this.Types = 
         this.NVTs 
-        |> List.choose (function NVT.Type(ty) -> Some(ty) | _ -> None) 
+        |> Seq.choose (function NVT.Type(ty) -> Some(ty) | _ -> None) 
 
     member this.ConsNamespace(ns)       = { this with NVTs= NVT.Namespace(ns)::this.NVTs }
     member this.ConsVariable(name, ty)  = { this with NVTs= NVT.Variable(name,ty)::this.NVTs }
