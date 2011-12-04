@@ -90,7 +90,7 @@ let tryResolveOpImplicit, tryResolveOpExplicit =
 ///try to resolve the given type in the refAsms and openNames context; return null if fail to resolve
 let rec tryResolveType (env:SemanticEnvironment) gsig =
     match gsig with
-    | Ast.TySig("",_) -> None
+    | Ast.TySig("",_) -> None //short circuit for performance
     | Ast.TySig(name,args) ->
         seq {
             for possibleName in env.Namespaces |> List.map (fun n -> n + "." + name) do
