@@ -55,11 +55,26 @@ let emitOpCodes (il:ILGenerator) ilExpr =
             il.Emit(OpCodes.Stloc, local)
         | Coerce(x,ty) ->
             emit x
-            if ty = typeof<float> then
-                il.Emit(OpCodes.Conv_R8)
-            elif ty = typeof<int> then
-                il.Emit(OpCodes.Conv_I4)
-            else
+            let convLookup = 
+                [
+                    //typeof<>, OpCodes.Conv_I
+                    typeof<int8>, OpCodes.Conv_I1
+                    typeof<int16>, OpCodes.Conv_I2
+                    typeof<int32>, OpCodes.Conv_I4
+                    typeof<int64>, OpCodes.Conv_I8
+                    typeof<single>, OpCodes.Conv_R4
+                    typeof<double>, OpCodes.Conv_R8
+                    //typeof<>, OpCodes.Conv_U
+                    typeof<uint8>, OpCodes.Conv_U1
+                    typeof<uint16>, OpCodes.Conv_U2
+                    typeof<uint32>, OpCodes.Conv_U4
+                    typeof<uint64>, OpCodes.Conv_U8
+                ] |> dict //can't use Map because Type does not support "comparison" constraints
+
+            match convLookup.TryGetValue ty with
+            | true, oc ->
+                il.Emit(oc)
+            | _ ->
                 failwithf "unsupported coersion: %A" ty //shouldn't be possible since already ty checked
         | Cast(x,ty) -> //precondition: x.Type <> ty
             emit x
