@@ -81,6 +81,7 @@ type Identifier(ident:string) =
     override this.ToString() = ident
 
 type TySig(genericName:string, genericArgs: TySig list) =
+    let mutable (cached:Type) = null
     new (genericName:string) = TySig(genericName,[])
     new (genericName:Identifier, genericArgs) = TySig(genericName.Full, genericArgs)
     new (genericName:Identifier) = TySig(genericName.Full,[])
@@ -89,6 +90,12 @@ type TySig(genericName:string, genericArgs: TySig list) =
     member x.GenericName = genericName
     ///i.e. String and Int in Dictionary<String, Int>
     member x.GenericArgs = genericArgs
+
+    member __.Cached 
+        with get() = cached
+        and set(x) = cached <- x
+        
+
 let (|TySig|) (tySig:TySig) =
     (tySig.GenericName, tySig.GenericArgs)
 type TySig with

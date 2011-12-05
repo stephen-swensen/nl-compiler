@@ -95,8 +95,9 @@ let withNamespace tyName ns =
 
 ///Try to resolve the given type in the refAsms and openNames context; return null if fail to resolve.
 ///If exact is true, does not search for the generic type name among namespaces (though generic type parameters will still be resolved among namespaces)
-let rec tryResolveTypeExact (env:SemanticEnvironment) gsig exact =
+let rec tryResolveTypeExact (env:SemanticEnvironment) (gsig:TySig) exact =
     match gsig with
+    | _ when gsig.Cached <> null -> Some(gsig.Cached)
     | Ast.TySig(name,args) ->
         seq {
             let nsl = if exact then Seq.singleton name else env.Namespaces |> Seq.map (withNamespace name)
@@ -105,6 +106,7 @@ let rec tryResolveTypeExact (env:SemanticEnvironment) gsig exact =
                     if args = [] then
                         let possibleFullName = possibleName + ", " + possibleAsm.FullName
                         let ty = Type.GetType(possibleFullName,false, true)
+                        gsig.Cached <- ty
                         yield Option.ofAllowsNull ty
                     else
                         match tryResolveGenericArgTys env args with
@@ -117,6 +119,7 @@ let rec tryResolveTypeExact (env:SemanticEnvironment) gsig exact =
                                     (String.concat "," (argTys |> Seq.map (fun (argTy:Type) -> sprintf "[%s]" argTy.AssemblyQualifiedName)))
                                     possibleAsm.FullName
                             let ty = Type.GetType(possibleFullName,false, true)
+                            gsig.Cached <- ty
                             yield Option.ofAllowsNull ty
         } |> Seq.tryPick id
 ///Try to resolve the given type in the refAsms and openNames context; return null if fail to resolve.
