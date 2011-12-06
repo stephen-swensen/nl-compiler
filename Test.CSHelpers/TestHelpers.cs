@@ -9,6 +9,7 @@ namespace Tests
         public Test1() { }
         public T DoIt<T>() { return default(T); }
         public T DoIt2<T>(T x) { return x; }
+        public static int Stopwatch() { return 0; }
     }
 
     public static class Test2<T> {
