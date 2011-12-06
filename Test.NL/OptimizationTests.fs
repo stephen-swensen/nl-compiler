@@ -85,6 +85,10 @@ let ``coersion of literal int to double is optimized away`` () =
     test <@ C.parseFromString "2[double]" |> O.optimize = C.parseFromString "2.0" @>
 
 [<Fact>]
+let ``coersion of literal double to int is optimized away`` () =
+    test <@ C.parseFromString "2.3[int32]" |> O.optimize = C.parseFromString "2" @>
+
+[<Fact>]
 let ``coersion subexpression folds`` () =
     test <@ C.parseFromString "(2 + 2)[double]" |> O.optimize = C.parseFromString "4.0" @>
 
@@ -262,6 +266,3 @@ let ``varset assign is optimized`` () =
 [<Fact>]
 let ``can't optimize Error case`` () =
     raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> ILTopLevel.Exp |> O.optimize @>
-
-
-

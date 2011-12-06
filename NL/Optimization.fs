@@ -56,7 +56,8 @@ let optimize (tn:ILTopLevel) =
         | ILExpr.Coerce(x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExp x
             match x with
-            | Int32(x) -> Double(float x)
+            | Int32(x) when ty = typeof<double> -> Double(double x)
+            | Double(x) when ty = typeof<int32> -> Int32(int32 x)
             | _ -> ILExpr.Coerce(x, ty)
         | ILExpr.LogicalNot(x) ->
             let x = optimizeExp x
