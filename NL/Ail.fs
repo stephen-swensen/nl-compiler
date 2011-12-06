@@ -40,6 +40,7 @@ type ILExpr =
     | Null          of Type
     | Typeof        of Type
     | Var           of string * Type
+    //Default value of ValueType ("zero") or Ref type (null)
     | Default       of Type
     | Nop
     | Break         
@@ -57,18 +58,14 @@ type ILExpr =
     | InstanceCall  of ILExpr * System.Reflection.MethodInfo * ILExpr list * Type
     | Sequential    of ILExpr * ILExpr * Type
     | Ctor          of System.Reflection.ConstructorInfo * ILExpr list * Type
-    ///Default value of ValueType ("zero") or Ref type (null)
     | LogicalNot    of ILExpr
     | IfThen        of ILExpr * ILExpr
     | IfThenElse    of ILExpr * ILExpr * ILExpr * Type
     | ComparisonBinop  of ILComparisonBinop * ILExpr * ILExpr
     | VarSet        of string * ILExpr
     | WhileLoop     of ILExpr * ILExpr
-    | FieldSet      of FieldInfo * ILExpr
-    | FieldGet      of FieldInfo
-    | PropertySet   of PropertyInfo * ILExpr
-    | PropertyGet   of PropertyInfo
-//    | Xor           of ILExpr * ILExpr
+    | StaticFieldSet      of FieldInfo * ILExpr
+    | StaticFieldGet      of FieldInfo
     with 
         member this.Type =
             match this with
@@ -81,8 +78,7 @@ type ILExpr =
             | Bool _                -> typeof<bool>
             | Typeof _              -> typeof<Type>
             | ComparisonBinop _     -> typeof<bool>
-            | FieldGet fi           -> fi.FieldType
-            | PropertyGet pi        -> pi.PropertyType
+            | StaticFieldGet fi           -> fi.FieldType
             
             //Always void
             | IfThen _
@@ -90,8 +86,7 @@ type ILExpr =
             | VarSet _
             | Break
             | Continue
-            | FieldSet _
-            | PropertySet _
+            | StaticFieldSet _
             | WhileLoop _           -> typeof<Void>
 
             //Explicitly constructed with types

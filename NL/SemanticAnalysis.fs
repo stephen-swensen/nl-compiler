@@ -168,7 +168,7 @@ let tryLoadAssembly (name:string) =
             None
 
 type FP =
-    | Field of FieldInfo
+    | Field of FieldInfo //N.B. CONSTANT FIELDS LIKE INT32.MAXVALUE CANNOT BE ACCESSED NORMALLY: CHECK FOR ISLITERAL FIELD ATTRIBUTE AND EMIT LITERAL VALUE (CAN USE GETVALUE REFLECTION) -- IF CAN'T DO THAT, CHECK FIELDINFO HANDLE AND IF THROWS WE KNOW WE NEED TO STOP
     | Property of PropertyInfo
 
 let tryResolveFieldOrProperty ty name bindingFlags =
@@ -417,8 +417,8 @@ let rec tycheckWith env synTopLevel =
             ILExpr.Let(name, assign, body, body.Type)
         | Ast.SynExpr.Var(ident, pos) ->
             match tryResolveVarFieldOrProperty env ident with
-            | Some(VFP.FieldOrProperty(FP.Property(pi))) -> ILExpr.PropertyGet(pi)
-            | Some(VFP.FieldOrProperty(FP.Field(fi))) -> ILExpr.FieldGet(fi)
+            | Some(VFP.FieldOrProperty(FP.Property(pi))) -> ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
+            | Some(VFP.FieldOrProperty(FP.Field(fi))) -> ILExpr.StaticFieldGet(fi)
             | Some(VFP.Var(name,ty)) -> ILExpr.Var(name,ty)
             | None ->
                 EM.Variable_field_or_property_not_found pos ident.Full
@@ -429,13 +429,13 @@ let rec tycheckWith env synTopLevel =
 
             match tryResolveVarFieldOrProperty env ident with
             | Some(vfp) ->
-                let ilExpr =
+                let ilExpr, vfpTy =
                     match vfp with
-                    | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.PropertySet(pi,x)
-                    | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.FieldSet(fi,x)
-                    | VFP.Var(name,ty) -> ILExpr.VarSet(name,x)
+                    | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.StaticCall(pi.GetSetMethod(), [x], typeof<Void>), pi.PropertyType
+                    | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.StaticFieldSet(fi,x), fi.FieldType
+                    | VFP.Var(name, varTy) -> ILExpr.VarSet(name,x), varTy
                 
-                if x.Type <> ilExpr.Type then
+                if x.Type <> vfpTy then
                     EM.Variable_set_type_mismatch pos ident.Full ilExpr.Type.Name x.Type.Name
                     ILExpr.Error(typeof<Void>)
                 else

@@ -172,9 +172,11 @@ let emitOpCodes (il:ILGenerator) ilExpr =
                 il.Emit(OpCodes.Br, endBodyLabel)
             | None ->
                 failwith "invalid break"
-//        | Xor(x,y) ->
-//            emitAll [x;y]
-//            il.Emit(OpCodes.Xor)
+        | StaticFieldSet(fi, x) ->
+            emit x
+            il.Emit(OpCodes.Stsfld, fi)
+        | StaticFieldGet(fi) ->
+            il.Emit(OpCodes.Ldsfld, fi)
         | ILExpr.Error _ ->
             failwith "Should not be emitting opcodes for an ilExpr with errors"
 

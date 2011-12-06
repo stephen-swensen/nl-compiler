@@ -54,6 +54,8 @@
     <Compile Include="OpenTypeTests.fs" />
     <Compile Include="IdentifierTests.fs" />
     <Compile Include="NVTScopingTests.fs" />
+    <Compile Include="FieldTests.fs" />
+    <Compile Include="PropertyTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
