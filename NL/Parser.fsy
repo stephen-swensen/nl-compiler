@@ -165,10 +165,10 @@ expr:
        { Ast.SynExpr.Let($1, ($3, range parseState 3 3), $5) }
     //var expression
     | longName                                     
-        { Ast.SynExpr.Var($1, range parseState 1 1)}
+        { Ast.SynExpr.Var(Identifier($1), range parseState 1 1)}
     //set var expression
     | longName SET expr
-        { Ast.SynExpr.VarSet(($1, range parseState 1 1), $3, range parseState 1 3)}
+        { Ast.SynExpr.VarSet((Identifier($1), range parseState 1 1), $3, range parseState 1 3)}
 
     //cast on var
     | longName LBRACKET tySigList RBRACKET
@@ -176,7 +176,7 @@ expr:
             if $3.Length <> 1 then //a bit of a hack here; we need to use tySigList instead of just tySig to disambiguate grammer
                 parseState.RaiseError()
 
-            Ast.SynExpr.Cast(Ast.SynExpr.Var($1, range parseState 1 1), ($3.Head, range parseState 3 3), range parseState 1 4) 
+            Ast.SynExpr.Cast(Ast.SynExpr.Var(Identifier($1), range parseState 1 1), ($3.Head, range parseState 3 3), range parseState 1 4) 
         }
 
     //cast on expression

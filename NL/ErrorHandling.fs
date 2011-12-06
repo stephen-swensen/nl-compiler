@@ -144,8 +144,8 @@ module ErrorMessage =
     let Variable_set_type_mismatch pos = //todo: rewrite to make clearer
         mk ErrorLevel.Error ErrorType.Semantic 4 pos "Type mismatch: variable '%s' of type '%s' cannot be assigned a value of the different type '%s'"
 
-    let Variable_not_found pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 5 pos "Variable '%s' not found"
+    let Variable_field_or_property_not_found pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 5 pos "Variable, field, or property '%s' not found"
 
     let Expected_type_but_got_type pos = 
         mk ErrorLevel.Error ErrorType.Semantic 6 pos "Expected type '%s' but got type '%s'"

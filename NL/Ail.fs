@@ -66,6 +66,8 @@ type ILExpr =
     | WhileLoop     of ILExpr * ILExpr
     | FieldSet      of FieldInfo * ILExpr
     | FieldGet      of FieldInfo
+    | PropertySet   of PropertyInfo * ILExpr
+    | PropertyGet   of PropertyInfo
 //    | Xor           of ILExpr * ILExpr
     with 
         member this.Type =
@@ -80,6 +82,7 @@ type ILExpr =
             | Typeof _              -> typeof<Type>
             | ComparisonBinop _     -> typeof<bool>
             | FieldGet fi           -> fi.FieldType
+            | PropertyGet pi        -> pi.PropertyType
             
             //Always void
             | IfThen _
@@ -88,6 +91,7 @@ type ILExpr =
             | Break
             | Continue
             | FieldSet _
+            | PropertySet _
             | WhileLoop _           -> typeof<Void>
 
             //Explicitly constructed with types
