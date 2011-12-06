@@ -79,7 +79,7 @@ type Identifier(ident:string) =
     member this.IsShort = isShort
     member this.IsLong = not isShort
     member this.Full = ident
-    override this.ToString() = ident
+    override this.ToString() = ident    
 
 type TySig(genericName:string, genericArgs: TySig list) =
     let mutable (cached:Type) = null
