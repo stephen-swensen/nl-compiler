@@ -10,6 +10,7 @@ namespace Tests
         public T DoIt<T>() { return default(T); }
         public T DoIt2<T>(T x) { return x; }
         public static int Stopwatch() { return 0; }
+        public static int sf = 0;
     }
 
     public static class Test2<T> {
