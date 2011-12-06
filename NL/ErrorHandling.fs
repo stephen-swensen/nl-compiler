@@ -220,5 +220,7 @@ exception CompilerInterruptException
 type EvaluationException(msg:string, errors:CompilerError[]) =
     inherit Exception(msg)
     member this.Errors = errors
+    override this.ToString() =
+        sprintf "EvaluationException: %s %A" msg errors
 
 exception CompilerInternalErrorException
