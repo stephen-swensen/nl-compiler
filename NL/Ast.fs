@@ -77,6 +77,7 @@ type Identifier(ident:string) =
     member this.LongPrefix = longPrefix
     member this.ShortSuffix = shortSuffix
     member this.IsShort = isShort
+    member this.IsLong = not isShort
     member this.Full = ident
     override this.ToString() = ident
 
@@ -129,7 +130,7 @@ type SynExpr =
     ///bind a variable
     | Let              of string * (SynExpr * PositionRange) * SynExpr
     ///reference a variable
-    | Var              of string * PositionRange
+    | Var              of Identifier * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
     | NameCall         of Identifier * (TySig list * PositionRange) * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
@@ -148,7 +149,7 @@ type SynExpr =
     | IfThenElse       of (SynExpr * PositionRange) * SynExpr * SynExpr option * PositionRange //should be pos for each!
     | ComparisonBinop  of SynComparisonBinop * SynExpr * SynExpr * PositionRange
     | Nop
-    | VarSet           of (string * PositionRange) * SynExpr * PositionRange
+    | VarSet           of (Identifier * PositionRange) * SynExpr * PositionRange
     | WhileLoop        of (SynExpr * PositionRange) * SynExpr
     | Break            of PositionRange
     | Continue         of PositionRange

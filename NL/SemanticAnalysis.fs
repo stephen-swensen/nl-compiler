@@ -143,6 +143,13 @@ let tryResolveMethodWithGenericArgs env ty methodName bindingFlags genericArgs a
             abort()
         | Some(genericArgTys) -> tryResolveMethod ty methodName bindingFlags genericArgTys argTys
 
+let tryResolveField (ty:Type) fieldName bindingFlags =
+    Option.ofAllowsNull <| ty.GetField(fieldName, bindingFlags)
+
+//only resolves simple non-parameterized properties
+let tryResolveProperty (ty:Type) (propertyName:string) (bindingFlags:BindingFlags) =
+    Option.ofAllowsNull <| ty.GetProperty(propertyName, bindingFlags)
+
 ///Tests whethere the given namespace exists in  the list of assemblies
 let namespaceExists (assemblies: Assembly list) name =
     assemblies
@@ -159,6 +166,43 @@ let tryLoadAssembly (name:string) =
             Some(Assembly.LoadFrom(name))
         with _ ->
             None
+
+type FP =
+    | Field of FieldInfo
+    | Property of PropertyInfo
+
+let tryResolveFieldOrProperty ty name bindingFlags =
+    match tryResolveField ty name staticFlags with
+    | Some(fi) -> Some(FP.Field(fi))
+    | None ->
+        match tryResolveProperty ty name staticFlags with
+        | Some(pi) -> Some(FP.Property(pi))
+        | None -> None
+
+type VFP =
+    | Var of string * Type
+    | FieldOrProperty of FP
+
+let tryResolveVarFieldOrProperty env (ident:Identifier) =
+    let rec loop = function
+        | [] -> None
+        | hd::tl ->
+            match hd with
+            | NVT.Variable(name,ty) when name = ident.Full -> //local var
+                Some(VFP.Var(name,ty))
+            | NVT.Namespace(ns) when ident.IsLong ->
+                match tryResolveTypeExact env (Ast.TySig(withNamespace ident.LongPrefix ns, [])) true with
+                | Some(ty) ->
+                    match tryResolveFieldOrProperty ty ident.ShortSuffix staticFlags with
+                    | Some(fp) -> Some(VFP.FieldOrProperty(fp))
+                    | None -> loop tl
+                | None -> loop tl
+            | NVT.Type(ty) when ident.IsShort -> //field or property of an open type
+                match tryResolveFieldOrProperty ty ident.ShortSuffix staticFlags with
+                | Some(fp) -> Some(VFP.FieldOrProperty(fp))
+                | None -> loop tl
+            | _ -> loop tl
+    loop env.NVTs
 
 ///Symantic analysis (type checking)
 let rec tycheckWith env synTopLevel =
@@ -300,7 +344,7 @@ let rec tycheckWith env synTopLevel =
                                 EM.Invalid_instance_method pos ident.ShortSuffix ty.Name (sprintTypes argTys)
                                 abort()
                             | Some(meth) -> 
-                                ILExpr.InstanceCall(Var(ident.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                                ILExpr.InstanceCall(ILExpr.Var(ident.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                         else 
                             loop tl
                     | NVT.Namespace(ns) ->
@@ -371,13 +415,34 @@ let rec tycheckWith env synTopLevel =
         
             let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
-        | Ast.SynExpr.Var(name, pos) ->
-            match Map.tryFind name env.Variables with
-            | Some(ty) -> 
-                ILExpr.Var(name,ty)
-            | None -> 
-                EM.Variable_not_found pos name
+        | Ast.SynExpr.Var(ident, pos) ->
+            match tryResolveVarFieldOrProperty env ident with
+            | Some(VFP.FieldOrProperty(FP.Property(pi))) -> ILExpr.PropertyGet(pi)
+            | Some(VFP.FieldOrProperty(FP.Field(fi))) -> ILExpr.FieldGet(fi)
+            | Some(VFP.Var(name,ty)) -> ILExpr.Var(name,ty)
+            | None ->
+                EM.Variable_field_or_property_not_found pos ident.Full
                 abort()
+            
+        | Ast.SynExpr.VarSet((ident, identPos), x, pos) ->
+            let x = tycheckExp x
+
+            match tryResolveVarFieldOrProperty env ident with
+            | Some(vfp) ->
+                let ilExpr =
+                    match vfp with
+                    | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.PropertySet(pi,x)
+                    | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.FieldSet(fi,x)
+                    | VFP.Var(name,ty) -> ILExpr.VarSet(name,x)
+                
+                if x.Type <> ilExpr.Type then
+                    EM.Variable_set_type_mismatch pos ident.Full ilExpr.Type.Name x.Type.Name
+                    ILExpr.Error(typeof<Void>)
+                else
+                    ilExpr
+            | None ->
+                EM.Variable_field_or_property_not_found pos ident.Full
+                ILExpr.Error(typeof<Void>)
         | Ast.SynExpr.Sequential((Ast.SynExpr.Break(_)|Ast.SynExpr.Continue(_)) as x, (_,pos)) ->
             EM.Unreachable_code_detected pos
             tycheckExp x //error recovery
@@ -484,18 +549,6 @@ let rec tycheckWith env synTopLevel =
                     ILExpr.IfThenElse(condition, thenBranch, ILExpr.Default(thenBranch.Type), thenBranch.Type)
         | Ast.SynExpr.Nop ->
             ILExpr.Nop
-        | Ast.SynExpr.VarSet((name, namePos), x, pos) ->
-            let x = tycheckExp x
-            match Map.tryFind name env.Variables with
-            | Some(ty) -> 
-                if x.Type <> ty then
-                    EM.Variable_set_type_mismatch pos name ty.Name x.Type.Name
-                    ILExpr.Error(typeof<Void>)
-                else
-                    ILExpr.VarSet(name, x)
-            | None -> 
-                EM.Variable_not_found namePos name
-                ILExpr.Error(typeof<Void>)
         | Ast.SynExpr.WhileLoop((condition, conditionPos), body) ->
             let condition = 
                 let condition = tycheckExp condition
