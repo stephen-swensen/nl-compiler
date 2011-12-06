@@ -2,6 +2,7 @@
 module Swensen.NL.Ail
 
 open System
+open System.Reflection
 
 type ILNumericBinop = Plus | Minus | Times | Div
     with
@@ -63,27 +64,33 @@ type ILExpr =
     | ComparisonBinop  of ILComparisonBinop * ILExpr * ILExpr
     | VarSet        of string * ILExpr
     | WhileLoop     of ILExpr * ILExpr
+    | FieldSet      of FieldInfo * ILExpr
+    | FieldGet      of FieldInfo
 //    | Xor           of ILExpr * ILExpr
     with 
         member this.Type =
             match this with
-            | LogicalNot _           -> typeof<bool>
-            | Double(_)              -> typeof<float>
-            | Int32(_)               -> typeof<int>
-            | String(_)              -> typeof<string>
-            | Char(_)                -> typeof<char>
-            | Bool(_)                -> typeof<bool>
-            | Typeof(_)              -> typeof<Type>
-            | IfThen(_,_)            -> typeof<Void>
-            | ComparisonBinop(_,_,_) -> typeof<bool>
-            | Nop                    -> typeof<Void>
-            | VarSet(_,_)            -> typeof<Void>
-            | Break                  -> typeof<Void>
-            | Continue               -> typeof<Void>
-            | WhileLoop(_,_)         -> typeof<Void>
-            //| LogicBinop _           -> typeof<bool>
-            //| Xor(_,_)               -> typeof<bool>
-        //    | NliReturn _            -> typeof<obj[]>
+            //Other implicit
+            | LogicalNot _          -> typeof<bool>
+            | Double _              -> typeof<float>
+            | Int32 _               -> typeof<int>
+            | String _              -> typeof<string>
+            | Char _                -> typeof<char>
+            | Bool _                -> typeof<bool>
+            | Typeof _              -> typeof<Type>
+            | ComparisonBinop _     -> typeof<bool>
+            | FieldGet fi           -> fi.FieldType
+            
+            //Always void
+            | IfThen _
+            | Nop
+            | VarSet _
+            | Break
+            | Continue
+            | FieldSet _
+            | WhileLoop _           -> typeof<Void>
+
+            //Explicitly constructed with types
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
@@ -97,8 +104,7 @@ type ILExpr =
             | Default(ty)
             | Null(ty)
             | IfThenElse(_,_,_,ty)
-            //ty is the recovery typeof the expression. (maybe add optional first parameter with the specific branch which was type checked but in error?)
-            | Error(ty)
+            | Error(ty) //ty is the recovery typeof the expression. (maybe add optional first parameter with the specific branch which was type checked but in error?)
                 -> ty
         
         ///make a comparison binop case using an Ast.SynComparisonBinop
