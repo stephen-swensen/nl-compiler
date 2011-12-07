@@ -51,16 +51,16 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 //%nonassoc NOT
 
 %start start
-%type <Ast.SynTopLevel> start
+%type <SynTopLevel> start
 
-%type <Ast.SynExpr> expr
-%type <Ast.SynExpr list> exprList
+%type <SynExpr> expr
+%type <SynExpr list> exprList
 
-%type <Ast.SynStmt> stmt
-%type <Ast.SynStmt list> stmtList
+%type <SynStmt> stmt
+%type <SynStmt list> stmtList
 
-%type <Ast.TySig> tySig
-%type <Ast.TySig list> tySigList
+%type <TySig> tySig
+%type <TySig list> tySigList
 
 %%
 
@@ -77,8 +77,8 @@ tySigList:
     | tySig COMMA tySigList { $1::$3 }
 
 tySig:
-    | longName LBRACKET tySigList RBRACKET { Ast.TySig($1, $3, range parseState 1 4) }
-    | longName { Ast.TySig($1, [], range parseState 1 1) } 
+    | longName LBRACKET tySigList RBRACKET { TySig($1, $3, range parseState 1 4) }
+    | longName { TySig($1, [], range parseState 1 1) } 
 
 exprList:
     | expr { [$1] }
@@ -89,72 +89,72 @@ expr:
     //-- logical binary operators --
 
 //    | expr XOR expr                             
-//        { Ast.SynExpr.LogicBinop(Ast.SynLogicBinop.Xor, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
+//        { SynExpr.LogicBinop(SynLogicBinop.Xor, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
     | expr OROR expr                             
-        { Ast.SynExpr.LogicBinop(Ast.SynLogicBinop.Or, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
+        { SynExpr.LogicBinop(SynLogicBinop.Or, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
     | expr ANDAND expr                             
-        { Ast.SynExpr.LogicBinop(Ast.SynLogicBinop.And, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
+        { SynExpr.LogicBinop(SynLogicBinop.And, ($1, range parseState 1 1), ($3, range parseState 3 3)) }
 
     //-- comparison operators --
 
     | expr EQEQ expr                             
-        { Ast.SynExpr.ComparisonBinop(Ast.SynComparisonBinop.Eq, $1, $3, range parseState 1 3) }
+        { SynExpr.ComparisonBinop(SynComparisonBinop.Eq, $1, $3, range parseState 1 3) }
     | expr NOTEQ expr                             
-        { Ast.SynExpr.ComparisonBinop(Ast.SynComparisonBinop.Neq, $1, $3, range parseState 1 3) }
+        { SynExpr.ComparisonBinop(SynComparisonBinop.Neq, $1, $3, range parseState 1 3) }
     | expr LT expr                             
-        { Ast.SynExpr.ComparisonBinop(Ast.SynComparisonBinop.Lt, $1, $3, range parseState 1 3) }
+        { SynExpr.ComparisonBinop(SynComparisonBinop.Lt, $1, $3, range parseState 1 3) }
     | expr GT expr                                 
-        { Ast.SynExpr.ComparisonBinop(Ast.SynComparisonBinop.Gt, $1, $3, range parseState 1 3) }
+        { SynExpr.ComparisonBinop(SynComparisonBinop.Gt, $1, $3, range parseState 1 3) }
     | expr LTEQ expr                                 
-        { Ast.SynExpr.ComparisonBinop(Ast.SynComparisonBinop.LtEq, $1, $3, range parseState 1 3) }
+        { SynExpr.ComparisonBinop(SynComparisonBinop.LtEq, $1, $3, range parseState 1 3) }
     | expr GTEQ expr                                 
-        { Ast.SynExpr.ComparisonBinop(Ast.SynComparisonBinop.GtEq, $1, $3, range parseState 1 3) }
+        { SynExpr.ComparisonBinop(SynComparisonBinop.GtEq, $1, $3, range parseState 1 3) }
 
     //-- numeric binary operators --
 
     | expr PLUS expr                             
-        { Ast.SynExpr.NumericBinop(Ast.SynNumericBinop.Plus, $1, $3, range parseState 1 3) }
+        { SynExpr.NumericBinop(SynNumericBinop.Plus, $1, $3, range parseState 1 3) }
     | expr MINUS expr                             
-        { Ast.SynExpr.NumericBinop(Ast.SynNumericBinop.Minus, $1, $3, range parseState 1 3) }
+        { SynExpr.NumericBinop(SynNumericBinop.Minus, $1, $3, range parseState 1 3) }
     | expr TIMES expr                             
-        { Ast.SynExpr.NumericBinop(Ast.SynNumericBinop.Times, $1, $3, range parseState 1 3) }
+        { SynExpr.NumericBinop(SynNumericBinop.Times, $1, $3, range parseState 1 3) }
     | expr DIV expr                                 
-        { Ast.SynExpr.NumericBinop(Ast.SynNumericBinop.Div, $1, $3, range parseState 1 3) }
+        { SynExpr.NumericBinop(SynNumericBinop.Div, $1, $3, range parseState 1 3) }
     | expr POW expr                                 
-        { Ast.SynExpr.Pow($1, $3, range parseState 1 3) }
+        { SynExpr.Pow($1, $3, range parseState 1 3) }
             
     //-- postfix operators --
     
 //    | expr BANG                                     
-//        { Ast.SynExpr.Fact($1, range parseState 1 2) }
+//        { SynExpr.Fact($1, range parseState 1 2) }
     
     //-- prefix operators --
     
     | MINUS expr %prec UMINUS                    
-        { Ast.SynExpr.UMinus($2, range parseState 1 2) }
+        { SynExpr.UMinus($2, range parseState 1 2) }
     | BANG expr                                    
-        { Ast.SynExpr.LogicalNot($2, range parseState 2 2) }
+        { SynExpr.LogicalNot($2, range parseState 2 2) }
 
     //-- literal values --
 
     | INT32                                      
-        { Ast.SynExpr.Int32($1) }
+        { SynExpr.Int32($1) }
     | DOUBLE                                 
-        { Ast.SynExpr.Double($1) }
+        { SynExpr.Double($1) }
     | STRING                                 
-        { Ast.SynExpr.String($1) }
+        { SynExpr.String($1) }
     | CHAR                                   
-        { Ast.SynExpr.Char($1) }
+        { SynExpr.Char($1) }
     | BOOL                                  
-        { Ast.SynExpr.Bool($1) }
+        { SynExpr.Bool($1) }
     | NULL LBRACKET tySig RBRACKET              
-        { Ast.SynExpr.Null($3) }
+        { SynExpr.Null($3) }
     | TYPE LBRACKET tySig RBRACKET            
-        { Ast.SynExpr.Typeof($3) }
+        { SynExpr.Typeof($3) }
     | DEFAULT LBRACKET tySig RBRACKET            
-        { Ast.SynExpr.Default($3) }
+        { SynExpr.Default($3) }
     | LPAREN RPAREN
-        { Ast.SynExpr.Nop }
+        { SynExpr.Nop }
     
     //enclosed expression
     | LPAREN expr RPAREN                      
@@ -162,13 +162,13 @@ expr:
     
     //bind variable
     | longName EQ expr IN expr                
-       { Ast.SynExpr.Let($1, ($3, range parseState 3 3), $5) }
+       { SynExpr.Let($1, ($3, range parseState 3 3), $5) }
     //var expression
     | longName                                     
-        { Ast.SynExpr.Var(Identifier($1), range parseState 1 1)}
+        { SynExpr.Var(Identifier($1), range parseState 1 1)}
     //set var expression
     | longName SET expr
-        { Ast.SynExpr.VarSet((Identifier($1), range parseState 1 1), $3, range parseState 1 3)}
+        { SynExpr.VarSet((Identifier($1), range parseState 1 1), $3, range parseState 1 3)}
 
     //cast on var
     | longName LBRACKET tySigList RBRACKET
@@ -176,62 +176,62 @@ expr:
             if $3.Length <> 1 then //a bit of a hack here; we need to use tySigList instead of just tySig to disambiguate grammer
                 parseState.RaiseError()
 
-            Ast.SynExpr.Cast(Ast.SynExpr.Var(Identifier($1), range parseState 1 1), ($3.Head, range parseState 3 3), range parseState 1 4) 
+            SynExpr.Cast(SynExpr.Var(Identifier($1), range parseState 1 1), ($3.Head, range parseState 3 3), range parseState 1 4) 
         }
 
     //cast on expression
     | expr LBRACKET tySig RBRACKET                
-        { Ast.SynExpr.Cast($1, ($3, range parseState 3 3), range parseState 1 4) }
+        { SynExpr.Cast($1, ($3, range parseState 3 3), range parseState 1 4) }
 
     //non-generic constructor or static call or instance call on var
     | longName LPAREN exprList RPAREN                                            
-        { Ast.SynExpr.NameCall(Identifier($1), ([], range parseState 1 4), $3, range parseState 1 4) }
+        { SynExpr.NameCall(Identifier($1), ([], range parseState 1 4), $3, range parseState 1 4) }
     //generic constructor or static call or instance call on var
     | longName LBRACKET tySigList RBRACKET LPAREN exprList RPAREN            
-        { Ast.SynExpr.NameCall(Identifier($1), ($3, range parseState 3 3), $6, range parseState 1 7) }
+        { SynExpr.NameCall(Identifier($1), ($3, range parseState 3 3), $6, range parseState 1 7) }
     //generic type non-generic static call
     | longName LBRACKET tySigList RBRACKET DOT NAME LPAREN exprList RPAREN
-        { Ast.SynExpr.GenericTypeStaticCall($1, ($3, range parseState 3 3), $6, [], $8, range parseState 1 9) }
+        { SynExpr.GenericTypeStaticCall($1, ($3, range parseState 3 3), $6, [], $8, range parseState 1 9) }
     //generic type generic static call
     | longName LBRACKET tySigList RBRACKET DOT NAME LBRACKET tySigList RBRACKET LPAREN exprList RPAREN    
-        { Ast.SynExpr.GenericTypeStaticCall($1, ($3, range parseState 3 3), $6, $8, $11, range parseState 1 12) }
+        { SynExpr.GenericTypeStaticCall($1, ($3, range parseState 3 3), $6, $8, $11, range parseState 1 12) }
     
     //non-generic method call on expression
     | expr DOT NAME LPAREN exprList RPAREN        
-        { Ast.SynExpr.ExpCall($1,$3,([], range parseState 1 6),$5, range parseState 1 6) }
+        { SynExpr.ExpCall($1,$3,([], range parseState 1 6),$5, range parseState 1 6) }
     //generic method call on expression
     | expr DOT NAME LBRACKET tySigList RBRACKET LPAREN exprList RPAREN        
-        { Ast.SynExpr.ExpCall($1,$3,($5, range parseState 1 9),$8, range parseState 1 9) }
+        { SynExpr.ExpCall($1,$3,($5, range parseState 1 9),$8, range parseState 1 9) }
     
     //sequential expression 
     | expr SEMICOLON expr                     
-        { Ast.SynExpr.Sequential($1,($3, range parseState 3 3)) }
+        { SynExpr.Sequential($1,($3, range parseState 3 3)) }
     
     //open namespace
     | OPEN longName LBRACKET tySigList RBRACKET IN expr                    
-        { Ast.SynExpr.OpenNamespaceOrType((Identifier($2), $4, range parseState 2 4), $7) }
+        { SynExpr.OpenNamespaceOrType((Identifier($2), $4, range parseState 2 4), $7) }
 
     //open namespace
     | OPEN longName IN expr                    
-        { Ast.SynExpr.OpenNamespaceOrType((Identifier($2), [], range parseState 2 2), $4) }
+        { SynExpr.OpenNamespaceOrType((Identifier($2), [], range parseState 2 2), $4) }
     
     //open assembly reference (by assembly name or file name)
     | OPEN STRING IN expr                     
-        { Ast.SynExpr.OpenAssembly(($2, range parseState 2 2), $4) }
+        { SynExpr.OpenAssembly(($2, range parseState 2 2), $4) }
 
     //if then else expressions
     | IF expr LBRACE expr RBRACE
-        { Ast.SynExpr.IfThenElse(($2, range parseState 2 2),$4,None, range parseState 1 5) }
+        { SynExpr.IfThenElse(($2, range parseState 2 2),$4,None, range parseState 1 5) }
     | IF expr LBRACE expr RBRACE ELSE LBRACE expr RBRACE
-        { Ast.SynExpr.IfThenElse(($2, range parseState 2 2), $4, Some($8), range parseState 1 9) }
+        { SynExpr.IfThenElse(($2, range parseState 2 2), $4, Some($8), range parseState 1 9) }
 
     //-- loops --
     | WHILE expr LBRACE expr RBRACE
-        { Ast.SynExpr.WhileLoop(($2, range parseState 2 2),$4) }
+        { SynExpr.WhileLoop(($2, range parseState 2 2),$4) }
     | BREAK LPAREN RPAREN
-        { Ast.SynExpr.Break(range parseState 1 1) }
+        { SynExpr.Break(range parseState 1 1) }
     | CONTINUE LPAREN RPAREN
-        { Ast.SynExpr.Continue(range parseState 1 1) }
+        { SynExpr.Continue(range parseState 1 1) }
 
 stmtList:
     | stmt { [$1] }
@@ -240,14 +240,14 @@ stmtList:
 stmt:
     //open namespace
     | OPEN longName SEMICOLON SEMICOLON
-        { Ast.SynStmt.OpenNamespaceOrType(Identifier($2),[], range parseState 2 2) }
+        { SynStmt.OpenNamespaceOrType(Identifier($2),[], range parseState 2 2) }
 
     | OPEN longName LBRACKET tySigList RBRACKET SEMICOLON SEMICOLON
-        { Ast.SynStmt.OpenNamespaceOrType(Identifier($2),$4, range parseState 2 4) }
+        { SynStmt.OpenNamespaceOrType(Identifier($2),$4, range parseState 2 4) }
     
     //open assembly reference (by assembly name or file name)
     | OPEN STRING SEMICOLON SEMICOLON
-        { Ast.SynStmt.OpenAssembly($2, range parseState 2 2) }
+        { SynStmt.OpenAssembly($2, range parseState 2 2) }
         
     //let statement (these can not be longNames, since they are compiled as fields -- unless we want to compile them with '$' seperators)
     | longName EQ expr SEMICOLON SEMICOLON
@@ -255,14 +255,14 @@ stmt:
             if ($1).Contains(".") then
                 EM.Invalid_identifier (range parseState 1 1) ($1) "."
 
-            Ast.SynStmt.Let($1, ($3, range parseState 3 3))
+            SynStmt.Let($1, ($3, range parseState 3 3))
         }
 
     | expr SEMICOLON SEMICOLON
-        { Ast.SynStmt.Do($1) }
+        { SynStmt.Do($1) }
 
 topLevel:
     | stmtList
-        { Ast.SynTopLevel.StmtList($1) }
+        { SynTopLevel.StmtList($1) }
     | expr
-        { Ast.SynTopLevel.Expr($1) }
+        { SynTopLevel.Expr($1) }
