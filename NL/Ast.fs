@@ -81,22 +81,20 @@ type Identifier(ident:string) =
     member this.Full = ident
     override this.ToString() = ident    
 
-type TySig(genericName:string, genericArgs: TySig list) =
-    let mutable (cached:Type) = null
-    new (genericName:string) = TySig(genericName,[])
-    new (genericName:Identifier, genericArgs) = TySig(genericName.Full, genericArgs)
-    new (genericName:Identifier) = TySig(genericName.Full,[])
+type TySig(genericName:string, genericArgs: TySig list, pos:PositionRange) =
+    do
+        if String.IsNullOrWhiteSpace genericName then
+            invalidArg "genericName" "Cannot be null or whitespace"
+
+    new (genericName:string, pos) = TySig(genericName,[], pos)
+    new (genericName:Identifier, genericArgs, pos) = TySig(genericName.Full, genericArgs, pos)
+    new (genericName:Identifier, pos) = TySig(genericName.Full,[], pos)
     
     ///i.e. Dictionary in Dictionary<'T, 'R>
     member x.GenericName = genericName
     ///i.e. String and Int in Dictionary<String, Int>
     member x.GenericArgs = genericArgs
-
-    member __.Cached 
-        with get() = cached
-        and set(x) = cached <- x
-        
-
+    member x.Pos = pos
 let (|TySig|) (tySig:TySig) =
     (tySig.GenericName, tySig.GenericArgs)
 type TySig with
@@ -119,9 +117,9 @@ type SynExpr =
     | String           of string
     | Char             of char
     | Bool             of bool
-    | Null             of TySig * PositionRange
-    | Typeof           of TySig * PositionRange
-    | Default          of TySig * PositionRange
+    | Null             of TySig
+    | Typeof           of TySig
+    | Default          of TySig
     | NumericBinop     of SynNumericBinop * SynExpr * SynExpr * PositionRange
     | Pow              of SynExpr * SynExpr * PositionRange
     //TODO: implement semantic analysis
