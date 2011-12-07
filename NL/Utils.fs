@@ -12,17 +12,17 @@ module Seq =
     let cons x xs =
         seq { yield x ; yield! xs}
 
-    let combine s1 s2 =
-        seq {
-            for x in s1 do
-                for y in s2 do
-                    yield x,y
-        }
-
-    let combine3 s1 s2 s3 =
-        seq {
-            for x in s1 do
-                for y in s2 do
-                    for z in s3 do
-                        yield x,y,z
-        }
+//    let combine s1 s2 =
+//        seq {
+//            for x in s1 do
+//                for y in s2 do
+//                    yield x,y
+//        }
+//
+//    let combine3 s1 s2 s3 =
+//        seq {
+//            for x in s1 do
+//                for y in s2 do
+//                    for z in s3 do
+//                        yield x,y,z
+//        }
