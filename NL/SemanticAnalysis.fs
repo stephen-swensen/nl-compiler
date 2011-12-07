@@ -333,7 +333,7 @@ let rec tycheckWith env synTopLevel =
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<bool>)
         //this is our most complex part of the grammer...
-        | SynExpr.NameCall(ident, (genericTyArgs,_), args, pos) ->
+        | SynExpr.NameCall(ident, genericTyArgs, args, pos) ->
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let genericTyArgs = resolveTySigs env genericTyArgs
@@ -387,7 +387,7 @@ let rec tycheckWith env synTopLevel =
                     | _ ->
                         loop tl
             loop env.NVTs
-        | SynExpr.GenericTypeStaticCall(tyName, (tyGenericTyArgs, _), methodName, methodGenericTyArgs, args, pos) -> //todo: need more position info for different tokens
+        | SynExpr.GenericTypeStaticCall(tyName, tyGenericTyArgs, methodName, methodGenericTyArgs, args, pos) -> //todo: need more position info for different tokens
             let tyGenericTyArgs = resolveTySigs env tyGenericTyArgs
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
 
@@ -404,7 +404,7 @@ let rec tycheckWith env synTopLevel =
                     abort()
                 | Some(meth) -> 
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-        | SynExpr.ExpCall(instance, methodName, (methodGenericTyArgs, _), args, pos) ->
+        | SynExpr.ExpCall(instance, methodName, methodGenericTyArgs, args, pos) ->
             let instance = tycheckExp instance
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
@@ -456,17 +456,17 @@ let rec tycheckWith env synTopLevel =
         | SynExpr.Sequential(x,(y,_)) ->
             let x, y = tycheckExp x, tycheckExp y
             ILExpr.Sequential(x,y,y.Type)
-        | SynExpr.OpenNamespaceOrType((ident, tyTySigs,pos), x) ->
-            let tyTys = resolveTySigs env tyTySigs
-            match tyTys with
-            | [||] when namespaceExists env.Assemblies ident.Full ->
-                tycheckExpWith (env.ConsNamespace(ident.Full)) x
+        | SynExpr.OpenNamespaceOrType(nsOrTy, x) ->
+            match nsOrTy.GenericArgs with
+            | [] when namespaceExists env.Assemblies nsOrTy.GenericName ->
+                tycheckExpWith (env.ConsNamespace(nsOrTy.GenericName)) x
             | _ ->
-                match tryResolveType env.Namespaces env.Assemblies ident.Full tyTys with
+                let tyTys = resolveTySigs env nsOrTy.GenericArgs
+                match tryResolveType env.Namespaces env.Assemblies nsOrTy.GenericName tyTys with
                 | Some(ty) ->
                     tycheckExpWith (env.ConsType(ty)) x
                 | None ->
-                    EM.Namespace_or_type_not_found pos (TySig(ident,tyTySigs,pos)).Name (sprintAssemblies env.Assemblies)
+                    EM.Namespace_or_type_not_found nsOrTy.Pos nsOrTy.Name (sprintAssemblies env.Assemblies)
                     tycheckExp x
         | SynExpr.OpenAssembly((name,pos), x) ->
             let asm = tryLoadAssembly name
@@ -482,7 +482,7 @@ let rec tycheckWith env synTopLevel =
                 ILExpr.Error(typeof<bool>)
             else
                 ILExpr.LogicalNot(x)
-        | SynExpr.Cast(x, (tySig, _), pos) ->
+        | SynExpr.Cast(x, tySig, pos) ->
             let x = tycheckExp x
             let ty = resolveTySig env tySig
             
@@ -603,19 +603,18 @@ let rec tycheckWith env synTopLevel =
                         loop env synStmts ilStmts //error recovery
                     | Some(asm) -> 
                         loop { env with Assemblies=asm::env.Assemblies } synStmts ilStmts
-                | SynStmt.OpenNamespaceOrType(ident, tySigs, pos) ->
-                    let tyTys = resolveTySigs env tySigs
-                    match tyTys with
-                    | [||] when namespaceExists env.Assemblies ident.Full ->
-                        loop (env.ConsNamespace(ident.Full)) synStmts ilStmts
+                | SynStmt.OpenNamespaceOrType(nsOrTy) ->
+                    match nsOrTy.GenericArgs with
+                    | [] when namespaceExists env.Assemblies nsOrTy.GenericName ->
+                        loop (env.ConsNamespace(nsOrTy.GenericName)) synStmts ilStmts
                     | _ ->
-                        match tryResolveType env.Namespaces env.Assemblies ident.Full tyTys with
+                        let tyTys = resolveTySigs env nsOrTy.GenericArgs
+                        match tryResolveType env.Namespaces env.Assemblies nsOrTy.GenericName tyTys with
                         | Some(ty) ->
                             loop (env.ConsType(ty)) synStmts ilStmts
                         | None ->
-                            let tySig = (TySig(ident,tySigs, pos))
-                            EM.Namespace_or_type_not_found pos tySig.Name (sprintAssemblies env.Assemblies)
-                            loop env synStmts ilStmts //error recovery    
+                            EM.Namespace_or_type_not_found nsOrTy.Pos nsOrTy.Name (sprintAssemblies env.Assemblies)
+                            loop env synStmts ilStmts //error recovery
         ILTopLevel.StmtList(loop env xl [])
     | SynTopLevel.Expr(x) ->
         ILTopLevel.Exp(tycheckExpWith env x)

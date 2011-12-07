@@ -130,20 +130,20 @@ type SynExpr =
     ///reference a variable
     | Var              of Identifier * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
-    | NameCall         of Identifier * (TySig list * PositionRange) * SynExpr list * PositionRange
+    | NameCall         of Identifier * TySig list * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
-    | GenericTypeStaticCall of string * (TySig list * PositionRange) * string * TySig list * SynExpr list * PositionRange
+    | GenericTypeStaticCall of string * TySig list * string * TySig list * SynExpr list * PositionRange
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
-    | ExpCall          of SynExpr * string * (TySig list * PositionRange) * SynExpr list * PositionRange
+    | ExpCall          of SynExpr * string * TySig list * SynExpr list * PositionRange
     ///discard left hand side, return right hand side
     | Sequential       of SynExpr * (SynExpr * PositionRange)
     ///open a namespace
-    | OpenNamespaceOrType    of (Identifier * TySig list * PositionRange) * SynExpr 
+    | OpenNamespaceOrType of TySig * SynExpr 
     ///reference an assembly by name or dll path
     | OpenAssembly     of (string * PositionRange) * SynExpr
     | LogicalNot       of SynExpr * PositionRange
-    | Cast             of SynExpr * (TySig * PositionRange) * PositionRange
+    | Cast             of SynExpr * TySig * PositionRange
     | IfThenElse       of (SynExpr * PositionRange) * SynExpr * SynExpr option * PositionRange //should be pos for each!
     | ComparisonBinop  of SynComparisonBinop * SynExpr * SynExpr * PositionRange
     | Nop
@@ -155,7 +155,7 @@ type SynExpr =
 
 type SynStmt =
     | Let                   of string * (SynExpr * PositionRange)
-    | OpenNamespaceOrType   of Identifier * TySig list * PositionRange
+    | OpenNamespaceOrType   of TySig
     | OpenAssembly          of string * PositionRange
     | Do                    of SynExpr
 
