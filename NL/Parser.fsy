@@ -77,8 +77,8 @@ tySigList:
     | tySig COMMA tySigList { $1::$3 }
 
 tySig:
-    | longName LBRACKET tySigList RBRACKET { Ast.TySig($1,$3) }
-    | longName { Ast.TySig($1,[]) } 
+    | longName LBRACKET tySigList RBRACKET { Ast.TySig($1, $3, range parseState 1 4) }
+    | longName { Ast.TySig($1, [], range parseState 1 1) } 
 
 exprList:
     | expr { [$1] }
@@ -148,11 +148,11 @@ expr:
     | BOOL                                  
         { Ast.SynExpr.Bool($1) }
     | NULL LBRACKET tySig RBRACKET              
-        { Ast.SynExpr.Null($3, range parseState 3 3) }
+        { Ast.SynExpr.Null($3) }
     | TYPE LBRACKET tySig RBRACKET            
-        { Ast.SynExpr.Typeof($3, range parseState 3 3) }
+        { Ast.SynExpr.Typeof($3) }
     | DEFAULT LBRACKET tySig RBRACKET            
-        { Ast.SynExpr.Default($3, range parseState 3 3) }
+        { Ast.SynExpr.Default($3) }
     | LPAREN RPAREN
         { Ast.SynExpr.Nop }
     
