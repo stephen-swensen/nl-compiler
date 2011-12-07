@@ -202,11 +202,25 @@ let resolveTySigs env tySigs =
             EM.Could_not_resolve_type nr.Pos nr.Name
         abort()
 
+let resolveTySig env (tySig:TySig) =
+    let tyTys = resolveTySigs env tySig.GenericArgs
+    match tryResolveType env.Namespaces env.Assemblies tySig.GenericName tyTys with
+    | Some(ty) -> ty
+    | None -> 
+        EM.Could_not_resolve_type tySig.Pos tySig.Name //todo: specific pos for ty name
+        abort()
+
+let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
+    match tryResolveType namespaces assemblies name tyTys with
+    | Some(ty) -> ty
+    | None ->    
+        EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
+        abort()
+
 ///Symantic analysis (type checking)
 let rec tycheckWith env synTopLevel =
     let rec tycheckExpWith env synExpr=
         let tycheckExp = tycheckExpWith env
-        let resolveTySigs = resolveTySigs env
 
         match synExpr with
         | SynExpr.Double x -> ILExpr.Double x
@@ -215,17 +229,12 @@ let rec tycheckWith env synTopLevel =
         | SynExpr.Char x   -> ILExpr.Char x
         | SynExpr.Bool x   -> ILExpr.Bool x
         | SynExpr.Null(tySig) -> 
-            //todo: could improve by dumping out "unable to resolve" error message for each generic arg type (if applicable)
-            match tryResolveTySig env tySig with
-            | None -> 
-                EM.Could_not_resolve_type tySig.Pos tySig.Name //todo: specific pos for ty name
-                abort()
-            | Some(ty) ->
-                if ty.IsValueType then
-                    EM.Null_is_invalid_for_value_types tySig.Pos ty.Name
-                    ILExpr.Null(ty) //error recovery: use wants to use a ValueType, but incorrectly wanted to use null for it
-                else
-                    ILExpr.Null(ty)
+            let ty = resolveTySig env tySig
+            if ty.IsValueType then
+                EM.Null_is_invalid_for_value_types tySig.Pos ty.Name
+                ILExpr.Null(ty) //error recovery: use wants to use a ValueType, but incorrectly wanted to use null for it
+            else
+                ILExpr.Null(ty)
         | SynExpr.Typeof(tySig)   -> 
             match tryResolveTySig env tySig with
             | None -> 
@@ -234,17 +243,13 @@ let rec tycheckWith env synTopLevel =
             | Some(ty) -> 
                 ILExpr.Typeof(ty)
         | SynExpr.Default(tySig)   -> 
-            match tryResolveTySig env tySig with
-            | None -> 
-                EM.Could_not_resolve_type tySig.Pos tySig.Name
-                abort()
-            | Some(ty) -> 
-                if ty = typeof<System.Void> then
-                    EM.Void_cannot_be_instantiated tySig.Pos
+            let ty = resolveTySig env tySig
+            if ty = typeof<System.Void> then
+                EM.Void_cannot_be_instantiated tySig.Pos
 
-                    ILExpr.Default(ty) //error recovery
-                else
-                    ILExpr.Default(ty)
+                ILExpr.Default(ty) //error recovery
+            else
+                ILExpr.Default(ty)
         | SynExpr.UMinus(x,pos) ->
             let x = tycheckExp x
             if x.Type = typeof<Int64> ||
@@ -331,7 +336,7 @@ let rec tycheckWith env synTopLevel =
         | SynExpr.NameCall(ident, (genericTyArgs,_), args, pos) ->
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-            let genericTyArgs = resolveTySigs genericTyArgs
+            let genericTyArgs = resolveTySigs env genericTyArgs
 
             let rec loop = function
                 | [] -> 
@@ -382,9 +387,9 @@ let rec tycheckWith env synTopLevel =
                     | _ ->
                         loop tl
             loop env.NVTs
-        | SynExpr.GenericTypeStaticCall(tyName, (tyGenericTyArgs, genericArgsPos), methodName, methodGenericTyArgs, args, pos) -> //todo: need more position info for different tokens
-            let tyGenericTyArgs = resolveTySigs tyGenericTyArgs
-            let methodGenericTyArgs = resolveTySigs methodGenericTyArgs
+        | SynExpr.GenericTypeStaticCall(tyName, (tyGenericTyArgs, _), methodName, methodGenericTyArgs, args, pos) -> //todo: need more position info for different tokens
+            let tyGenericTyArgs = resolveTySigs env tyGenericTyArgs
+            let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
 
             match tryResolveType env.Namespaces env.Assemblies tyName tyGenericTyArgs with
             | None -> 
@@ -399,11 +404,11 @@ let rec tycheckWith env synTopLevel =
                     abort()
                 | Some(meth) -> 
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-        | SynExpr.ExpCall(instance, methodName, (methodGenericTyArgs, genericArgsPos), args, pos) ->
+        | SynExpr.ExpCall(instance, methodName, (methodGenericTyArgs, _), args, pos) ->
             let instance = tycheckExp instance
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-            let methodGenericTyArgs = resolveTySigs methodGenericTyArgs
+            let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
             match tryResolveMethod instance.Type methodName instanceFlags methodGenericTyArgs argTys with
             | None -> 
                 EM.Invalid_instance_method pos methodName instance.Type.Name (sprintTypes argTys)
@@ -452,7 +457,7 @@ let rec tycheckWith env synTopLevel =
             let x, y = tycheckExp x, tycheckExp y
             ILExpr.Sequential(x,y,y.Type)
         | SynExpr.OpenNamespaceOrType((ident, tyTySigs,pos), x) ->
-            let tyTys = resolveTySigs tyTySigs
+            let tyTys = resolveTySigs env tyTySigs
             match tyTys with
             | [||] when namespaceExists env.Assemblies ident.Full ->
                 tycheckExpWith (env.ConsNamespace(ident.Full)) x
@@ -477,39 +482,34 @@ let rec tycheckWith env synTopLevel =
                 ILExpr.Error(typeof<bool>)
             else
                 ILExpr.LogicalNot(x)
-        | SynExpr.Cast(x, (ty, _), pos) ->
+        | SynExpr.Cast(x, (tySig, _), pos) ->
             let x = tycheckExp x
-            let tyTys = resolveTySigs ty.GenericArgs
+            let ty = resolveTySig env tySig
+            
+            if ty = typeof<System.Void> then
+                EM.Casting_to_void_invalid pos
+                ILExpr.Error(ty)
+            elif x.Type = ty then
+                EM.Casting_noop pos x.Type.Name
+                x
+            elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
+                ILExpr.Cast(x,ty)
+            elif (x.Type = typeof<int> && ty = typeof<float>) || (x.Type = typeof<float> && ty = typeof<int>) then
+                ILExpr.Coerce(x,ty) 
+            else
+                let meth = seq {
+                    //giver implicit conversion op from either type over explicit ops; next prefer conversion op defined on lhs type over rhs type
+                    yield tryResolveOpImplicit ty x.Type ty
+                    yield tryResolveOpImplicit x.Type x.Type ty
+                    yield tryResolveOpExplicit ty x.Type ty
+                    yield tryResolveOpExplicit x.Type x.Type ty } |> Seq.tryPick id
 
-            match tryResolveType env.Namespaces env.Assemblies ty.Name tyTys with
-            | None -> 
-                EM.Could_not_resolve_type ty.Pos ty.Name
-                abort()
-            | Some(ty) ->
-                if ty = typeof<System.Void> then
-                    EM.Casting_to_void_invalid pos
+                match meth with
+                | Some(meth) -> 
+                    ILExpr.StaticCall(meth, [x], meth.ReturnType)    
+                | None -> 
+                    EM.Casting_from_type_to_type_always_invalid pos x.Type.Name ty.Name
                     ILExpr.Error(ty)
-                elif x.Type = ty then
-                    EM.Casting_noop pos x.Type.Name
-                    x
-                elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
-                    ILExpr.Cast(x,ty)
-                elif (x.Type = typeof<int> && ty = typeof<float>) || (x.Type = typeof<float> && ty = typeof<int>) then
-                    ILExpr.Coerce(x,ty) 
-                else
-                    let meth = seq {
-                        //giver implicit conversion op from either type over explicit ops; next prefer conversion op defined on lhs type over rhs type
-                        yield tryResolveOpImplicit ty x.Type ty
-                        yield tryResolveOpImplicit x.Type x.Type ty
-                        yield tryResolveOpExplicit ty x.Type ty
-                        yield tryResolveOpExplicit x.Type x.Type ty } |> Seq.tryPick id
-
-                    match meth with
-                    | Some(meth) -> 
-                        ILExpr.StaticCall(meth, [x], meth.ReturnType)    
-                    | None -> 
-                        EM.Casting_from_type_to_type_always_invalid pos x.Type.Name ty.Name
-                        ILExpr.Error(ty)
         | SynExpr.LogicBinop(op,(x,xpos),(y,ypos)) ->
             let x =
                 match tycheckExp x with
