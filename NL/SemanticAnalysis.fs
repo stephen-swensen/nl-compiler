@@ -94,9 +94,11 @@ let withNamespace tyName ns =
     else ns + "." + tyName
 
 let rec tryResolveType (namespaces:string seq) (assemblies: Assembly seq) name (tyArgs: Type seq) =
-    Seq.combine 
-        (namespaces |> Seq.map (withNamespace name))
+    namespaces
+    |> Seq.collect (fun ns ->
+        let possibleName = withNamespace name ns
         assemblies
+        |> Seq.map (fun possibleAsm -> possibleName, possibleAsm))
     |> Seq.tryPick (fun (possibleName, possibleAsm) ->
         if tyArgs |> Seq.isEmpty then
             let possibleFullName = possibleName + ", " + possibleAsm.FullName
