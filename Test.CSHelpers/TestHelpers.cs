@@ -11,6 +11,9 @@ namespace Tests
         public T DoIt2<T>(T x) { return x; }
         public static int Stopwatch() { return 0; }
         public static int sf = 0;
+
+        public static Test1 sfld = new Test1();
+        public Test1 ifld = new Test1();
     }
 
     public static class Test2<T> {
