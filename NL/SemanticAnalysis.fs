@@ -196,6 +196,19 @@ let tryResolveVarFieldOrProperty env (ident:Identifier) =
             | _ -> loop tl
     loop env.NVTs
 
+let tryResolveIdentifier env (ident:Identifier) =
+    let rec loop = function
+        | [] -> None
+        | cur::rest ->
+            match tryResolveVarFieldOrProperty env cur with
+            | Some(vfp) ->
+                match rest with
+                | [] -> Some(vfp,None)
+                | rest ->
+                    Some(vfp, Some(Identifier.JoinShortSuffixes(rest)))
+            | None -> loop rest
+    loop ident.Parts
+
 let resolveTySigs env tySigs =
     match env, tySigs with
     | Resolved resolved -> resolved |> List.toArray
@@ -426,9 +439,11 @@ let rec tycheckWith env synTopLevel =
             ILExpr.Let(name, assign, body, body.Type)
         | SynExpr.Var(ident, pos) ->
             match tryResolveVarFieldOrProperty env ident with
-            | Some(VFP.FieldOrProperty(FP.Property(pi))) -> ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
-            | Some(VFP.FieldOrProperty(FP.Field(fi))) -> ILExpr.StaticFieldGet(fi)
-            | Some(VFP.Var(name,ty)) -> ILExpr.Var(name,ty)
+            | Some(vfp) ->
+                match vfp with
+                | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
+                | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.StaticFieldGet(fi)
+                | VFP.Var(name,ty) -> ILExpr.Var(name,ty)
             | None ->
                 EM.Variable_field_or_property_not_found pos ident.Full
                 abort()
