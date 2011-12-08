@@ -77,9 +77,17 @@ type Identifier(ident:string) =
     member this.LongPrefix = longPrefix
     member this.ShortSuffix = shortSuffix
     member this.IsShort = isShort
-    member this.IsLong = not isShort
+    member this.IsLong = not isShort    
     member this.Full = ident
-    override this.ToString() = ident    
+    override this.ToString() = this.Full
+    member this.Parts =
+        let split = ident.Split('.')
+        [
+            for i in 1..split.Length do
+                yield Identifier(String.Join(".", split.[0..i-1]))
+        ]
+    static member JoinShortSuffixes(idents:Identifier list) =
+        Identifier(String.Join(".", idents |> Seq.map (fun i -> i.ShortSuffix)))
 
 type TySig(genericName:string, genericArgs: TySig list, pos:PositionRange) =
     do
