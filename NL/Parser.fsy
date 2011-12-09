@@ -165,10 +165,10 @@ expr:
        { SynExpr.Let($1, ($3, range parseState 3 3), $5) }
     //var expression
     | path                                     
-        { SynExpr.Var(Path($1), range parseState 1 1)}
+        { SynExpr.PathGet(Path($1), range parseState 1 1)}
     //set var expression
     | path SET expr
-        { SynExpr.VarSet((Path($1), range parseState 1 1), $3, range parseState 1 3)}
+        { SynExpr.PathSet((Path($1), range parseState 1 1), $3, range parseState 1 3)}
 
     //cast on var
     | path LBRACKET tySigList RBRACKET
@@ -176,7 +176,7 @@ expr:
             if $3.Length <> 1 then //a bit of a hack here; we need to use tySigList instead of just tySig to disambiguate grammer
                 parseState.RaiseError()
 
-            SynExpr.Cast(SynExpr.Var(Path($1), range parseState 1 1), $3.Head, range parseState 1 4) 
+            SynExpr.Cast(SynExpr.PathGet(Path($1), range parseState 1 1), $3.Head, range parseState 1 4) 
         }
 
     //cast on expression

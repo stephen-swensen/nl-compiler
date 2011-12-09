@@ -46,7 +46,7 @@ let emitOpCodes (il:ILGenerator) ilExpr =
             emit assign
             il.Emit(OpCodes.Stloc, local)
             emitWith loopLabel (Map.add name local lenv) body
-        | Var(name, _) ->
+        | VarGet(name, _) ->
             let local = lenv |> Map.find name
             il.Emit(OpCodes.Ldloc, local)
         | VarSet(name, x) ->

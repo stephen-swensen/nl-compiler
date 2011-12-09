@@ -39,7 +39,7 @@ type ILExpr =
     | Bool          of bool
     | Null          of Type
     | Typeof        of Type
-    | Var           of string * Type
+    | VarGet        of string * Type
     //Default value of ValueType ("zero") or Ref type (null)
     | Default       of Type
     | Nop
@@ -93,7 +93,7 @@ type ILExpr =
             | NumericBinop(_,_,_,ty)
             | UMinus(_,ty)
             | Let(_,_,_,ty)
-            | Var(_,ty) 
+            | VarGet(_,ty) 
             | Coerce(_,ty)
             | Cast(_,ty)
             | StaticCall(_,_,ty)
