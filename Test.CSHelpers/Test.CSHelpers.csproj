@@ -8,8 +8,8 @@
     <ProjectGuid>{7FE87916-4378-4556-9931-BA9BEA5C0101}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Test.CSHelpers</RootNamespace>
-    <AssemblyName>Test.CSHelpers</AssemblyName>
+    <RootIdentspace>Test.CSHelpers</RootIdentspace>
+    <AssemblyIdent>Test.CSHelpers</AssemblyIdent>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -46,9 +46,9 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
+  <Target Ident="BeforeBuild">
   </Target>
-  <Target Name="AfterBuild">
+  <Target Ident="AfterBuild">
   </Target>
   -->
 </Project>

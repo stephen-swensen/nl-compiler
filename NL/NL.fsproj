@@ -7,12 +7,12 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{e25f2830-8e94-4680-882b-39e30ce3d586}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Swensen.NL</RootNamespace>
-    <AssemblyName>NL</AssemblyName>
+    <RootIdentspace>Swensen.NL</RootIdentspace>
+    <AssemblyIdent>NL</AssemblyIdent>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>NL</Name>
+    <Ident>NL</Ident>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -84,9 +84,9 @@
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
+  <Target Ident="BeforeBuild">
   </Target>
-  <Target Name="AfterBuild">
+  <Target Ident="AfterBuild">
   </Target>
   -->
 </Project>
