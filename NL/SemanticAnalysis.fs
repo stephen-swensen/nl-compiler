@@ -348,7 +348,7 @@ let rec tycheckWith env synTopLevel =
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<bool>)
         //this is our most complex part of the grammer...
-        | SynExpr.NameCall(path, genericTyArgs, args, pos) ->
+        | SynExpr.PathCall(path, genericTyArgs, args, pos) ->
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let genericTyArgs = resolveTySigs env genericTyArgs
@@ -419,17 +419,22 @@ let rec tycheckWith env synTopLevel =
                     abort()
                 | Some(meth) -> 
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-        | SynExpr.ExprCall(instance, methodName, methodGenericTyArgs, args, pos) ->
+        | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) ->
+//            let instance =                
+//                if path.IsLong then
+//                    SynExpr.exp
+            let methodName = path.Text
             let instance = tycheckExp instance
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
+
             match tryResolveMethod instance.Type methodName instanceFlags methodGenericTyArgs argTys with
             | None -> 
                 EM.Invalid_instance_method pos methodName instance.Type.Name (sprintTypes argTys)
                 abort()
             | Some(meth) ->
-                ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+            ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | SynExpr.Let(name, (assign, assignPos), body) ->
             let assign = tycheckExp assign
             if assign.Type = typeof<Void> then
