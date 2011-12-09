@@ -185,10 +185,10 @@ expr:
 
     //non-generic constructor or static call or instance call on var
     | path LPAREN exprList RPAREN                                            
-        { SynExpr.NameCall(Path($1), [], $3, range parseState 1 4) }
+        { SynExpr.PathCall(Path($1), [], $3, range parseState 1 4) }
     //generic constructor or static call or instance call on var
     | path LBRACKET tySigList RBRACKET LPAREN exprList RPAREN            
-        { SynExpr.NameCall(Path($1), $3, $6, range parseState 1 7) }
+        { SynExpr.PathCall(Path($1), $3, $6, range parseState 1 7) }
     //generic type non-generic static call
     | path LBRACKET tySigList RBRACKET DOT IDENT LPAREN exprList RPAREN
         { SynExpr.GenericTypeStaticCall($1, $3, $6, [], $8, range parseState 1 9) }
@@ -197,11 +197,11 @@ expr:
         { SynExpr.GenericTypeStaticCall($1, $3, $6, $8, $11, range parseState 1 12) }
     
     //non-generic method call on expression
-    | expr DOT IDENT LPAREN exprList RPAREN        
-        { SynExpr.ExprCall($1,$3,[],$5, range parseState 1 6) }
+    | expr DOT path LPAREN exprList RPAREN        
+        { SynExpr.ExprPathCall($1,Path($3),[],$5, range parseState 1 6) }
     //generic method call on expression
-    | expr DOT IDENT LBRACKET tySigList RBRACKET LPAREN exprList RPAREN        
-        { SynExpr.ExprCall($1,$3,$5,$8, range parseState 1 9) }
+    | expr DOT path LBRACKET tySigList RBRACKET LPAREN exprList RPAREN        
+        { SynExpr.ExprPathCall($1,Path($3),$5,$8, range parseState 1 9) }
     
     //sequential expression 
     | expr SEMICOLON expr                     

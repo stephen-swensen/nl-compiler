@@ -89,6 +89,12 @@ type Path(path:string) =
     static member JoinShortSuffixes(paths:Path list) =
         Path(String.Join(".", paths |> Seq.map (fun i -> i.ShortSuffix)))
 
+//let (|ShortPath|LongPath|) (path:Path) =
+//    if path.IsShort then
+//        ShortPath(path.ShortSuffix)
+//    else
+//        LongPath(path.LongPrefix, path.ShortSuffix)
+
 type TySig(genericName:string, genericArgs: TySig list, pos:PositionRange) =
     do
         if String.IsNullOrWhiteSpace genericName then
@@ -140,16 +146,18 @@ type SynExpr =
     ///set the value of a path (var, field, property, ...)
     | PathSet          of (Path * PositionRange) * SynExpr * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
-    | NameCall         of Path * TySig list * SynExpr list * PositionRange
+    | PathCall         of Path * TySig list * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
     | GenericTypeStaticCall of string * TySig list * string * TySig list * SynExpr list * PositionRange
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
-    | ExprCall          of SynExpr * string * TySig list * SynExpr list * PositionRange
+    | ExprPathCall          of SynExpr * Path * TySig list * SynExpr list * PositionRange
+
+    //| ExprPathGet           of SynExpr * Path * TySig list * SynExpr list * PositionRange
     //| ExprDataMember    of SynExpr * (Path * PositionRange)
     ///discard left hand side, return right hand side
     | Sequential       of SynExpr * (SynExpr * PositionRange)
-    ///open a namespace
+    ///open a namespace or type
     | OpenNamespaceOrType of TySig * SynExpr 
     ///reference an assembly by name or dll path
     | OpenAssembly     of (string * PositionRange) * SynExpr
