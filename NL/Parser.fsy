@@ -198,10 +198,10 @@ expr:
     
     //non-generic method call on expression
     | expr DOT IDENT LPAREN exprList RPAREN        
-        { SynExpr.ExpCall($1,$3,[],$5, range parseState 1 6) }
+        { SynExpr.ExprCall($1,$3,[],$5, range parseState 1 6) }
     //generic method call on expression
     | expr DOT IDENT LBRACKET tySigList RBRACKET LPAREN exprList RPAREN        
-        { SynExpr.ExpCall($1,$3,$5,$8, range parseState 1 9) }
+        { SynExpr.ExprCall($1,$3,$5,$8, range parseState 1 9) }
     
     //sequential expression 
     | expr SEMICOLON expr                     

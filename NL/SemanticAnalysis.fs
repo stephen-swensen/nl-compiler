@@ -419,7 +419,7 @@ let rec tycheckWith env synTopLevel =
                     abort()
                 | Some(meth) -> 
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-        | SynExpr.ExpCall(instance, methodName, methodGenericTyArgs, args, pos) ->
+        | SynExpr.ExprCall(instance, methodName, methodGenericTyArgs, args, pos) ->
             let instance = tycheckExp instance
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray

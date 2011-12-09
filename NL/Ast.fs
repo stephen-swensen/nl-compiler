@@ -143,7 +143,7 @@ type SynExpr =
     | GenericTypeStaticCall of string * TySig list * string * TySig list * SynExpr list * PositionRange
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
-    | ExpCall          of SynExpr * string * TySig list * SynExpr list * PositionRange
+    | ExprCall          of SynExpr * string * TySig list * SynExpr list * PositionRange
     //| ExprDataMember    of SynExpr * (Path * PositionRange)
     ///discard left hand side, return right hand side
     | Sequential       of SynExpr * (SynExpr * PositionRange)
