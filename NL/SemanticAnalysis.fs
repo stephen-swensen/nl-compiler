@@ -365,7 +365,7 @@ let rec tycheckWith env synTopLevel =
                             EM.Invalid_instance_method pos path.ShortSuffix ty.Name (sprintTypes argTys)
                             abort()
                         | Some(meth) -> 
-                            ILExpr.InstanceCall(ILExpr.Var(path.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                            ILExpr.InstanceCall(ILExpr.VarGet(path.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                     | NVT.Namespace(ns) ->
                         match tryResolveType [ns] env.Assemblies path.LongPrefix [] with
                         | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
@@ -437,13 +437,13 @@ let rec tycheckWith env synTopLevel =
         
             let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
-        | SynExpr.Var(path, pos) ->
+        | SynExpr.PathGet(path, pos) ->
             match tryResolveVarFieldOrProperty env path with
             | Some(vfp) ->
                 match vfp with
                 | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
                 | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.StaticFieldGet(fi)
-                | VFP.Var(name,ty) -> ILExpr.Var(name,ty)
+                | VFP.Var(name,ty) -> ILExpr.VarGet(name,ty)
             | None ->
                 EM.Variable_field_or_property_not_found pos path.Text
                 abort()
@@ -464,7 +464,7 @@ let rec tycheckWith env synTopLevel =
 //                match path with
 //                | None -> ilx
 //                | Some(path) -> ilx //TODO
-        | SynExpr.VarSet((path, pathPos), x, pos) ->
+        | SynExpr.PathSet((path, pathPos), x, pos) ->
             let x = tycheckExp x
 
             match tryResolveVarFieldOrProperty env path with

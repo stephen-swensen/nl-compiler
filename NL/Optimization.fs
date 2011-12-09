@@ -103,7 +103,7 @@ let optimize (tn:ILTopLevel) =
         | Bool _
         | Null _
         | Typeof _
-        | Var _
+        | VarGet _
         | Default _
         | Nop
         | Break         

@@ -135,8 +135,10 @@ type SynExpr =
     //| Fact             of SynExpr * PositionRange
     ///bind a variable
     | Let              of string * (SynExpr * PositionRange) * SynExpr
-    ///reference a variable
-    | Var              of Path * PositionRange
+    ///get the value of a path (var, field, property, ...)
+    | PathGet          of Path * PositionRange
+    ///set the value of a path (var, field, property, ...)
+    | PathSet          of (Path * PositionRange) * SynExpr * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
     | NameCall         of Path * TySig list * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
@@ -156,7 +158,6 @@ type SynExpr =
     | IfThenElse       of (SynExpr * PositionRange) * SynExpr * SynExpr option * PositionRange //should be pos for each!
     | ComparisonBinop  of SynComparisonBinop * SynExpr * SynExpr * PositionRange
     | Nop
-    | VarSet           of (Path * PositionRange) * SynExpr * PositionRange
     | WhileLoop        of (SynExpr * PositionRange) * SynExpr
     | Break            of PositionRange
     | Continue         of PositionRange
