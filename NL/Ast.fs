@@ -62,38 +62,72 @@ type SynComparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
             | GtEq -> "op_GreaterThanOrEqual"
             | Neq -> "op_Inequality"
 
-type Path(path:string) =
+///A Path is a non-empty sequence of non-empty strings representing e.g. "a.b.c.d..."
+type Path(parts:(string * PositionRange) seq) =
     do
-        if path |> String.IsNullOrEmpty then
-            invalidArg "path" "can't be null or empty"
+        if parts = null then
+            nullArg "parts" "must not be null"
 
-    let isShort, longPrefix, shortSuffix =
-        let split = path.Split('.')
-        match split.Length with
-        | 1 -> true, "", path
-        | _ ->
-            false, String.Join(".",split.[..split.Length-2]), split.[split.Length-1]
-    
-    member this.LongPrefix = longPrefix
-    member this.ShortSuffix = shortSuffix
-    member this.IsShort = isShort
-    member this.IsLong = not isShort    
-    member this.Text = path
+        if parts |> Seq.isEmpty then
+            invalidArg "parts" "must not be empty"
+
+        if parts |> Seq.exists (fun (partText,_) -> String.IsNullOrWhiteSpace partText) then
+            invalidArg "parts" "parts may not contain any null or whitespace part text"
+
+    ///invariant: parts.Length >= 1
+    let parts = parts |> Seq.toArray //easier to work with than list, but we still treat as immutable
+    let pos = PositionRange(parts.[0] |> snd, parts.[parts.Length-1] |> snd)
+
+    member this.Length = parts.Length
+    member this.IsMultiPart = this.Length > 1
+    member this.IsSinglePart = this.Length = 1
+    member this.Pos = pos
+    member this.Parts = parts |> Seq.readonly
+    member this.Text = parts |> Seq.map fst |> String.concat "."
     override this.ToString() = this.Text
-    member this.Parts =
-        let split = path.Split('.')
-        [
-            for i in 1..split.Length do
-                yield Path(String.Join(".", split.[0..i-1]))
-        ]
-    static member JoinShortSuffixes(paths:Path list) =
-        Path(String.Join(".", paths |> Seq.map (fun i -> i.ShortSuffix)))
+    
+    new(part:string, pos:PositionRange) = Path(Seq.singleton (part,pos))
+    new(path:Path, last:string*PositionRange) = Path(seq { yield! path.Parts ; yield last }) 
+    new(first:string*PositionRange, path:Path) = Path(seq { yield first ; yield! path.Parts })
 
-//let (|ShortPath|LongPath|) (path:Path) =
-//    if path.IsShort then
-//        ShortPath(path.ShortSuffix)
-//    else
-//        LongPath(path.LongPrefix, path.ShortSuffix)
+    static member op_Addition(path:Path, last:string * PositionRange) = Path(path, last)
+    static member op_Addition(first:string*PositionRange, path:Path) = Path(first, path)
+        
+    ///e.g. "a.b.c" -> "a.b". May be empty string if Path only contains one part (e.g. "a" -> "")
+    member this.LeadingPartsText =
+        if this.IsSinglePart then ""
+        else
+            parts.[0..parts.Length-2]
+            |> Seq.map fst
+            |> String.concat "."
+
+    ///e.g. "a.b.c" -> "c", will always be non-empty
+    member this.LastPartText =
+        parts.[parts.Length-1] |> fst
+
+    ///e.g. "a.b.c" -> "a",Some("b.c") ; "a.b",Some("c") ; "a.b.c",None
+    member this.Expansion =
+        [
+            let lastIndex = parts.Length-1
+            for i in 0..lastIndex do
+                let remaining =
+                    if i = lastIndex then 
+                        None 
+                    else 
+                        Some(Path(parts.[i+1..lastIndex]))
+                
+                yield Path(parts.[0..i]), remaining
+        ]
+
+    override this.Equals(other:obj) =
+        match other with
+        | :? Path as other -> 
+            parts = (other.Parts |> Seq.toArray)
+        | _ -> false
+
+    override this.GetHashCode() =
+        this.Text.GetHashCode()
+        
 
 type TySig(genericName:string, genericArgs: TySig list, pos:PositionRange) =
     do
@@ -142,9 +176,9 @@ type SynExpr =
     ///bind a variable
     | Let              of string * (SynExpr * PositionRange) * SynExpr
     ///get the value of a path (var, field, property, ...)
-    | PathGet          of Path * PositionRange
+    | PathGet          of Path
     ///set the value of a path (var, field, property, ...)
-    | PathSet          of (Path * PositionRange) * SynExpr * PositionRange
+    | PathSet          of Path * SynExpr * PositionRange
     ///call instance method on a variable or call a static method or call a constructor
     | PathCall         of Path * TySig list * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position

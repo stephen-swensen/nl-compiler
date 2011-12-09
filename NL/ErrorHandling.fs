@@ -14,15 +14,24 @@ type ErrorType =
     | Internal
 
 type PositionRange(posStart:Position, posEnd:Position) =
-//    new(posRangeStart:PositionRange,posRangeEnd:PositionRange) = 
-//        new PositionRange(posRangeStart.Start, posRangeEnd.End)
     member __.StartLine = posStart.Line
     member __.EndLine = posEnd.Line
     member __.StartColumn = posStart.Column
     member __.EndColumn = posEnd.Column-1
     //assume error cannot span more than one file
     member __.FileName = posStart.FileName
-    
+    member __.Start = posStart
+    member __.End = posEnd
+    new(posRangeStart:PositionRange, posRangeEnd:PositionRange) = 
+        new PositionRange(posRangeStart.Start, posRangeEnd.End)    
+
+    override this.Equals(other:obj) =
+        match other with
+        | :? PositionRange as other -> this.Start = other.Start && this.End = other.End
+        | _ -> false
+
+    override this.GetHashCode() =
+        this.Start.GetHashCode() ^^^ this.End.GetHashCode()
 
 type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:ErrorLevel, errorCode:int, msg:string, stackTrace:StackTrace) =
     member __.Type = errorType

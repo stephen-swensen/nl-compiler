@@ -52,7 +52,7 @@
     <Compile Include="OptimizationTests.fs" />
     <Compile Include="OpenNamespaceTests.fs" />
     <Compile Include="OpenTypeTests.fs" />
-    <Compile Include="IdentifierTests.fs" />
+    <Compile Include="PathTests.fs" />
     <Compile Include="NVTScopingTests.fs" />
     <Compile Include="FieldTests.fs" />
     <Compile Include="PropertyTests.fs" />

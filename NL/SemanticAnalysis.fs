@@ -182,15 +182,15 @@ let tryResolveVarFieldOrProperty env (path:Path) =
             match hd with
             | NVT.Variable(name,ty) when name = path.Text -> //local var
                 Some(VFP.Var(name,ty))
-            | NVT.Namespace(ns) when path.IsLong ->
-                match tryResolveType [ns] env.Assemblies path.LongPrefix [] with
+            | NVT.Namespace(ns) when path.IsMultiPart ->
+                match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
                 | Some(ty) ->
-                    match tryResolveFieldOrProperty ty path.ShortSuffix staticFlags with
+                    match tryResolveFieldOrProperty ty path.LastPartText staticFlags with
                     | Some(fp) -> Some(VFP.FieldOrProperty(fp))
                     | None -> loop tl
                 | None -> loop tl
-            | NVT.Type(ty) when path.IsShort -> //field or property of an open type
-                match tryResolveFieldOrProperty ty path.ShortSuffix staticFlags with
+            | NVT.Type(ty) when path.IsSinglePart -> //field or property of an open type
+                match tryResolveFieldOrProperty ty path.LastPartText staticFlags with
                 | Some(fp) -> Some(VFP.FieldOrProperty(fp))
                 | None -> loop tl
             | _ -> loop tl
@@ -199,15 +199,11 @@ let tryResolveVarFieldOrProperty env (path:Path) =
 let tryResolvePath env (path:Path) =
     let rec loop = function
         | [] -> None
-        | cur::rest ->
-            match tryResolveVarFieldOrProperty env cur with
-            | Some(vfp) ->
-                match rest with
-                | [] -> Some(vfp,None)
-                | rest ->
-                    Some(vfp, Some(Path.JoinShortSuffixes(rest)))
-            | None -> loop rest
-    loop path.Parts
+        | (curPath,restPath)::restExpansion ->
+            match tryResolveVarFieldOrProperty env curPath with
+            | Some(vfp) -> Some(vfp, restPath)
+            | None -> loop restExpansion
+    loop (path.Expansion |> Seq.toList)
 
 let resolveTySigs env tySigs =
     match env, tySigs with
@@ -355,23 +351,23 @@ let rec tycheckWith env synTopLevel =
 
             let rec loop = function
                 | [] -> 
-                    EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LongPrefix path.Text //TODO: may not be accurate any more!
+                    EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text //TODO: may not be accurate any more!
                     abort() //need error message too!
                 | hd::tl ->
                     match hd with
-                    | NVT.Variable(name,ty) when name = path.LongPrefix -> //instance method call on variable
-                        match tryResolveMethod ty path.ShortSuffix instanceFlags genericTyArgs argTys with
+                    | NVT.Variable(name,ty) when name = path.LeadingPartsText -> //instance method call on variable
+                        match tryResolveMethod ty path.LastPartText instanceFlags genericTyArgs argTys with
                         | None -> 
-                            EM.Invalid_instance_method pos path.ShortSuffix ty.Name (sprintTypes argTys)
+                            EM.Invalid_instance_method pos path.LastPartText ty.Name (sprintTypes argTys)
                             abort()
                         | Some(meth) -> 
-                            ILExpr.InstanceCall(ILExpr.VarGet(path.LongPrefix,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                            ILExpr.InstanceCall(ILExpr.VarGet(path.LeadingPartsText,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                     | NVT.Namespace(ns) ->
-                        match tryResolveType [ns] env.Assemblies path.LongPrefix [] with
+                        match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
                         | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                            match tryResolveMethod ty path.ShortSuffix staticFlags genericTyArgs argTys with
+                            match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
                             | None -> 
-                                EM.Invalid_static_method pos path.ShortSuffix ty.Name (sprintTypes argTys)
+                                EM.Invalid_static_method pos path.LastPartText ty.Name (sprintTypes argTys)
                                 abort()
                             | Some(meth) -> 
                                 ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
@@ -393,8 +389,8 @@ let rec tycheckWith env synTopLevel =
                                         ILExpr.Error(ty)
                                     | ctor ->
                                         ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
-                    | NVT.Type(ty) when path.IsShort -> //static methods of an open type
-                        match tryResolveMethod ty path.ShortSuffix staticFlags genericTyArgs argTys with
+                    | NVT.Type(ty) when path.IsSinglePart -> //static methods of an open type
+                        match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
                         | Some(meth) ->
                             ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
                         | None ->
@@ -421,7 +417,7 @@ let rec tycheckWith env synTopLevel =
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) ->
 //            let instance =                
-//                if path.IsLong then
+//                if path.IsMultiPart then
 //                    SynExpr.exp
             let methodName = path.Text
             let instance = tycheckExp instance
@@ -442,7 +438,7 @@ let rec tycheckWith env synTopLevel =
         
             let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
-        | SynExpr.PathGet(path, pos) ->
+        | SynExpr.PathGet(path) ->
             match tryResolveVarFieldOrProperty env path with
             | Some(vfp) ->
                 match vfp with
@@ -450,7 +446,7 @@ let rec tycheckWith env synTopLevel =
                 | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.StaticFieldGet(fi)
                 | VFP.Var(name,ty) -> ILExpr.VarGet(name,ty)
             | None ->
-                EM.Variable_field_or_property_not_found pos path.Text
+                EM.Variable_field_or_property_not_found path.Pos path.Text
                 abort()
             
 
@@ -469,7 +465,7 @@ let rec tycheckWith env synTopLevel =
 //                match path with
 //                | None -> ilx
 //                | Some(path) -> ilx //TODO
-        | SynExpr.PathSet((path, pathPos), x, pos) ->
+        | SynExpr.PathSet(path, x, pos) ->
             let x = tycheckExp x
 
             match tryResolveVarFieldOrProperty env path with
