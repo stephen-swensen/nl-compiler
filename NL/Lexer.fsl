@@ -106,7 +106,7 @@ rule tokenize = parse
         let input = (lexeme lexbuf).ToLower()
         match keywords |> Map.tryFind input with
         | Some(token) -> token
-        | None -> NAME(input) 
+        | None -> IDENT(input) 
     }
 
 // EOF

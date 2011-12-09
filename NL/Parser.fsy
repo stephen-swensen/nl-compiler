@@ -23,7 +23,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token ANDAND OROR //XOR
 %token EQEQ NOTEQ LT GT GTEQ LTEQ
 %token PLUS MINUS TIMES DIV POW BANG NOT
-%token <string> NAME
+%token <string> IDENT
 %token IN EQ
 %token LPAREN RPAREN
 %token COMMA DOT SEMICOLON
@@ -68,17 +68,17 @@ start:
     | topLevel EOF { $1 }
 
 
-longName:
-    | NAME { $1 }
-    | NAME DOT longName { $1 + "." + $3 }
+path:
+    | IDENT { $1 }
+    | IDENT DOT path { $1 + "." + $3 }
 
 tySigList:
     | tySig { [$1] }
     | tySig COMMA tySigList { $1::$3 }
 
 tySig:
-    | longName LBRACKET tySigList RBRACKET { TySig($1, $3, range parseState 1 4) }
-    | longName { TySig($1, [], range parseState 1 1) } 
+    | path LBRACKET tySigList RBRACKET { TySig($1, $3, range parseState 1 4) }
+    | path { TySig($1, [], range parseState 1 1) } 
 
 exprList:
     | expr { [$1] }
@@ -161,22 +161,22 @@ expr:
         { $2 }
     
     //bind variable
-    | longName EQ expr IN expr                
+    | path EQ expr IN expr                
        { SynExpr.Let($1, ($3, range parseState 3 3), $5) }
     //var expression
-    | longName                                     
-        { SynExpr.Var(Identifier($1), range parseState 1 1)}
+    | path                                     
+        { SynExpr.Var(Path($1), range parseState 1 1)}
     //set var expression
-    | longName SET expr
-        { SynExpr.VarSet((Identifier($1), range parseState 1 1), $3, range parseState 1 3)}
+    | path SET expr
+        { SynExpr.VarSet((Path($1), range parseState 1 1), $3, range parseState 1 3)}
 
     //cast on var
-    | longName LBRACKET tySigList RBRACKET
+    | path LBRACKET tySigList RBRACKET
         { 
             if $3.Length <> 1 then //a bit of a hack here; we need to use tySigList instead of just tySig to disambiguate grammer
                 parseState.RaiseError()
 
-            SynExpr.Cast(SynExpr.Var(Identifier($1), range parseState 1 1), $3.Head, range parseState 1 4) 
+            SynExpr.Cast(SynExpr.Var(Path($1), range parseState 1 1), $3.Head, range parseState 1 4) 
         }
 
     //cast on expression
@@ -184,23 +184,23 @@ expr:
         { SynExpr.Cast($1, $3, range parseState 1 4) }
 
     //non-generic constructor or static call or instance call on var
-    | longName LPAREN exprList RPAREN                                            
-        { SynExpr.NameCall(Identifier($1), [], $3, range parseState 1 4) }
+    | path LPAREN exprList RPAREN                                            
+        { SynExpr.NameCall(Path($1), [], $3, range parseState 1 4) }
     //generic constructor or static call or instance call on var
-    | longName LBRACKET tySigList RBRACKET LPAREN exprList RPAREN            
-        { SynExpr.NameCall(Identifier($1), $3, $6, range parseState 1 7) }
+    | path LBRACKET tySigList RBRACKET LPAREN exprList RPAREN            
+        { SynExpr.NameCall(Path($1), $3, $6, range parseState 1 7) }
     //generic type non-generic static call
-    | longName LBRACKET tySigList RBRACKET DOT NAME LPAREN exprList RPAREN
+    | path LBRACKET tySigList RBRACKET DOT IDENT LPAREN exprList RPAREN
         { SynExpr.GenericTypeStaticCall($1, $3, $6, [], $8, range parseState 1 9) }
     //generic type generic static call
-    | longName LBRACKET tySigList RBRACKET DOT NAME LBRACKET tySigList RBRACKET LPAREN exprList RPAREN    
+    | path LBRACKET tySigList RBRACKET DOT IDENT LBRACKET tySigList RBRACKET LPAREN exprList RPAREN    
         { SynExpr.GenericTypeStaticCall($1, $3, $6, $8, $11, range parseState 1 12) }
     
     //non-generic method call on expression
-    | expr DOT NAME LPAREN exprList RPAREN        
+    | expr DOT IDENT LPAREN exprList RPAREN        
         { SynExpr.ExpCall($1,$3,[],$5, range parseState 1 6) }
     //generic method call on expression
-    | expr DOT NAME LBRACKET tySigList RBRACKET LPAREN exprList RPAREN        
+    | expr DOT IDENT LBRACKET tySigList RBRACKET LPAREN exprList RPAREN        
         { SynExpr.ExpCall($1,$3,$5,$8, range parseState 1 9) }
     
     //sequential expression 
@@ -242,11 +242,11 @@ stmt:
     | OPEN STRING SEMICOLON SEMICOLON
         { SynStmt.OpenAssembly($2, range parseState 2 2) }
         
-    //let statement (these can not be longNames, since they are compiled as fields -- unless we want to compile them with '$' seperators)
-    | longName EQ expr SEMICOLON SEMICOLON
+    //let statement (these can not be paths, since they are compiled as fields -- unless we want to compile them with '$' seperators)
+    | path EQ expr SEMICOLON SEMICOLON
         { 
             if ($1).Contains(".") then
-                EM.Invalid_identifier (range parseState 1 1) ($1) "."
+                EM.Invalid_pathifier (range parseState 1 1) ($1) "."
 
             SynStmt.Let($1, ($3, range parseState 3 3))
         }
