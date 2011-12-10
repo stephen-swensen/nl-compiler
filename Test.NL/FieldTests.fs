@@ -23,3 +23,15 @@ let ``get static then class instance then class instance field`` () =
 [<Fact>]
 let ``expr get class instance then class instance field`` () =
     test <@ C.eval (Prelude.openAsm + "Tests.Test1().ifld.ifld") = 0 @>
+
+[<Fact>]
+let ``expr get struct instance`` () =
+    test <@ C.eval (Prelude.openAsm + "Tests.Struct1().s1_ifld1") = 0 @>
+
+[<Fact>]
+let ``expr get class property`` () =
+    test <@ C.eval (Prelude.openAsm + "Tests.Test1().t1_iprop1") = 0 @>
+
+[<Fact>]
+let ``expr get class property get struct property`` () =
+    test <@ C.eval (Prelude.openAsm + "Tests.Test1().t1_iprop2.s1_iprop1") = 0 @>

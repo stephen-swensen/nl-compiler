@@ -183,7 +183,7 @@ let emitOpCodes (il:ILGenerator) ilExpr =
 //            il.Emit(OpCodes.Stsfld, fi)
         | InstanceFieldGet(instance, fi) ->
             emit instance
-            //if instance is value type may need to load reference onto stack, like in InstanceCall
+            //(DOES NOT APPEAR TO BE THE CASE) if instance is value type may need to load reference onto stack, like in InstanceCall
             il.Emit(OpCodes.Ldfld, fi)
         | ILExpr.Error _ ->
             failwith "Should not be emitting opcodes for an ilExpr with errors"
