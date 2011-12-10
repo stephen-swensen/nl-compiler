@@ -438,33 +438,45 @@ let rec tycheckWith env synTopLevel =
         
             let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
+        ///variable, static field, or static (non-parameterized) property
         | SynExpr.PathGet(path) ->
-            match tryResolveVarFieldOrProperty env path with
-            | Some(vfp) ->
-                match vfp with
-                | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
-                | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.StaticFieldGet(fi)
-                | VFP.Var(name,ty) -> ILExpr.VarGet(name,ty)
-            | None ->
-                EM.Variable_field_or_property_not_found path.Pos path.Text
-                abort()
-            
+            let tryResolveFieldOrProperty ty name rest =
+                match tryResolveField ty name staticFlags with
+                | Some(fi) -> Some(ILExpr.StaticFieldGet(fi), rest)
+                | None ->
+                    match tryResolveMethod ty ("get_" + name) staticFlags [||] [||] with
+                    | Some(mi) -> Some(ILExpr.StaticCall(mi,[],mi.ReturnType),rest)
+                    | None -> None
 
+            path.Expansion
+            |> Seq.collect (fun p ->
+                env.NVTs 
+                |> Seq.map (fun nvt -> nvt, p))
+            |> Seq.tryPick (fun (nvt, (path, rest)) ->
+                match nvt with
+                //a local variable
+                | NVT.Variable(name,ty) when name = path.Text -> //local var
+                    Some(ILExpr.VarGet(name,ty), rest)
+                //field or property of type resolved against an open namespace
+                | NVT.Namespace(ns) when path.IsMultiPart ->
+                    match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
+                    | Some(ty) -> tryResolveFieldOrProperty ty path.LastPartText rest
+                    | None -> None
+                //field or property of an open type
+                | NVT.Type(ty) when path.IsSinglePart->
+                    tryResolveFieldOrProperty ty path.LastPartText rest
+                | _ -> None) 
+            |> (function
+                | None ->
+                    EM.Variable_field_or_property_not_found path.Pos path.Text
+                    abort()
+//                | Some(ilExpr, Some(rest)) ->
+//                    tycheckExp (SynExpr.ExprPathGet(ilExpr, rest))
+                | Some(ilExpr, None) ->
+                    ilExpr)
 
-//            match tryResolvePath env path with
-//            | None ->
-//                EM.Variable_field_or_property_not_found pos path.Text
-//                abort()
-//            | Some(vfp, path) ->
-//                let ilx =
-//                    match vfp with
-//                    | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
-//                    | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.StaticFieldGet(fi)
-//                    | VFP.Var(name,ty) -> ILExpr.Var(name,ty)
-//                
-//                match path with
-//                | None -> ilx
-//                | Some(path) -> ilx //TODO
+        | SynExpr.ExprPathGet(x, path) ->
+            ILExpr.Error(typeof<Void>)
         | SynExpr.PathSet(path, x, pos) ->
             let x = tycheckExp x
 
