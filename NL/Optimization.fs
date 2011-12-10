@@ -95,6 +95,10 @@ let optimize (tn:ILTopLevel) =
             ILExpr.VarSet(name, optimizeExp assign)
         | ILExpr.StaticFieldSet(fi, assign) ->
             ILExpr.StaticFieldSet(fi, optimizeExp assign)
+        | ILExpr.InstanceFieldGet(x, fi) ->
+            ILExpr.InstanceFieldGet(optimizeExp x, fi)
+        | ILExpr.InstanceFieldSet(x,fi,y) ->
+            ILExpr.InstanceFieldSet(optimizeExp x, fi, optimizeExp y)
         | ILExpr.StaticFieldGet _
         | Double _
         | Int32 _

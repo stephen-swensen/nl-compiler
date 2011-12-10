@@ -107,7 +107,7 @@ type Path(parts:(string * PositionRange) seq) =
 
     ///e.g. "a.b.c" -> "a",Some("b.c") ; "a.b",Some("c") ; "a.b.c",None
     member this.Expansion =
-        [
+        seq {
             let lastIndex = parts.Length-1
             for i in 0..lastIndex do
                 let remaining =
@@ -117,7 +117,11 @@ type Path(parts:(string * PositionRange) seq) =
                         Some(Path(parts.[i+1..lastIndex]))
                 
                 yield Path(parts.[0..i]), remaining
-        ]
+        }
+
+    member this.FirstPartPathWithRest = //TODO:TEST
+        if this.IsSinglePart then this, None
+        else Path([parts.[0]]), Some(Path(parts.[1..parts.Length-1]))
 
     override this.Equals(other:obj) =
         match other with
