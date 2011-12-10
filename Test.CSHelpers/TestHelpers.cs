@@ -17,6 +17,8 @@ namespace Tests
 
         public int t1_iprop1 { get { return 0; } }
         public Struct1 t1_iprop2 { get { return new Struct1(); } }
+
+        //public int t1_ifld2 = 0;
     }
 
     public static class Test2<T> {
