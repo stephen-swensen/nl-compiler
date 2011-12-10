@@ -237,7 +237,7 @@ let rec resolveILExprInstancePathGet (ilExpr:ILExpr) (path:Path) =
             match tryResolveMethod ilExpr.Type ("get_" + path.Text) instanceFlags [||] [||] with
             | Some(mi) -> ILExpr.InstanceCall(ilExpr,mi,[],mi.ReturnType)
             | None -> 
-                EM.Instance_field_or_property_not_found path.Pos path.Text
+                EM.Instance_field_or_property_not_found path.Pos path.Text ilExpr.Type.Name
                 abort()
 
     match rest with

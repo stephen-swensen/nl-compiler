@@ -14,6 +14,9 @@ namespace Tests
 
         public static Test1 sfld = new Test1();
         public Test3 ifld = new Test3();
+
+        public int t1_iprop1 { get { return 0; } }
+        public Struct1 t1_iprop2 { get { return new Struct1(); } }
     }
 
     public static class Test2<T> {
@@ -23,5 +26,11 @@ namespace Tests
     public class Test3
     {
         public int ifld = 0;
+    }
+
+    public struct Struct1
+    {
+        public int s1_ifld1;
+        public int s1_iprop1 { get { return 0; } }
     }
 }
