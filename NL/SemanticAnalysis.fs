@@ -228,6 +228,22 @@ let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
         EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
         abort()
 
+let rec resolveILExprInstancePathGet (ilExpr:ILExpr) (path:Path) =
+    let path,rest = path.FirstPartPathWithRest
+    let ilExpr =
+        match tryResolveField ilExpr.Type path.Text instanceFlags with
+        | Some(fi) -> ILExpr.InstanceFieldGet(ilExpr,fi)
+        | None ->
+            match tryResolveMethod ilExpr.Type ("get_" + path.Text) instanceFlags [||] [||] with
+            | Some(mi) -> ILExpr.InstanceCall(ilExpr,mi,[],mi.ReturnType)
+            | None -> 
+                EM.Instance_field_or_property_not_found path.Pos path.Text
+                abort()
+
+    match rest with
+    | Some(rest) -> resolveILExprInstancePathGet ilExpr rest
+    | None -> ilExpr
+
 ///Symantic analysis (type checking)
 let rec tycheckWith env synTopLevel =
     let rec tycheckExpWith env synExpr=
@@ -470,13 +486,13 @@ let rec tycheckWith env synTopLevel =
                 | None ->
                     EM.Variable_field_or_property_not_found path.Pos path.Text
                     abort()
-//                | Some(ilExpr, Some(rest)) ->
-//                    tycheckExp (SynExpr.ExprPathGet(ilExpr, rest))
+                | Some(ilExpr, Some(rest)) -> 
+                    resolveILExprInstancePathGet ilExpr rest
                 | Some(ilExpr, None) ->
                     ilExpr)
-
         | SynExpr.ExprPathGet(x, path) ->
-            ILExpr.Error(typeof<Void>)
+            let x = tycheckExp x
+            resolveILExprInstancePathGet x path
         | SynExpr.PathSet(path, x, pos) ->
             let x = tycheckExp x
 

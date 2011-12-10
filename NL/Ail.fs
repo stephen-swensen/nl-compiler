@@ -66,6 +66,8 @@ type ILExpr =
     | WhileLoop     of ILExpr * ILExpr
     | StaticFieldSet      of FieldInfo * ILExpr
     | StaticFieldGet      of FieldInfo
+    | InstanceFieldGet    of ILExpr * FieldInfo
+    | InstanceFieldSet    of ILExpr * FieldInfo * ILExpr
     with 
         member this.Type =
             match this with
@@ -78,8 +80,8 @@ type ILExpr =
             | Bool _                -> typeof<bool>
             | Typeof _              -> typeof<Type>
             | ComparisonBinop _     -> typeof<bool>
-            | StaticFieldGet fi           -> fi.FieldType
-            
+            | StaticFieldGet fi     -> fi.FieldType
+            | InstanceFieldGet(_,fi) -> fi.FieldType
             //Always void
             | IfThen _
             | Nop
@@ -87,6 +89,7 @@ type ILExpr =
             | Break
             | Continue
             | StaticFieldSet _
+            | InstanceFieldSet _
             | WhileLoop _           -> typeof<Void>
 
             //Explicitly constructed with types

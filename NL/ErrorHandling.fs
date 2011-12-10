@@ -223,6 +223,9 @@ module ErrorMessage =
     let Invalid_pathifier pos = 
         mk ErrorLevel.Error ErrorType.Semantic 28 pos "Path '%s' cannot contain any '%s' characters"
 
+    let Instance_field_or_property_not_found pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 29 pos "Instance field, or property '%s' not found"
+
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
 
