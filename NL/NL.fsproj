@@ -48,7 +48,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <Compile Include="Utils.fs" />
-    <Compile Include="ErrorHandling.fs" />
+    <Compile Include="ErrorLogging.fs" />
     <Compile Include="Ast.fs" />
     <Compile Include="$(IntermediateOutputPath)\Parser.fs">
       <Visible>false</Visible>
