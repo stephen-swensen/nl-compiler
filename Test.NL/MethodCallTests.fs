@@ -37,7 +37,7 @@ let ``call non-generic static method on generic type`` () =
 
 [<Fact>]
 let ``call generic static method on generic type`` () =
-    test <@ C.eval (openPrefix + "Test2[string].DoIt1[int32]()") = 0 @>
+    test <@ C.eval (openPrefix + "StaticGenericClass1[string].StaticGenericMethod[int32]()") = 0 @>
 
 [<Fact>]
 let ``call generic static method with explicit generic args and no type-wise overloads on non-generic static type`` () = //these could be inferable
@@ -45,8 +45,8 @@ let ``call generic static method with explicit generic args and no type-wise ove
 
 [<Fact>]
 let ``call generic instance method with explicit generic args and no overloads on var`` () =
-    test <@ C.eval (openPrefix + "x = Test1() in x.DoIt2[int32](1)") = 1 @>
+    test <@ C.eval (openPrefix + "x = NonGenericClass1() in x.InstanceGenericMethod[int32](1)") = 1 @>
 
 [<Fact>]
 let ``call generic instance method with explicit generic args and no overloads on expression`` () =
-    test <@ C.eval (openPrefix + "Test1().DoIt2[int32](1)") = 1 @>
+    test <@ C.eval (openPrefix + "NonGenericClass1().InstanceGenericMethod[int32](1)") = 1 @>

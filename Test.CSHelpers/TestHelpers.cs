@@ -5,34 +5,39 @@ using System.Text;
 
 namespace Tests
 {
-    public class Test1 {
-        public Test1() { }
-        public T DoIt<T>() { return default(T); }
-        public T DoIt2<T>(T x) { return x; }
+    public class NonGenericClass1
+    {
+        public NonGenericClass1() { }
+        public T InstanceGenericMethod<T>() { return default(T); }
+        public T InstanceGenericMethod<T>(T x) { return x; }
+        //to test shadowing
         public static int Stopwatch() { return 0; }
-        public static int sf = 0;
+        
+        public static int static_field_int = 0;
 
-        public static Test1 sfld = new Test1();
-        public Test3 ifld = new Test3();
+        public static NonGenericClass1 static_field_ngc1 = new NonGenericClass1();
+        public NonGenericClass2 instance_field_ngc2 = new NonGenericClass2();
 
-        public int t1_iprop1 { get { return 0; } }
-        public Struct1 t1_iprop2 { get { return new Struct1(); } }
+        public int instance_property_int { get { return 0; } }
+        public NonGenericStruct1 instance_property_ngs1 { get { return new NonGenericStruct1(); } }
 
-        //public int t1_ifld2 = 0;
+        public int instance_field_int = 0;
     }
 
-    public static class Test2<T> {
-        public static R DoIt1<R>() { return default(R); }
-    }
-
-    public class Test3
+    public class NonGenericClass2
     {
-        public int ifld = 0;
+        public NonGenericClass2() { } //being explicit for clarity
+        public int instance_field_int = 0;
     }
 
-    public struct Struct1
+    public struct NonGenericStruct1
     {
-        public int s1_ifld1;
-        public int s1_iprop1 { get { return 0; } }
+        public int instance_field_int; //default is 0
+        public int instance_property_int { get { return 0; } }
+    }
+
+    public static class StaticGenericClass1<T>
+    {
+        public static R StaticGenericMethod<R>() { return default(R); }
     }
 }

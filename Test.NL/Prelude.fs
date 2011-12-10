@@ -3,7 +3,7 @@ module Tests.Prelude
 
 open Swensen.NL
 
-let private csHelpersAssmLocation = typeof<Tests.Test1>.Assembly.Location
+let private csHelpersAssmLocation = typeof<Tests.NonGenericClass1>.Assembly.Location
 
 ///code fragment to reference this assembly within tests so we can test with types defined in this assembly
 let openAsm = sprintf "open \"%s\" in " csHelpersAssmLocation
