@@ -178,12 +178,10 @@ let emitOpCodes (il:ILGenerator) ilExpr =
         | StaticFieldGet(fi) ->
             il.Emit(OpCodes.Ldsfld, fi)
         | InstanceFieldSet(x, fi, assign) ->
-            failwith "not implemented"
-//            emit x
-//            il.Emit(OpCodes.Stsfld, fi)
+            emit x
+            il.Emit(OpCodes.Stfld, fi)
         | InstanceFieldGet(instance, fi) ->
             emit instance
-            //(DOES NOT APPEAR TO BE THE CASE) if instance is value type may need to load reference onto stack, like in InstanceCall
             il.Emit(OpCodes.Ldfld, fi)
         | ILExpr.Error _ ->
             failwith "Should not be emitting opcodes for an ilExpr with errors"
