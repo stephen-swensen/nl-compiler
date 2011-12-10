@@ -21,5 +21,9 @@ let ``get struct instance field`` () =
     test <@ C.eval (Prelude.openAsm + "Tests.NonGenericStruct1().instance_field_int") = 0 @>
 
 [<Fact>]
+let ``set struct instance field`` () =
+    test <@ C.eval (Prelude.openAsm + "ngs = Tests.NonGenericStruct1() in ngs.instance_field_int <- 3; ngs.instance_field_int") = 3 @>
+
+[<Fact>]
 let ``get class instance field`` () =
     test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_int") = 0 @>

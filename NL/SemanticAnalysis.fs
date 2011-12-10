@@ -493,7 +493,7 @@ let rec tycheckWith env synTopLevel =
         | SynExpr.ExprPathGet(x, path) ->
             let x = tycheckExp x
             resolveILExprInstancePathGet x path
-        | SynExpr.PathSet(path, x, pos) ->
+        | SynExpr.PathSet(path, (x, pos)) ->
             let x = tycheckExp x
 
             match tryResolveVarFieldOrProperty env path with
@@ -510,7 +510,7 @@ let rec tycheckWith env synTopLevel =
                 else
                     ilExpr
             | None ->
-                EM.Variable_field_or_property_not_found pos path.Text
+                EM.Variable_field_or_property_not_found path.Pos path.Text
                 ILExpr.Error(typeof<Void>)
         | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)) as x, (_,pos)) ->
             EM.Unreachable_code_detected pos

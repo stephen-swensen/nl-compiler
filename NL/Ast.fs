@@ -184,7 +184,7 @@ type SynExpr =
     ///get the value of a path (var, field, property, ...)
     | PathGet          of Path
     ///set the value of a path (var, field, property, ...)
-    | PathSet          of Path * SynExpr * PositionRange
+    | PathSet          of Path * (SynExpr * PositionRange)
     ///call instance method on a variable or call a static method or call a constructor
     | PathCall         of Path * TySig list * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
@@ -193,7 +193,7 @@ type SynExpr =
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
     | ExprPathCall          of SynExpr * Path * TySig list * SynExpr list * PositionRange
     | ExprPathGet           of SynExpr * Path
-
+    | ExprPathSet           of SynExpr * Path * (SynExpr * PositionRange)
     //| ExprPathGet           of SynExpr * Path * TySig list * SynExpr list * PositionRange
     //| ExprDataMember    of SynExpr * (Path * PositionRange)
     ///discard left hand side, return right hand side
