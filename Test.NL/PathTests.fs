@@ -70,6 +70,7 @@ let ``single part`` () =
     test <@ path.LeadingPartsText = "" @>
     test <@ path.LastPartText = "xx" @>
     test <@ path.Expansion |> Seq.toList = [Path([xx]),None] @>
+    test <@ path.Pos = range (1,1) (1,2) @>
 
 [<Fact>]
 let ``multi part path`` () =
@@ -80,6 +81,7 @@ let ``multi part path`` () =
     test <@ path.LeadingPartsText = "xx.yy" @>
     test <@ path.LastPartText = "zz" @>
     test <@ path.Expansion |> Seq.toList = [Path([xx]),Some(Path([yy;zz])); Path([xx;yy]),Some(Path([zz])); path,None] @>
+    test <@ path.Pos = range (1,1) (1,8) @>
 
 [<Fact>]
 let ``cant be null`` () =

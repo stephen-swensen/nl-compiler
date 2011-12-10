@@ -87,6 +87,8 @@ type Path(parts:(string * PositionRange) seq) =
     override this.ToString() = this.Text
     
     new(part:string, pos:PositionRange) = Path(Seq.singleton (part,pos))
+    new(single:string * PositionRange) = Path(Seq.singleton single)
+
     new(path:Path, last:string*PositionRange) = Path(seq { yield! path.Parts ; yield last }) 
     new(first:string*PositionRange, path:Path) = Path(seq { yield first ; yield! path.Parts })
 
