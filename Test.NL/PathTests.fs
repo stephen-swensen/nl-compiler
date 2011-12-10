@@ -92,3 +92,26 @@ let ``cant be empty`` () =
 [<Fact>]
 let ``parts cant contain any null or whitespace parts`` () =
     raises<System.ArgumentException> <@ Path(Seq.append multiPartPathSeq (Seq.singleton ("",pos))) @>
+
+
+//grammer path cases:
+//
+//free id (var, static field / property) chain
+//id.id.id.id ...
+//	-> expr
+//	 | expr.id
+//	 | expr.id.id
+//	 | expr.id.id.id ...
+//
+//instance calls on an expression (field, property, or method)
+//expr.id.id.id ...
+//	-> expr.id.id ...
+//		-> expr.id ...
+//			-> expr ...
+//
+//
+//free id (var, static field / property) chain ending in non-generic method call
+//id.id.id.id ... id(args)
+//	-> expr.id(args)
+//	 | expr.id.id(args)
+//	 | expr.id.id.id ... id(args)

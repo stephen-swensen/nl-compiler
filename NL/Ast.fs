@@ -186,6 +186,7 @@ type SynExpr =
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
     | ExprPathCall          of SynExpr * Path * TySig list * SynExpr list * PositionRange
+    | ExprPathGet           of SynExpr * Path
 
     //| ExprPathGet           of SynExpr * Path * TySig list * SynExpr list * PositionRange
     //| ExprDataMember    of SynExpr * (Path * PositionRange)
