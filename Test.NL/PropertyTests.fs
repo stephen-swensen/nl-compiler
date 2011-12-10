@@ -13,8 +13,8 @@ let ``get static property`` () =
 
 [<Fact>]
 let ``get class instance property`` () =
-    test <@ C.eval (Prelude.openAsm + "Tests.Test1().t1_iprop1") = 0 @>
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_property_int") = 0 @>
 
 [<Fact>]
 let ``get struct instance property`` () =
-    test <@ C.eval (Prelude.openAsm + "Tests.Struct1().s1_iprop1") = 0 @>
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericStruct1().instance_property_int") = 0 @>

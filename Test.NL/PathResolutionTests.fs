@@ -9,12 +9,12 @@ module C = Compilation
 
 [<Fact>]
 let ``get static then class instance then class instance field`` () =
-    test <@ C.eval (Prelude.openAsm + "Tests.Test1.sfld.ifld.ifld") = 0 @>
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1.static_field_ngc1.instance_field_ngc2.instance_field_int") = 0 @>
 
 [<Fact>]
 let ``expr get class instance then class instance field`` () =
-    test <@ C.eval (Prelude.openAsm + "Tests.Test1().ifld.ifld") = 0 @>
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_ngc2.instance_field_int") = 0 @>
 
 [<Fact>]
 let ``expr get class property then struct property`` () =
-    test <@ C.eval (Prelude.openAsm + "Tests.Test1().t1_iprop2.s1_iprop1") = 0 @>
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_property_ngs1.instance_property_int") = 0 @>
