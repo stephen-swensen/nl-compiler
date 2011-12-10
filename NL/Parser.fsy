@@ -183,8 +183,8 @@ expr:
     | expr LBRACKET tySig RBRACKET                
         { SynExpr.Cast($1, $3, range parseState 1 4) }
 
-    | expr path 
-        { SynExpr.ExprPathGet($1,$2) }
+    | expr DOT path 
+        { SynExpr.ExprPathGet($1,$3) }
 
     //non-generic constructor or static call or instance call on var
     | path LPAREN exprList RPAREN                                            
