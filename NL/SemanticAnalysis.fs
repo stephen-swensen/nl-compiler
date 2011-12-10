@@ -456,7 +456,7 @@ let rec tycheckWith env synTopLevel =
             ILExpr.Let(name, assign, body, body.Type)
         ///variable, static field, or static (non-parameterized) property
         | SynExpr.PathGet(path) ->
-            let tryResolveFieldOrProperty ty name rest =
+            let tryResolveStaticFieldOrPropertyGet ty name rest =
                 match tryResolveField ty name staticFlags with
                 | Some(fi) -> Some(ILExpr.StaticFieldGet(fi), rest)
                 | None ->
@@ -476,11 +476,11 @@ let rec tycheckWith env synTopLevel =
                 //field or property of type resolved against an open namespace
                 | NVT.Namespace(ns) when path.IsMultiPart ->
                     match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
-                    | Some(ty) -> tryResolveFieldOrProperty ty path.LastPartText rest
+                    | Some(ty) -> tryResolveStaticFieldOrPropertyGet ty path.LastPartText rest
                     | None -> None
                 //field or property of an open type
                 | NVT.Type(ty) when path.IsSinglePart->
-                    tryResolveFieldOrProperty ty path.LastPartText rest
+                    tryResolveStaticFieldOrPropertyGet ty path.LastPartText rest
                 | _ -> None) 
             |> (function
                 | None ->
