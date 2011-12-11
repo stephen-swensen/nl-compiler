@@ -151,7 +151,7 @@ module ErrorMessage =
         mk ErrorLevel.Error ErrorType.Semantic 3 pos "Binary operator '%s' cannot be applied to operands of type '%s' and '%s'"
     
     let Variable_set_type_mismatch pos = //todo: rewrite to make clearer
-        mk ErrorLevel.Error ErrorType.Semantic 4 pos "Type mismatch: variable '%s' of type '%s' cannot be assigned a value of the different type '%s'"
+        mk ErrorLevel.Error ErrorType.Semantic 4 pos "Type mismatch: variable '%s' of type '%s' cannot be assigned a value of the incompatible type '%s'"
 
     let Variable_field_or_property_not_found pos = 
         mk ErrorLevel.Error ErrorType.Semantic 5 pos "Variable, field, or property '%s' not found"
@@ -225,6 +225,18 @@ module ErrorMessage =
 
     let Instance_field_or_property_not_found pos = 
         mk ErrorLevel.Error ErrorType.Semantic 29 pos "Field, or property '%s' on instance type '%s' not found"
+
+    let Field_set_type_mismatch pos =
+        mk ErrorLevel.Error ErrorType.Semantic 30 pos "Type mismatch: field '%s' of type '%s' cannot be assigned a value of the incompatible type '%s'"
+
+    let Property_set_type_mismatch pos =
+        mk ErrorLevel.Error ErrorType.Semantic 31 pos "Type mismatch: property '%s' of type '%s' cannot be assigned a value of the incompatible type '%s'"
+
+    let Property_has_no_setter pos =
+        mk ErrorLevel.Error ErrorType.Semantic 32 pos "The property '%s' has no setter"
+
+    let Property_has_no_getter pos =
+        mk ErrorLevel.Error ErrorType.Semantic 33 pos "The property '%s' has no getter"
 
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
