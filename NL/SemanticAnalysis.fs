@@ -432,11 +432,13 @@ let rec tycheckWith env synTopLevel =
                 | Some(meth) -> 
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) ->
-//            let instance =                
-//                if path.IsMultiPart then
-//                    SynExpr.exp
-            let methodName = path.Text
-            let instance = tycheckExp instance
+            let instance,methodName =
+                match path.LeadingPartsPath with
+                | Some(leadingPath) ->
+                    tycheckExp <| SynExpr.ExprPathGet(instance, leadingPath), path.LastPartText
+                | None ->
+                    tycheckExp instance, path.Text
+
             let args = args |> List.map (tycheckExp)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs

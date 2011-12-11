@@ -18,3 +18,11 @@ let ``expr get class instance then class instance field`` () =
 [<Fact>]
 let ``expr get class property then struct property`` () =
     test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_property_ngs1.instance_property_int") = 0 @>
+
+[<Fact>]
+let ``expr get class field then call method`` () =
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_ngc2.InstanceNonGenericMethod()") = 0 @>
+
+[<Fact>]
+let ``expr get class field then get class property then call method`` () =
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_ngc2.instance_property_ngs1.InstanceNonGenericMethod()") = 0 @>

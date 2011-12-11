@@ -103,9 +103,19 @@ type Path(parts:(string * PositionRange) seq) =
             |> Seq.map fst
             |> String.concat "."
 
+    ///e.g. "a.b.c" -> Some("a.b"). May be None if Path only contains one part (e.g. "a" -> None)
+    member this.LeadingPartsPath =
+        if this.IsSinglePart then None
+        else
+            Some(Path(parts.[0..parts.Length-2]))
+
     ///e.g. "a.b.c" -> "c", will always be non-empty
     member this.LastPartText =
         parts.[parts.Length-1] |> fst
+
+    member this.FirstPartPathWithRest = //TODO:TEST
+        if this.IsSinglePart then this, None
+        else Path([parts.[0]]), Some(Path(parts.[1..parts.Length-1]))
 
     ///e.g. "a.b.c" -> "a",Some("b.c") ; "a.b",Some("c") ; "a.b.c",None
     member this.Expansion =
@@ -120,10 +130,6 @@ type Path(parts:(string * PositionRange) seq) =
                 
                 yield Path(parts.[0..i]), remaining
         }
-
-    member this.FirstPartPathWithRest = //TODO:TEST
-        if this.IsSinglePart then this, None
-        else Path([parts.[0]]), Some(Path(parts.[1..parts.Length-1]))
 
     override this.Equals(other:obj) =
         match other with
