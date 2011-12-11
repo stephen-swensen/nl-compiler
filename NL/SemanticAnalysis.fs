@@ -431,7 +431,7 @@ let rec tycheckWith env synTopLevel =
                     abort()
                 | Some(meth) -> 
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-        | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) ->
+        | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) -> //DONE
             let instance,methodName =
                 match path.LeadingPartsPath with
                 | Some(leadingPath) ->
@@ -449,16 +449,9 @@ let rec tycheckWith env synTopLevel =
                 abort()
             | Some(meth) ->
             ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
-        | SynExpr.Let(name, (assign, assignPos), body) ->
-            let assign = tycheckExp assign
-            if assign.Type = typeof<Void> then
-                EM.Void_invalid_in_let_binding assignPos
-        
-            let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
-            ILExpr.Let(name, assign, body, body.Type)
         ///variable, static field, or static (non-parameterized) property
-        | SynExpr.PathGet(path) ->
-            let tryResolveStaticFieldOrPropertyGet ty name rest =
+        | SynExpr.PathGet(path) -> //DONE
+            let tryResolveILExprStaticFieldOrPropertyGet ty name rest =
                 match tryResolveField ty name staticFlags with
                 | Some(fi) -> Some(ILExpr.StaticFieldGet(fi), rest)
                 | None ->
@@ -478,11 +471,11 @@ let rec tycheckWith env synTopLevel =
                 //field or property of type resolved against an open namespace
                 | NVT.Namespace(ns) when path.IsMultiPart ->
                     match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
-                    | Some(ty) -> tryResolveStaticFieldOrPropertyGet ty path.LastPartText rest
+                    | Some(ty) -> tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest
                     | None -> None
                 //field or property of an open type
                 | NVT.Type(ty) when path.IsSinglePart->
-                    tryResolveStaticFieldOrPropertyGet ty path.LastPartText rest
+                    tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest
                 | _ -> None) 
             |> (function
                 | None ->
@@ -492,10 +485,10 @@ let rec tycheckWith env synTopLevel =
                     resolveILExprInstancePathGet ilExpr rest
                 | Some(ilExpr, None) ->
                     ilExpr)
-        | SynExpr.ExprPathGet(x, path) ->
+        | SynExpr.ExprPathGet(x, path) -> //DONE
             let x = tycheckExp x
             resolveILExprInstancePathGet x path
-        | SynExpr.PathSet(path, (x, pos)) ->
+        | SynExpr.PathSet(path, (x, pos)) -> //TODO
             let x = tycheckExp x
 
             match tryResolveVarFieldOrProperty env path with
@@ -514,6 +507,15 @@ let rec tycheckWith env synTopLevel =
             | None ->
                 EM.Variable_field_or_property_not_found path.Pos path.Text
                 ILExpr.Error(typeof<Void>)
+        | SynExpr.ExprPathSet(_) -> //TODO
+            abort()
+        | SynExpr.Let(name, (assign, assignPos), body) ->
+            let assign = tycheckExp assign
+            if assign.Type = typeof<Void> then
+                EM.Void_invalid_in_let_binding assignPos
+        
+            let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
+            ILExpr.Let(name, assign, body, body.Type)
         | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)) as x, (_,pos)) ->
             EM.Unreachable_code_detected pos
             tycheckExp x //error recovery
