@@ -28,12 +28,15 @@ namespace Tests
     {
         public NonGenericClass2() { } //being explicit for clarity
         public int instance_field_int = 0;
+        public NonGenericStruct1 instance_property_ngs1 { get { return new NonGenericStruct1(); } }
+        public int InstanceNonGenericMethod() { return 0; }
     }
 
     public struct NonGenericStruct1
     {
         public int instance_field_int; //default is 0
         public int instance_property_int { get { return 0; } }
+        public int InstanceNonGenericMethod() { return 0; }
     }
 
     public static class StaticGenericClass1<T>
