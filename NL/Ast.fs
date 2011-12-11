@@ -113,6 +113,10 @@ type Path(parts:(string * PositionRange) seq) =
     member this.LastPartText =
         parts.[parts.Length-1] |> fst
 
+    ///e.g. "a.b.c" -> "c", will always be non-empty
+    member this.LastPartPath =
+        Path(parts.[parts.Length-1])
+
     member this.FirstPartPathWithRest = //TODO:TEST
         if this.IsSinglePart then this, None
         else Path([parts.[0]]), Some(Path(parts.[1..parts.Length-1]))

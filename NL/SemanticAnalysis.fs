@@ -163,7 +163,7 @@ type FP =
     | Field of FieldInfo //N.B. CONSTANT FIELDS LIKE INT32.MAXVALUE CANNOT BE ACCESSED NORMALLY: CHECK FOR ISLITERAL FIELD ATTRIBUTE AND EMIT LITERAL VALUE (CAN USE GETVALUE REFLECTION) -- IF CAN'T DO THAT, CHECK FIELDINFO HANDLE AND IF THROWS WE KNOW WE NEED TO STOP
     | Property of PropertyInfo
 
-let tryResolveFieldOrProperty ty name bindingFlags =
+let tryResolveStaticFieldOrProperty ty name =
     match tryResolveField ty name staticFlags with
     | Some(fi) -> Some(FP.Field(fi))
     | None ->
@@ -175,35 +175,24 @@ type VFP =
     | Var of string * Type
     | FieldOrProperty of FP
 
-let tryResolveVarFieldOrProperty env (path:Path) =
-    let rec loop = function
-        | [] -> None
-        | hd::tl ->
-            match hd with
-            | NVT.Variable(name,ty) when name = path.Text -> //local var
-                Some(VFP.Var(name,ty))
-            | NVT.Namespace(ns) when path.IsMultiPart ->
-                match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
-                | Some(ty) ->
-                    match tryResolveFieldOrProperty ty path.LastPartText staticFlags with
-                    | Some(fp) -> Some(VFP.FieldOrProperty(fp))
-                    | None -> loop tl
-                | None -> loop tl
-            | NVT.Type(ty) when path.IsSinglePart -> //field or property of an open type
-                match tryResolveFieldOrProperty ty path.LastPartText staticFlags with
+let tryResolveStaticVarFieldOrProperty env (path:Path) =
+    env.NVTs
+    |> Seq.tryPick(fun nvt ->
+        match nvt with
+        | NVT.Variable(name,ty) when name = path.Text -> //local var
+            Some(VFP.Var(name,ty))
+        | NVT.Namespace(ns) when path.IsMultiPart ->
+            match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
+            | Some(ty) ->
+                match tryResolveStaticFieldOrProperty ty path.LastPartText with
                 | Some(fp) -> Some(VFP.FieldOrProperty(fp))
-                | None -> loop tl
-            | _ -> loop tl
-    loop env.NVTs
-
-let tryResolvePath env (path:Path) =
-    let rec loop = function
-        | [] -> None
-        | (curPath,restPath)::restExpansion ->
-            match tryResolveVarFieldOrProperty env curPath with
-            | Some(vfp) -> Some(vfp, restPath)
-            | None -> loop restExpansion
-    loop (path.Expansion |> Seq.toList)
+                | None -> None
+            | None -> None
+        | NVT.Type(ty) when path.IsSinglePart -> //field or property of an open type
+            match tryResolveStaticFieldOrProperty ty path.LastPartText with
+            | Some(fp) -> Some(VFP.FieldOrProperty(fp))
+            | None -> None
+        | _ -> None)
 
 let resolveTySigs env tySigs =
     match env, tySigs with
@@ -227,6 +216,34 @@ let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
     | None ->    
         EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
         abort()
+
+let tryResolveILExprStaticFieldOrPropertyGet ty name rest =
+    match tryResolveField ty name staticFlags with
+    | Some(fi) -> Some(ILExpr.StaticFieldGet(fi), rest)
+    | None ->
+        match tryResolveMethod ty ("get_" + name) staticFlags [||] [||] with
+        | Some(mi) -> Some(ILExpr.StaticCall(mi,[],mi.ReturnType),rest)
+        | None -> None
+
+let tryResolveLeadingPathGet env (path:Path) =
+    path.Expansion
+    |> Seq.collect (fun p ->
+        env.NVTs 
+        |> Seq.map (fun nvt -> nvt, p))
+    |> Seq.tryPick (fun (nvt, (path, rest)) ->
+        match nvt with
+        //a local variable
+        | NVT.Variable(name,ty) when name = path.Text -> //local var
+            Some(ILExpr.VarGet(name,ty), rest)
+        //field or property of type resolved against an open namespace
+        | NVT.Namespace(ns) when path.IsMultiPart ->
+            match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
+            | Some(ty) -> tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest
+            | None -> None
+        //field or property of an open type
+        | NVT.Type(ty) when path.IsSinglePart->
+            tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest
+        | _ -> None) 
 
 let rec resolveILExprInstancePathGet (ilExpr:ILExpr) (path:Path) =
     let path,rest = path.FirstPartPathWithRest
@@ -359,6 +376,23 @@ let rec tycheckWith env synTopLevel =
                 | None, _ ->
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<bool>)
+        | SynExpr.GenericTypeStaticCall(tyName, tyGenericTyArgs, methodName, methodGenericTyArgs, args, pos) -> //todo: need more position info for different tokens
+            let tyGenericTyArgs = resolveTySigs env tyGenericTyArgs
+            let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
+
+            match tryResolveType env.Namespaces env.Assemblies tyName tyGenericTyArgs with
+            | None -> 
+                EM.Could_not_resolve_type pos tyName //TODO: IMPROVE IDENT POS INFO
+                abort()
+            | Some(ty) ->
+                let args = args |> List.map (tycheckExp)
+                let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
+                match tryResolveMethod ty methodName staticFlags methodGenericTyArgs argTys with
+                | None -> 
+                    EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
+                    abort()
+                | Some(meth) -> 
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         //this is our most complex part of the grammer...
         | SynExpr.PathCall(path, genericTyArgs, args, pos) ->
             let args = args |> List.map (tycheckExp)
@@ -414,23 +448,6 @@ let rec tycheckWith env synTopLevel =
                     | _ ->
                         loop tl
             loop env.NVTs
-        | SynExpr.GenericTypeStaticCall(tyName, tyGenericTyArgs, methodName, methodGenericTyArgs, args, pos) -> //todo: need more position info for different tokens
-            let tyGenericTyArgs = resolveTySigs env tyGenericTyArgs
-            let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
-
-            match tryResolveType env.Namespaces env.Assemblies tyName tyGenericTyArgs with
-            | None -> 
-                EM.Could_not_resolve_type pos tyName //TODO: IMPROVE IDENT POS INFO
-                abort()
-            | Some(ty) ->
-                let args = args |> List.map (tycheckExp)
-                let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-                match tryResolveMethod ty methodName staticFlags methodGenericTyArgs argTys with
-                | None -> 
-                    EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
-                    abort()
-                | Some(meth) -> 
-                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) -> //DONE
             let instance,methodName =
                 match path.LeadingPartsPath with
@@ -451,62 +468,88 @@ let rec tycheckWith env synTopLevel =
             ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
         ///variable, static field, or static (non-parameterized) property
         | SynExpr.PathGet(path) -> //DONE
-            let tryResolveILExprStaticFieldOrPropertyGet ty name rest =
-                match tryResolveField ty name staticFlags with
-                | Some(fi) -> Some(ILExpr.StaticFieldGet(fi), rest)
-                | None ->
-                    match tryResolveMethod ty ("get_" + name) staticFlags [||] [||] with
-                    | Some(mi) -> Some(ILExpr.StaticCall(mi,[],mi.ReturnType),rest)
-                    | None -> None
-
-            path.Expansion
-            |> Seq.collect (fun p ->
-                env.NVTs 
-                |> Seq.map (fun nvt -> nvt, p))
-            |> Seq.tryPick (fun (nvt, (path, rest)) ->
-                match nvt with
-                //a local variable
-                | NVT.Variable(name,ty) when name = path.Text -> //local var
-                    Some(ILExpr.VarGet(name,ty), rest)
-                //field or property of type resolved against an open namespace
-                | NVT.Namespace(ns) when path.IsMultiPart ->
-                    match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
-                    | Some(ty) -> tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest
-                    | None -> None
-                //field or property of an open type
-                | NVT.Type(ty) when path.IsSinglePart->
-                    tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest
-                | _ -> None) 
-            |> (function
-                | None ->
-                    EM.Variable_field_or_property_not_found path.Pos path.Text
-                    abort()
-                | Some(ilExpr, Some(rest)) -> 
-                    resolveILExprInstancePathGet ilExpr rest
-                | Some(ilExpr, None) ->
-                    ilExpr)
+            match tryResolveLeadingPathGet env path with
+            | None ->
+                EM.Variable_field_or_property_not_found path.Pos path.Text
+                abort()
+            | Some(ilExpr, Some(rest)) -> 
+                resolveILExprInstancePathGet ilExpr rest
+            | Some(ilExpr, None) ->
+                ilExpr
         | SynExpr.ExprPathGet(x, path) -> //DONE
             let x = tycheckExp x
             resolveILExprInstancePathGet x path
-        | SynExpr.PathSet(path, (x, pos)) -> //TODO
-            let x = tycheckExp x
+        | SynExpr.PathSet(path, (assign, pos)) -> //TODO
+            let assign = tycheckExp assign
 
-            match tryResolveVarFieldOrProperty env path with
-            | Some(vfp) ->
-                let ilExpr, vfpTy =
-                    match vfp with
-                    | VFP.FieldOrProperty(FP.Property(pi)) -> ILExpr.StaticCall(pi.GetSetMethod(), [x], typeof<Void>), pi.PropertyType
-                    | VFP.FieldOrProperty(FP.Field(fi)) -> ILExpr.StaticFieldSet(fi,x), fi.FieldType
-                    | VFP.Var(name, varTy) -> ILExpr.VarSet(name,x), varTy
-                
-                if x.Type <> vfpTy then
-                    EM.Variable_set_type_mismatch pos path.Text ilExpr.Type.Name x.Type.Name
-                    ILExpr.Error(typeof<Void>)
-                else
-                    ilExpr
+            let instance =
+                match path.LeadingPartsPath with
+                | Some(path) -> 
+                    match tryResolveLeadingPathGet env path with
+                    | None ->
+                        None
+                    | Some(ilExpr, Some(rest)) -> 
+                        Some(resolveILExprInstancePathGet ilExpr rest)
+                    | Some(ilExpr, None) ->
+                        Some(ilExpr)
+                | None -> None
+            
+            match instance with
+            | Some(instance) ->
+                let path = path.LastPartPath
+                match tryResolveField instance.Type path.LastPartText instanceFlags with
+                | Some(fi) ->
+                    if not <| fi.FieldType.IsAssignableFrom(assign.Type) then //allow implicit cast?
+                        EM.Field_set_type_mismatch path.Pos path.Text fi.FieldType.Name assign.Type.Name
+                        ILExpr.Error(typeof<Void>)
+                    else
+                        ILExpr.InstanceFieldSet(instance, fi, castIfNeeded fi.FieldType assign)
+                | None ->
+                    match tryResolveProperty instance.Type path.LastPartText instanceFlags with
+                    | Some(pi) ->
+                        if not pi.CanWrite then
+                            EM.Property_has_no_setter path.Pos path.Text
+                            ILExpr.Error(typeof<Void>)
+                        else
+                            if pi.PropertyType.IsAssignableFrom(assign.Type) then //allow implicit cast?
+                                EM.Property_set_type_mismatch path.Pos path.Text pi.PropertyType.Name assign.Type.Name
+                                ILExpr.Error(typeof<Void>)
+                            else
+                                ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)
+                    | None ->
+                        EM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
+                        ILExpr.Error(typeof<Void>)
             | None ->
-                EM.Variable_field_or_property_not_found path.Pos path.Text
-                ILExpr.Error(typeof<Void>)
+                match tryResolveStaticVarFieldOrProperty env path with
+                | None ->
+                    EM.Variable_field_or_property_not_found path.Pos path.Text
+                    ILExpr.Error(typeof<Void>)
+                | Some(vfp) ->
+                    match vfp with
+                    | VFP.Var(name,ty) ->
+                        if not <| ty.IsAssignableFrom(assign.Type) then
+                            EM.Variable_set_type_mismatch path.Pos path.Text ty.Name assign.Type.Name
+                            ILExpr.Error(typeof<Void>)
+                        else
+                            ILExpr.VarSet(name, castIfNeeded ty assign)
+                    | VFP.FieldOrProperty(FP.Field(fi)) ->
+                        let path = path.LastPartPath
+                        if not <| fi.FieldType.IsAssignableFrom(assign.Type) then //allow implicit cast?
+                            EM.Field_set_type_mismatch path.Pos path.Text fi.FieldType.Name assign.Type.Name
+                            ILExpr.Error(typeof<Void>)
+                        else
+                            ILExpr.StaticFieldSet(fi, castIfNeeded fi.FieldType assign)
+                    | VFP.FieldOrProperty(FP.Property(pi)) ->
+                        let path = path.LastPartPath
+                        if not pi.CanWrite then
+                            EM.Property_has_no_setter path.Pos path.Text
+                            ILExpr.Error(typeof<Void>)
+                        else
+                            if pi.PropertyType.IsAssignableFrom(assign.Type) then //allow implicit cast?
+                                EM.Property_set_type_mismatch path.Pos path.Text pi.PropertyType.Name assign.Type.Name
+                                ILExpr.Error(typeof<Void>)
+                            else
+                                ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)
         | SynExpr.ExprPathSet(_) -> //TODO
             abort()
         | SynExpr.Let(name, (assign, assignPos), body) ->

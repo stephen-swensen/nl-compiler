@@ -133,6 +133,18 @@ type ILExpr =
 
             ILExpr.NumericBinop(op, x, y, ty)
 
+        static member InstancePropertySet(instance:ILExpr, pi:PropertyInfo, assign:ILExpr) =
+            ILExpr.InstanceCall(instance, pi.GetSetMethod(), [assign], pi.PropertyType)
+
+        static member InstancePropertyGet(instance:ILExpr, pi:PropertyInfo) =
+            ILExpr.InstanceCall(instance, pi.GetGetMethod(), [], pi.PropertyType)
+
+        static member StaticPropertySet(pi:PropertyInfo, assign:ILExpr) =
+            ILExpr.StaticCall(pi.GetSetMethod(), [assign], pi.PropertyType)
+
+        static member StaticPropertyGet(pi:PropertyInfo) =
+            ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
+
 ///represents a top level statement
 type ILStmt =
     //variable stmt
