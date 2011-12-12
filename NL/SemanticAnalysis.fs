@@ -493,29 +493,41 @@ let rec tycheckWith env synTopLevel =
                     | Some(ilExpr, None) ->
                         Some(ilExpr)
                 | None -> None
-            
+
+            let fieldSetIsValid (fi:FieldInfo) (path:Path) =
+                if not <| fi.FieldType.IsAssignableFrom(assign.Type) then //allow implicit cast?
+                    EM.Field_set_type_mismatch path.Pos path.Text fi.FieldType.Name assign.Type.Name
+                    false
+                else
+                    true
+
+            let propertySetIsValid (pi:PropertyInfo) (path:Path) =
+                if not pi.CanWrite then
+                    EM.Property_has_no_setter path.Pos path.Text
+                    false
+                else
+                    if pi.PropertyType.IsAssignableFrom(assign.Type) then //allow implicit cast?
+                        EM.Property_set_type_mismatch path.Pos path.Text pi.PropertyType.Name assign.Type.Name
+                        false
+                    else 
+                        true
+
             match instance with
             | Some(instance) ->
                 let path = path.LastPartPath
                 match tryResolveField instance.Type path.LastPartText instanceFlags with
                 | Some(fi) ->
-                    if not <| fi.FieldType.IsAssignableFrom(assign.Type) then //allow implicit cast?
-                        EM.Field_set_type_mismatch path.Pos path.Text fi.FieldType.Name assign.Type.Name
-                        ILExpr.Error(typeof<Void>)
-                    else
+                    if fieldSetIsValid fi path then
                         ILExpr.InstanceFieldSet(instance, fi, castIfNeeded fi.FieldType assign)
+                    else
+                        ILExpr.Error(typeof<Void>)
                 | None ->
                     match tryResolveProperty instance.Type path.LastPartText instanceFlags with
                     | Some(pi) ->
-                        if not pi.CanWrite then
-                            EM.Property_has_no_setter path.Pos path.Text
-                            ILExpr.Error(typeof<Void>)
+                        if propertySetIsValid pi path then
+                            ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)
                         else
-                            if pi.PropertyType.IsAssignableFrom(assign.Type) then //allow implicit cast?
-                                EM.Property_set_type_mismatch path.Pos path.Text pi.PropertyType.Name assign.Type.Name
-                                ILExpr.Error(typeof<Void>)
-                            else
-                                ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)
+                            ILExpr.Error(typeof<Void>)
                     | None ->
                         EM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
                         ILExpr.Error(typeof<Void>)
@@ -534,22 +546,16 @@ let rec tycheckWith env synTopLevel =
                             ILExpr.VarSet(name, castIfNeeded ty assign)
                     | VFP.FieldOrProperty(FP.Field(fi)) ->
                         let path = path.LastPartPath
-                        if not <| fi.FieldType.IsAssignableFrom(assign.Type) then //allow implicit cast?
-                            EM.Field_set_type_mismatch path.Pos path.Text fi.FieldType.Name assign.Type.Name
-                            ILExpr.Error(typeof<Void>)
-                        else
+                        if fieldSetIsValid fi path then
                             ILExpr.StaticFieldSet(fi, castIfNeeded fi.FieldType assign)
+                        else
+                            ILExpr.Error(typeof<Void>)
                     | VFP.FieldOrProperty(FP.Property(pi)) ->
                         let path = path.LastPartPath
-                        if not pi.CanWrite then
-                            EM.Property_has_no_setter path.Pos path.Text
-                            ILExpr.Error(typeof<Void>)
+                        if propertySetIsValid pi path then
+                            ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)
                         else
-                            if pi.PropertyType.IsAssignableFrom(assign.Type) then //allow implicit cast?
-                                EM.Property_set_type_mismatch path.Pos path.Text pi.PropertyType.Name assign.Type.Name
-                                ILExpr.Error(typeof<Void>)
-                            else
-                                ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)
+                            ILExpr.Error(typeof<Void>)
         | SynExpr.ExprPathSet(_) -> //TODO
             abort()
         | SynExpr.Let(name, (assign, assignPos), body) ->
