@@ -104,11 +104,6 @@
       <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\Test.CSHelpers\Test.CSHelpers.csproj">
-      <Name>Test.CSHelpers</Name>
-      <Project>{7fe87916-4378-4556-9931-ba9bea5c0101}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
