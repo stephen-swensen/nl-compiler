@@ -553,8 +553,15 @@ let rec tycheckWith env synTopLevel =
                         let path = path.LastPartPath
                         PR.validatePropertySet pi path assign.Type assignPos
                             (lazy(ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)))
-        | SynExpr.ExprPathSet(_) -> //TODO
-            abort()
+        | SynExpr.ExprPathSet(instance, path, (assign,assignPos)) -> //TODO
+            let instance = tycheckExp instance
+            let assign = tycheckExp assign
+            match path.LeadingPartsPath with
+            | Some(leadingPath) -> 
+                let instance = PR.resolveILExprInstancePathGet instance leadingPath
+                PR.resolveILExprInstancePathSet instance path.LastPartPath assign assignPos
+            | None ->
+                PR.resolveILExprInstancePathSet instance path assign assignPos
         | SynExpr.Let(name, (assign, assignPos), body) ->
             let assign = tycheckExp assign
             if assign.Type = typeof<Void> then
