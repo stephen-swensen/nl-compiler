@@ -188,11 +188,11 @@ module PathResolution =
         | Field of FieldInfo //N.B. CONSTANT FIELDS LIKE INT32.MAXVALUE CANNOT BE ACCESSED NORMALLY: CHECK FOR ISLITERAL FIELD ATTRIBUTE AND EMIT LITERAL VALUE (CAN USE GETVALUE REFLECTION) -- IF CAN'T DO THAT, CHECK FIELDINFO HANDLE AND IF THROWS WE KNOW WE NEED TO STOP
         | Property of PropertyInfo
 
-    let tryResolveStaticFieldOrProperty ty name =
-        match tryResolveField ty name staticFlags with
+    let tryResolveFieldOrProperty ty name bindingFlags =
+        match tryResolveField ty name bindingFlags with
         | Some(fi) -> Some(FP.Field(fi))
         | None ->
-            match tryResolveProperty ty name staticFlags with
+            match tryResolveProperty ty name bindingFlags with
             | Some(pi) -> Some(FP.Property(pi))
             | None -> None
 
@@ -209,12 +209,12 @@ module PathResolution =
             | NVT.Namespace(ns) when path.IsMultiPart ->
                 match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
                 | Some(ty) ->
-                    match tryResolveStaticFieldOrProperty ty path.LastPartText with
+                    match tryResolveFieldOrProperty ty path.LastPartText staticFlags with
                     | Some(fp) -> Some(VFP.FieldOrProperty(fp))
                     | None -> None
                 | None -> None
             | NVT.Type(ty) when path.IsSinglePart -> //field or property of an open type
-                match tryResolveStaticFieldOrProperty ty path.LastPartText with
+                match tryResolveFieldOrProperty ty path.LastPartText staticFlags with
                 | Some(fp) -> Some(VFP.FieldOrProperty(fp))
                 | None -> None
             | _ -> None)
@@ -519,18 +519,16 @@ let rec tycheckWith env synTopLevel =
             match instance with
             | Some(instance) ->
                 let path = path.LastPartPath
-                match tryResolveField instance.Type path.LastPartText instanceFlags with
-                | Some(fi) ->
+                match PR.tryResolveFieldOrProperty instance.Type path.Text instanceFlags with
+                | Some(PR.FP.Field(fi)) ->
                     PR.validateFieldSet fi path assign.Type
                         (lazy(ILExpr.InstanceFieldSet(instance, fi, castIfNeeded fi.FieldType assign)))
+                | Some(PR.FP.Property(pi)) ->
+                    PR.validatePropertySet pi path assign.Type 
+                        (lazy(ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)))
                 | None ->
-                    match tryResolveProperty instance.Type path.LastPartText instanceFlags with
-                    | Some(pi) ->
-                        PR.validatePropertySet pi path assign.Type 
-                            (lazy(ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)))
-                    | None ->
-                        EM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
-                        ILExpr.Error(typeof<Void>)
+                    EM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
+                    ILExpr.Error(typeof<Void>)
             | None ->
                 match PR.tryResolveStaticVarFieldOrProperty env path with
                 | None ->
