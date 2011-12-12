@@ -172,13 +172,14 @@ let emitOpCodes (il:ILGenerator) ilExpr =
                 il.Emit(OpCodes.Br, endBodyLabel)
             | None ->
                 failwith "invalid break"
-        | StaticFieldSet(fi, x) ->
-            emit x
+        | StaticFieldSet(fi, assign) ->
+            emit assign
             il.Emit(OpCodes.Stsfld, fi)
         | StaticFieldGet(fi) ->
             il.Emit(OpCodes.Ldsfld, fi)
-        | InstanceFieldSet(x, fi, assign) ->
-            emit x
+        | InstanceFieldSet(instance, fi, assign) ->
+            emit instance
+            emit assign
             il.Emit(OpCodes.Stfld, fi)
         | InstanceFieldGet(instance, fi) ->
             emit instance
@@ -271,7 +272,7 @@ let compileFromAil ail asmName =
         | ILTopLevel.Exp(x) -> x
         | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
         | _ -> 
-            raise (EvaluationException("not a valid eval expression", [||])) //todo: remove
+            failwithf "not a valid compiler expression: %A" ail //todo: remove
 
     let il = methBuilder.GetILGenerator()
     emitOpCodes il ilExpr
@@ -283,7 +284,8 @@ let compileFromAil ail asmName =
 
 ///Compile the given source code string into an assembly
 ///code -> assemblyName -> unit
-let compileFromString = parseFromString>>compileFromAil
+let compileFromString = 
+    parseFromString>>compileFromAil
 
 ///Compile all the given source code files into a single assembly
 ///fileNames -> assemblyName -> unit
@@ -291,6 +293,7 @@ let compileFromFiles fileNames =
     fileNames
     |> Seq.map System.IO.File.ReadAllText
     |> String.concat System.Environment.NewLine
+    //|> (fun text -> printfn "%s" text; text)
     |> compileFromString
 
 //type NliState =
