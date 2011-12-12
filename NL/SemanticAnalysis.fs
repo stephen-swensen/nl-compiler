@@ -155,7 +155,16 @@ let tryLoadAssembly (name:string) =
     with _ ->
         try 
             //are we sure we don't want to use LoadFile so that we can use reference in different scopes?
-            Some(Assembly.LoadFrom(name))
+            let asm = Assembly.LoadFrom(name)
+            //if asm is not being referenced by the currently executing assembly, then
+            //it will fail to load by assembly qualified name (i.e. Type.GetType in tryResolve type),
+            //so we need to add an assembly resolve handler here.
+            //TODO: look into what happens when we try to resolve the same assembly (by dll name, by assembly name...?)
+            //multiple times.  possible have asm.FullName / handler map where we remove the old handler and add a new one,
+            //supposing that we could load multiple handlers).
+            AppDomain.CurrentDomain.add_AssemblyResolve(ResolveEventHandler(fun sender are -> 
+                if are.Name = asm.FullName then asm else null))
+            Some(asm)
         with _ ->
             None
 

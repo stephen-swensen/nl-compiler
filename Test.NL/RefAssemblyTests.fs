@@ -19,3 +19,10 @@ let ``connot resolve assembly`` () =
     raisesWith 
         <@ C.eval "open \"not an assembly\" in ()" @>
         (expectedErrors [|19|])
+
+//Test.AssemblyResolveTarget.dll
+
+[<Fact>]
+let ``get type from assembly that is not referenced in this assembly`` () =
+    //for this to work do not want to copy the dll to the output directory
+    test <@ C.eval<obj> "open \"..\\..\\Test.AssemblyResolveTarget.dll\" in Test.AssemblyResolveTarget.Class1()" <> null @>
