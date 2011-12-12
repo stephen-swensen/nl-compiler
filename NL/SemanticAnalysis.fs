@@ -263,23 +263,35 @@ module PathResolution =
         | Some(rest) -> resolveILExprInstancePathGet ilExpr rest
         | None -> ilExpr
 
-    let validateFieldSet (fi:FieldInfo) (path:Path) (assignTy:Type) (ifValid:Lazy<_>) =
+    let validateFieldSet (fi:FieldInfo) (path:Path) (assignTy:Type) (assignPos) (ifValid:Lazy<_>) =
         if not <| fi.FieldType.IsAssignableFrom(assignTy) then //allow implicit cast?
-            EM.Field_set_type_mismatch path.Pos path.Text fi.FieldType.Name assignTy.Name
+            EM.Field_set_type_mismatch (PositionRange(path.Pos,assignPos)) path.Text fi.FieldType.Name assignTy.Name
             ILExpr.Error(typeof<Void>)
         else
             ifValid.Value
 
-    let validatePropertySet (pi:PropertyInfo) (path:Path) (assignTy:Type) (ifValid:Lazy<_>) =
+    let validatePropertySet (pi:PropertyInfo) (path:Path) (assignTy:Type) (assignPos) (ifValid:Lazy<_>) =
         if not pi.CanWrite then
             EM.Property_has_no_setter path.Pos path.Text
             ILExpr.Error(typeof<Void>)
         else
             if pi.PropertyType.IsAssignableFrom(assignTy) then //allow implicit cast?
-                EM.Property_set_type_mismatch path.Pos path.Text pi.PropertyType.Name assignTy.Name
+                EM.Property_set_type_mismatch (PositionRange(path.Pos, assignPos)) path.Text pi.PropertyType.Name assignTy.Name
                 ILExpr.Error(typeof<Void>)
             else 
                 ifValid.Value
+
+    let resolveILExprInstancePathSet (instance:ILExpr) (path:Path) (assign:ILExpr) (assignPos) =
+        match tryResolveFieldOrProperty instance.Type path.Text instanceFlags with
+        | Some(FP.Field(fi)) ->
+            validateFieldSet fi path assign.Type assignPos
+                (lazy(ILExpr.InstanceFieldSet(instance, fi, castIfNeeded fi.FieldType assign)))
+        | Some(FP.Property(pi)) ->
+            validatePropertySet pi path assign.Type assignPos
+                (lazy(ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)))
+        | None ->
+            EM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
+            ILExpr.Error(typeof<Void>)
 
 module PR = PathResolution
 
@@ -501,7 +513,7 @@ let rec tycheckWith env synTopLevel =
         | SynExpr.ExprPathGet(x, path) -> //DONE
             let x = tycheckExp x
             PR.resolveILExprInstancePathGet x path
-        | SynExpr.PathSet(path, (assign, pos)) -> //TODO
+        | SynExpr.PathSet(path, (assign, assignPos)) -> //TODO
             let assign = tycheckExp assign
 
             let instance =
@@ -519,16 +531,7 @@ let rec tycheckWith env synTopLevel =
             match instance with
             | Some(instance) ->
                 let path = path.LastPartPath
-                match PR.tryResolveFieldOrProperty instance.Type path.Text instanceFlags with
-                | Some(PR.FP.Field(fi)) ->
-                    PR.validateFieldSet fi path assign.Type
-                        (lazy(ILExpr.InstanceFieldSet(instance, fi, castIfNeeded fi.FieldType assign)))
-                | Some(PR.FP.Property(pi)) ->
-                    PR.validatePropertySet pi path assign.Type 
-                        (lazy(ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)))
-                | None ->
-                    EM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
-                    ILExpr.Error(typeof<Void>)
+                PR.resolveILExprInstancePathSet instance path assign assignPos
             | None ->
                 match PR.tryResolveStaticVarFieldOrProperty env path with
                 | None ->
@@ -544,11 +547,11 @@ let rec tycheckWith env synTopLevel =
                             ILExpr.VarSet(name, castIfNeeded ty assign)
                     | PR.VFP.FieldOrProperty(PR.FP.Field(fi)) ->
                         let path = path.LastPartPath
-                        PR.validateFieldSet fi path assign.Type
+                        PR.validateFieldSet fi path assign.Type assignPos
                             (lazy(ILExpr.StaticFieldSet(fi, castIfNeeded fi.FieldType assign)))
                     | PR.VFP.FieldOrProperty(PR.FP.Property(pi)) ->
                         let path = path.LastPartPath
-                        PR.validatePropertySet pi path assign.Type
+                        PR.validatePropertySet pi path assign.Type assignPos
                             (lazy(ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)))
         | SynExpr.ExprPathSet(_) -> //TODO
             abort()
