@@ -16,7 +16,8 @@ namespace Tests
 
         //to test shadowing
         public static int Stopwatch() { return 0; }
-        
+
+        public static int static_property_int { get { return static_field_int; } set { static_field_int = value; } }
         public static int static_field_int = 0;
 
         public static NonGenericClass1 static_field_ngc1 = new NonGenericClass1();
