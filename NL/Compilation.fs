@@ -12,6 +12,7 @@ open Parser
 type EL = ErrorLogger
 
 let emitOpCodes (il:ILGenerator) ilExpr =
+    //the loop label options is some if we are inside a while loop and gives a point to jump back when encounter continue or break
     let rec emitWith loopLabel lenv ilExpr =
         let emit = emitWith loopLabel lenv
         let emitAll exps =
@@ -49,9 +50,9 @@ let emitOpCodes (il:ILGenerator) ilExpr =
         | VarGet(name, _) ->
             let local = lenv |> Map.find name
             il.Emit(OpCodes.Ldloc, local)
-        | VarSet(name, x) ->
+        | VarSet(name, instance) ->
             let local = lenv |> Map.find name
-            emit x
+            emit instance
             il.Emit(OpCodes.Stloc, local)
         | Coerce(x,ty) ->
             emit x
@@ -90,8 +91,8 @@ let emitOpCodes (il:ILGenerator) ilExpr =
             args |> List.iter (emit)
             il.Emit(OpCodes.Call, meth)
         | InstanceCall(instance,meth,args,_) ->
-            emit instance
-            if instance.Type.IsValueType then
+            let isValueAddress = emitValueAddressIfApplicable loopLabel lenv instance
+            if not isValueAddress && instance.Type.IsValueType then
                 let loc = il.DeclareLocal(instance.Type)
                 il.Emit(OpCodes.Stloc, loc)
                 il.Emit(OpCodes.Ldloca, loc)
@@ -178,14 +179,34 @@ let emitOpCodes (il:ILGenerator) ilExpr =
         | StaticFieldGet(fi) ->
             il.Emit(OpCodes.Ldsfld, fi)
         | InstanceFieldSet(instance, fi, assign) ->
-            emit instance
+            emitValueAddressIfApplicable loopLabel lenv instance |> ignore
             emit assign
             il.Emit(OpCodes.Stfld, fi)
         | InstanceFieldGet(instance, fi) ->
-            emit instance
+            emitValueAddressIfApplicable loopLabel lenv instance |> ignore
             il.Emit(OpCodes.Ldfld, fi)
         | ILExpr.Error _ ->
             failwith "Should not be emitting opcodes for an ilExpr with errors"
+
+    ///e.g. Given: SomeVar.field <- 3, we need the (ADDRESS OF)SomeVar.(ADDRESS OF)field <- 3 when SomeVar and field are value types (if they are object types,
+    ///we are already getting the address by nature.
+    and emitValueAddressIfApplicable loopLabel lenv expr : bool =
+        match expr with
+        | InstanceFieldGet(instance, fi) when fi.FieldType.IsValueType ->
+            emitValueAddressIfApplicable loopLabel lenv instance |> ignore
+            il.Emit(OpCodes.Ldflda, fi)
+            true
+        | StaticFieldGet(fi) when fi.FieldType.IsValueType ->
+            il.Emit(OpCodes.Ldsflda, fi)
+            true
+        | VarGet(name, ty) when ty.IsValueType ->
+            let local = lenv |> Map.find name
+            il.Emit(OpCodes.Ldloca, local)
+            true
+        | _ -> 
+            emitWith loopLabel lenv expr
+            false
+    //and emitValueInitForSetIfApplicable loopLabel
 
     emitWith None Map.empty ilExpr |> ignore
 
