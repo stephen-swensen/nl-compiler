@@ -22,6 +22,14 @@ namespace Tests
         public NonGenericStruct1 instance_property_ngs1 { get { return new NonGenericStruct1(); } }
 
         public int instance_field_int = 0;
+
+        public int instance_property_int_without_setter { get { return 0; } }
+        public int instance_property_int_without_getter { set { return; } }
+
+        public static int static_property_int_without_setter { get { return 0; } }
+        public static int static_property_int_without_getter { set { return; } }
+
+        public int instance_property_string { get { return 0; } }
     }
 
     public class NonGenericClass2
