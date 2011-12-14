@@ -87,10 +87,10 @@ let emitOpCodes (il:ILGenerator) ilExpr =
                 il.Emit(OpCodes.Unbox_Any, ty)
             else
                 il.Emit(OpCodes.Castclass, ty)
-        | StaticCall(meth,args,_) ->
+        | StaticCall(meth,args) ->
             args |> List.iter (emit)
             il.Emit(OpCodes.Call, meth)
-        | InstanceCall(instance,meth,args,_) ->
+        | InstanceCall(instance,meth,args) ->
             let isValueAddress = emitValueAddressIfApplicable loopLabel lenv instance
             if not isValueAddress && instance.Type.IsValueType then
                 let loc = il.DeclareLocal(instance.Type)

@@ -54,8 +54,8 @@ type ILExpr =
     | Coerce        of ILExpr * Type
     ///box / box value type or down / up cast ref type
     | Cast          of ILExpr * Type
-    | StaticCall    of System.Reflection.MethodInfo * ILExpr list * Type
-    | InstanceCall  of ILExpr * System.Reflection.MethodInfo * ILExpr list * Type
+    | StaticCall    of System.Reflection.MethodInfo * ILExpr list
+    | InstanceCall  of ILExpr * System.Reflection.MethodInfo * ILExpr list
     | Sequential    of ILExpr * ILExpr * Type
     | Ctor          of System.Reflection.ConstructorInfo * ILExpr list * Type
     | LogicalNot    of ILExpr
@@ -82,6 +82,9 @@ type ILExpr =
             | ComparisonBinop _     -> typeof<bool>
             | StaticFieldGet fi     -> fi.FieldType
             | InstanceFieldGet(_,fi) -> fi.FieldType
+            | StaticCall(mi,_)       -> mi.ReturnType
+            | InstanceCall(_,mi,_)   -> mi.ReturnType
+
             //Always void
             | IfThen _
             | Nop
@@ -99,8 +102,6 @@ type ILExpr =
             | VarGet(_,ty) 
             | Coerce(_,ty)
             | Cast(_,ty)
-            | StaticCall(_,_,ty)
-            | InstanceCall(_,_,_,ty) 
             | Sequential(_,_,ty)
             | Ctor(_,_,ty)
             | Default(ty)
@@ -134,16 +135,16 @@ type ILExpr =
             ILExpr.NumericBinop(op, x, y, ty)
 
         static member InstancePropertySet(instance:ILExpr, pi:PropertyInfo, assign:ILExpr) =
-            ILExpr.InstanceCall(instance, pi.GetSetMethod(), [assign], pi.PropertyType)
+            ILExpr.InstanceCall(instance, pi.GetSetMethod(), [assign])
 
         static member InstancePropertyGet(instance:ILExpr, pi:PropertyInfo) =
-            ILExpr.InstanceCall(instance, pi.GetGetMethod(), [], pi.PropertyType)
+            ILExpr.InstanceCall(instance, pi.GetGetMethod(), [])
 
         static member StaticPropertySet(pi:PropertyInfo, assign:ILExpr) =
-            ILExpr.StaticCall(pi.GetSetMethod(), [assign], pi.PropertyType)
+            ILExpr.StaticCall(pi.GetSetMethod(), [assign])
 
         static member StaticPropertyGet(pi:PropertyInfo) =
-            ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
+            ILExpr.StaticCall(pi.GetGetMethod(), [])
 
         override this.ToString() =
             sprintf "%A" this

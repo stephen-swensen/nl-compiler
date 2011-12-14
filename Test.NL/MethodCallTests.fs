@@ -50,3 +50,11 @@ let ``call generic instance method with explicit generic args and no overloads o
 [<Fact>]
 let ``call generic instance method with explicit generic args and no overloads on expression`` () =
     test <@ C.eval (openPrefix + "NonGenericClass1().InstanceGenericMethod[int32](1)") = 1 @>
+
+//[<Fact>]
+//let ``Issue 36 Calling void method followed by non-void method emits bad IL`` () =
+//    test <@ C.eval<obj> (openPrefix + "x = NonGenericClass1() in x.InstanceVoidMethod(); x.InstanceNonVoidMethod(); ()") = null @>
+//
+//[<Fact>]
+//let ``Issue 36 Calling non void instance method followed by void instance method emits bad IL`` () =
+//    test <@ C.eval<obj> (openPrefix + "x = NonGenericClass1() in x.InstanceNonVoidMethod(); x.InstanceVoidMethod(); ()") = null @>
