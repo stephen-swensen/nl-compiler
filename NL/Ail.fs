@@ -145,6 +145,9 @@ type ILExpr =
         static member StaticPropertyGet(pi:PropertyInfo) =
             ILExpr.StaticCall(pi.GetGetMethod(), [], pi.PropertyType)
 
+        override this.ToString() =
+            sprintf "%A" this
+
 ///represents a top level statement
 type ILStmt =
     //variable stmt

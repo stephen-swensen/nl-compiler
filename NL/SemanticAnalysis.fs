@@ -284,7 +284,7 @@ module PathResolution =
             EM.Property_has_no_setter path.Pos path.Text
             ILExpr.Error(typeof<Void>)
         else
-            if pi.PropertyType.IsAssignableFrom(assignTy) then //allow implicit cast?
+            if not <| pi.PropertyType.IsAssignableFrom(assignTy) then //allow implicit cast?
                 EM.Property_set_type_mismatch (PositionRange(path.Pos, assignPos)) path.Text pi.PropertyType.Name assignTy.Name
                 ILExpr.Error(typeof<Void>)
             else 
