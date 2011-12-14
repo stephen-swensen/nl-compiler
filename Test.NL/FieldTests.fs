@@ -25,9 +25,13 @@ let ``assign struct instance field to var`` () =
     test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericStruct1().instance_field_int in x") = 0 @>
 
 [<Fact>]
+let ``get class instance field`` () =
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_int") = 0 @>
+
+[<Fact>]
 let ``set struct instance field`` () =
     test <@ C.eval (Prelude.openAsm + "ngs = Tests.NonGenericStruct1() in ngs.instance_field_int <- 3; ngs.instance_field_int") = 3 @>
 
 [<Fact>]
-let ``get class instance field`` () =
-    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_int") = 0 @>
+let ``set class instance field`` () =
+    test <@ C.eval (Prelude.openAsm + "ngc = Tests.NonGenericClass1() in ngc.instance_field_int <- 3; ngc.instance_field_int") = 3 @>
