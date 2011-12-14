@@ -20,6 +20,14 @@ let ``get struct instance property`` () =
     test <@ C.eval (Prelude.openAsm + "Tests.NonGenericStruct1().instance_property_int") = 0 @>
 
 [<Fact>]
+let ``set class instance property`` () =
+    test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int <- 3 ; x.instance_property_int") = 0 @>
+
+[<Fact>]
+let ``set struct instance property`` () =
+    test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericStruct1() in x.instance_property_int <- 3 ; x.instance_property_int ") = 3 @>
+
+[<Fact>]
 let ``instance property has not setter`` () =
     raisesWith <@ C.eval<obj> (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int_without_setter <- 3") = null @>
         (expectedErrors [|32|])

@@ -18,7 +18,7 @@ namespace Tests
         public static NonGenericClass1 static_field_ngc1 = new NonGenericClass1();
         public NonGenericClass2 instance_field_ngc2 = new NonGenericClass2();
 
-        public int instance_property_int { get { return 0; } }
+        public int instance_property_int { get { return instance_field_int; } set { instance_field_int = value; } }
         public NonGenericStruct1 instance_property_ngs1 { get { return new NonGenericStruct1(); } }
 
         public int instance_field_int = 0;
@@ -43,7 +43,7 @@ namespace Tests
     public struct NonGenericStruct1
     {
         public int instance_field_int; //default is 0
-        public int instance_property_int { get { return 0; } }
+        public int instance_property_int { get { return instance_field_int; } set { instance_field_int = value;  } } 
         public int InstanceNonGenericMethod() { return 0; }
     }
 
