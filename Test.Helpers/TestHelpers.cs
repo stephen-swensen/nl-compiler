@@ -10,6 +10,10 @@ namespace Tests
         public NonGenericClass1() { }
         public T InstanceGenericMethod<T>() { return default(T); }
         public T InstanceGenericMethod<T>(T x) { return x; }
+
+        public void InstanceVoidMethod() { }
+        public int InstanceNonVoidMethod() { return 0; }
+
         //to test shadowing
         public static int Stopwatch() { return 0; }
         

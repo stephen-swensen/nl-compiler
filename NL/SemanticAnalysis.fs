@@ -233,7 +233,7 @@ module PathResolution =
         | Some(fi) -> Some(ILExpr.StaticFieldGet(fi), rest)
         | None ->
             match tryResolveMethod ty ("get_" + name) staticFlags [||] [||] with
-            | Some(mi) -> Some(ILExpr.StaticCall(mi,[],mi.ReturnType),rest)
+            | Some(mi) -> Some(ILExpr.StaticCall(mi,[]),rest)
             | None -> None
 
     let tryResolveLeadingPathGet env (path:Path) =
@@ -263,7 +263,7 @@ module PathResolution =
             | Some(fi) -> ILExpr.InstanceFieldGet(ilExpr,fi)
             | None ->
                 match tryResolveMethod ilExpr.Type ("get_" + path.Text) instanceFlags [||] [||] with
-                | Some(mi) -> ILExpr.InstanceCall(ilExpr,mi,[],mi.ReturnType)
+                | Some(mi) -> ILExpr.InstanceCall(ilExpr,mi,[])
                 | None -> 
                     EM.Instance_field_or_property_not_found path.Pos path.Text ilExpr.Type.Name
                     abort()
@@ -352,7 +352,7 @@ let rec tycheckWith env synTopLevel =
                     EM.No_overload_found_for_unary_operator pos "-" x.Type.Name
                     ILExpr.Error(x.Type)
                 | meth ->
-                    ILExpr.StaticCall(meth, [x], meth.ReturnType)
+                    ILExpr.StaticCall(meth, [x])
         | SynExpr.Pow(x, y, pos) ->        
             let x,y = tycheckExp x, tycheckExp y
             //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
@@ -368,7 +368,7 @@ let rec tycheckWith env synTopLevel =
                     | _ -> false
 
                 if canCoerceToFloat x && canCoerceToFloat y then
-                    ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>) , meth.ReturnType)
+                    ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>))
                 else
                     EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<float>)
@@ -385,7 +385,7 @@ let rec tycheckWith env synTopLevel =
                     EM.Internal_error pos (sprintf "Could not resolve 'String.Concat' synthetic '+' overload for argument types %s" (sprintTypes [x.Type; y.Type]))
                     ILExpr.Error(typeof<string>) //error recovery
                 | Some(meth) ->
-                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y])
             | None -> //static "op_*" overloads
                 let meth = seq {
                     yield tryResolveMethod x.Type op.Name staticFlags [||] [|x.Type; y.Type|]
@@ -396,7 +396,7 @@ let rec tycheckWith env synTopLevel =
                     EM.No_overload_found_for_binary_operator pos op.Symbol x.Type.Name y.Type.Name
                     ILExpr.Error(x.Type) //error recovery: best guess of intended return type
                 | Some(meth) ->
-                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType) 
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y]) 
         | SynExpr.ComparisonBinop(op, x, y, pos) ->
             let x, y = tycheckExp x, tycheckExp y
                         
@@ -412,7 +412,7 @@ let rec tycheckWith env synTopLevel =
 
                 match meth, op with
                 | Some(meth), _ ->
-                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y], meth.ReturnType)    
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y])    
                 //reference equals
                 | None, (SynComparisonBinop.Eq | SynComparisonBinop.Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> 
                     ILExpr.mkComparisonBinop(op, x, y)    
@@ -435,7 +435,7 @@ let rec tycheckWith env synTopLevel =
                     EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
                     abort()
                 | Some(meth) -> 
-                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
         //this is our most complex part of the grammer...
         | SynExpr.PathCall(path, genericTyArgs, args, pos) ->
             let args = args |> List.map (tycheckExp)
@@ -454,7 +454,7 @@ let rec tycheckWith env synTopLevel =
                             EM.Invalid_instance_method pos path.LastPartText ty.Name (sprintTypes argTys)
                             abort()
                         | Some(meth) -> 
-                            ILExpr.InstanceCall(ILExpr.VarGet(path.LeadingPartsText,ty), meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                            ILExpr.InstanceCall(ILExpr.VarGet(path.LeadingPartsText,ty), meth, castArgsIfNeeded (meth.GetParameters()) args)
                     | NVT.Namespace(ns) ->
                         match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
                         | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
@@ -463,7 +463,7 @@ let rec tycheckWith env synTopLevel =
                                 EM.Invalid_static_method pos path.LastPartText ty.Name (sprintTypes argTys)
                                 abort()
                             | Some(meth) -> 
-                                ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                                ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
                         | None -> //constructors (generic or non-generic)
                             match tryResolveType [ns] env.Assemblies path.Text genericTyArgs with
                             | None -> 
@@ -485,7 +485,7 @@ let rec tycheckWith env synTopLevel =
                     | NVT.Type(ty) when path.IsSinglePart -> //static methods of an open type
                         match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
                         | Some(meth) ->
-                            ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+                            ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
                         | None ->
                             loop tl
                     | _ ->
@@ -508,7 +508,7 @@ let rec tycheckWith env synTopLevel =
                 EM.Invalid_instance_method pos methodName instance.Type.Name (sprintTypes argTys)
                 abort()
             | Some(meth) ->
-            ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args, meth.ReturnType)
+            ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args)
         ///variable, static field, or static (non-parameterized) property
         | SynExpr.PathGet(path) -> //DONE
             match PR.tryResolveLeadingPathGet env path with
@@ -634,7 +634,7 @@ let rec tycheckWith env synTopLevel =
 
                 match meth with
                 | Some(meth) -> 
-                    ILExpr.StaticCall(meth, [x], meth.ReturnType)    
+                    ILExpr.StaticCall(meth, [x])
                 | None -> 
                     EM.Casting_from_type_to_type_always_invalid pos x.Type.Name ty.Name
                     ILExpr.Error(ty)

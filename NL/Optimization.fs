@@ -32,17 +32,17 @@ let optimize (tn:ILTopLevel) =
             | ILExpr.Double(xval), ILExpr.Double(yval) ->
                 ILExpr.Double((op.Call(xval, yval)))
             | _ -> ILExpr.NumericBinop(op, x, y, ty)    
-        | ILExpr.StaticCall(mi, args, ty) ->
+        | ILExpr.StaticCall(mi, args) ->
             let args = args |> List.map optimizeExp
             match args with
             | [ILExpr.String(xval); ILExpr.String(yval)] when mi.DeclaringType = typeof<string> && mi.Name = "Concat" -> //i.e. "asdf" + "asdf" (can refactor this better?)
                 ILExpr.String(xval + yval)
             | _ ->
-                ILExpr.StaticCall(mi, args, ty)
-        | ILExpr.InstanceCall(instance, mi, args, ty) ->
+                ILExpr.StaticCall(mi, args)
+        | ILExpr.InstanceCall(instance, mi, args) ->
             let instance = optimizeExp instance
             let args = args |> List.map optimizeExp
-            ILExpr.InstanceCall(instance, mi, args, ty)
+            ILExpr.InstanceCall(instance, mi, args)
         | ILExpr.ComparisonBinop(op, x, y) -> //comparison constants folding
             let x, y = optimizeExp x, optimizeExp y
             match x, y with
