@@ -1,7 +1,7 @@
 ﻿module Swensen.NL.Optimization
 open Swensen.NL.Ail
 
-let optimize (tn:ILTopLevel) =
+let optimize (tl:ILTopLevel) =
     let rec optimizeExp exp = 
         match exp with
         | ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty) -> //unreachable code elimination
@@ -99,6 +99,17 @@ let optimize (tn:ILTopLevel) =
             ILExpr.InstanceFieldGet(optimizeExp x, fi)
         | ILExpr.InstanceFieldSet(x,fi,y) ->
             ILExpr.InstanceFieldSet(optimizeExp x, fi, optimizeExp y)
+        | Default(ty) ->
+            if ty = typeof<int32> then
+                ILExpr.Int32(Unchecked.defaultof<int32>)
+            elif ty = typeof<double> then
+                ILExpr.Double(Unchecked.defaultof<double>)
+            elif ty = typeof<bool> then
+                ILExpr.Bool(Unchecked.defaultof<bool>)
+            elif ty = typeof<char> then
+                ILExpr.Char(Unchecked.defaultof<char>)
+            else
+                exp
         | ILExpr.StaticFieldGet _
         | Double _
         | Int32 _
@@ -108,14 +119,13 @@ let optimize (tn:ILTopLevel) =
         | Null _
         | Typeof _
         | VarGet _
-        | Default _
         | Nop
         | Break         
         | Continue -> exp //atomic expressions
         | ILExpr.Error _ ->
             failwith "Should not be optimizing an expression with errors"
 
-    match tn with
+    match tl with
     | ILTopLevel.Exp(x) -> optimizeExp x |> ILTopLevel.Exp
     | ILTopLevel.StmtList(xl) ->
         xl 

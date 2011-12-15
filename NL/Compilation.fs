@@ -115,16 +115,12 @@ let emitOpCodes (il:ILGenerator) ilExpr =
             il.Emit(OpCodes.Ldtoken, ty)
             il.Emit(OpCodes.Call, typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|]))
         | Default(ty) ->
-            //start with primitive optimizations
-            if ty = typeof<int32> then
-                emit <| ILExpr.Int32(Unchecked.defaultof<int32>)
-            elif ty = typeof<double> then
-                emit <| ILExpr.Double(Unchecked.defaultof<double>)
-            elif ty = typeof<bool> then
-                emit <| ILExpr.Bool(Unchecked.defaultof<bool>)
-            elif ty = typeof<char> then
-                emit <| ILExpr.Char(Unchecked.defaultof<char>)
-            else //http://source.db4o.com/db4o/trunk/db4o.net/Libs/compact-3.5/System.Linq.Expressions/System.Linq.Expressions/EmitContext.cs
+            if not ty.IsValueType then
+                //although we could technically use initobj to emit a null reference of a non-value type, it is really only
+                //designed for value types and therefore we treat it as null here and don't consider it an optimization
+                //(unless we see some good reason in the optimization phase).
+                emit <| Null(ty)
+            else
                 let loc = il.DeclareLocal(ty)
                 il.Emit(OpCodes.Ldloca, loc)
                 il.Emit(OpCodes.Initobj, ty)

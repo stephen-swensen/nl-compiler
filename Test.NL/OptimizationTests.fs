@@ -266,3 +266,19 @@ let ``varset assign is optimized`` () =
 [<Fact>]
 let ``can't optimize Error case`` () =
     raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> ILTopLevel.Exp |> O.optimize @>
+
+[<Fact>]
+let ``default int32 is optimized to its constant`` () =
+    test <@ C.parseFromString "default[int32]" |> O.optimize = C.parseFromString "0" @>
+
+[<Fact>]
+let ``default double is optimized to its constant`` () =
+    test <@ C.parseFromString "default[double]" |> O.optimize = C.parseFromString "0.0" @>
+
+[<Fact>]
+let ``default char is optimized to its constant`` () =
+    test <@ C.parseFromString "default[char]" |> O.optimize = C.parseFromString "'\000'" @>
+
+[<Fact>]
+let ``default bool is optimized to its constant`` () =
+    test <@ C.parseFromString "default[boolean]" |> O.optimize = C.parseFromString "false" @>

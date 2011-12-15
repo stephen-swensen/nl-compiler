@@ -5,6 +5,12 @@ open System.Reflection
 open Swensen.NL.Ast
 open Swensen.NL.Ail
 
+//module Primitive =
+//    let primitives = [
+//            
+//        ]
+//    let isPrimitive<'a>
+
 ///Functions for calculating primitive type widening
 module NumericTower =
         //todo: refactor this tower stuff!
