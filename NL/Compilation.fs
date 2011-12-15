@@ -12,12 +12,27 @@ open Parser
 type EL = ErrorLogger
 
 let emitOpCodes (il:ILGenerator) ilExpr =
+    let isDefaultOfValueType = function
+        | Default(ty) when ty.IsValueType ->
+            true
+        | _ ->
+            false
+
     //the loop label options is some if we are inside a while loop and gives a point to jump back when encounter continue or break
     let rec emitWith loopLabel lenv ilExpr =
         let emit = emitWith loopLabel lenv
         let emitAll exps =
             for arg in exps do 
                 emit arg
+
+        ///used by VarSet and Let expressions
+        let setLocalVar (local:LocalBuilder) assign =
+            if isDefaultOfValueType assign then
+                il.Emit(OpCodes.Ldloca, local)
+                il.Emit(OpCodes.Initobj, assign.Type)
+            else
+                emit assign
+                il.Emit(OpCodes.Stloc, local)
 
         match ilExpr with
         | Int32 x  -> il.Emit(OpCodes.Ldc_I4, x)
@@ -44,16 +59,14 @@ let emitOpCodes (il:ILGenerator) ilExpr =
             | Gt -> il.Emit(OpCodes.Cgt)
         | ILExpr.Let(name, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
-            emit assign
-            il.Emit(OpCodes.Stloc, local)
+            setLocalVar local assign
             emitWith loopLabel (Map.add name local lenv) body
         | VarGet(name, _) ->
             let local = lenv |> Map.find name
             il.Emit(OpCodes.Ldloc, local)
-        | VarSet(name, instance) ->
+        | VarSet(name, assign) ->
             let local = lenv |> Map.find name
-            emit instance
-            il.Emit(OpCodes.Stloc, local)
+            setLocalVar local assign
         | Coerce(x,ty) ->
             emit x
             let convLookup = 
@@ -169,15 +182,23 @@ let emitOpCodes (il:ILGenerator) ilExpr =
                 il.Emit(OpCodes.Br, endBodyLabel)
             | None ->
                 failwith "invalid break"
-        | StaticFieldSet(fi, assign) ->
-            emit assign
-            il.Emit(OpCodes.Stsfld, fi)
+        | StaticFieldSet(fi, assign) ->            
+            if isDefaultOfValueType assign then
+                il.Emit(OpCodes.Ldsflda, fi)
+                il.Emit(OpCodes.Initobj, assign.Type)
+            else
+                emit assign
+                il.Emit(OpCodes.Stsfld, fi)
         | StaticFieldGet(fi) ->
             il.Emit(OpCodes.Ldsfld, fi)
         | InstanceFieldSet(instance, fi, assign) ->
             emitValueAddressIfApplicable loopLabel lenv instance |> ignore
-            emit assign
-            il.Emit(OpCodes.Stfld, fi)
+            if isDefaultOfValueType assign then
+                il.Emit(OpCodes.Ldflda, fi)
+                il.Emit(OpCodes.Initobj, assign.Type)
+            else
+                emit assign
+                il.Emit(OpCodes.Stfld, fi)
         | InstanceFieldGet(instance, fi) ->
             emitValueAddressIfApplicable loopLabel lenv instance |> ignore
             il.Emit(OpCodes.Ldfld, fi)

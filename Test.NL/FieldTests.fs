@@ -35,3 +35,12 @@ let ``set struct instance field`` () =
 [<Fact>]
 let ``set class instance field`` () =
     test <@ C.eval (Prelude.openAsm + "ngc = Tests.NonGenericClass1() in ngc.instance_field_int <- 3; ngc.instance_field_int") = 3 @>
+
+[<Fact>]
+let ``set class instance field with default of value type`` () =
+    test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_field_decimal3 <- default[decimal]; x.instance_field_decimal3") = 0M @>
+
+[<Fact>]
+let ``set static field with default of value type`` () =
+    //funky 'cause we need to reset sf within the test... maybe unquote needs a "teardown" verion that accepts a fun () -> _
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1.static_field_decimal3 <- default[decimal]; temp = Tests.NonGenericClass1.static_field_decimal3 in Tests.NonGenericClass1.static_field_decimal3 <- decimal(3); temp") = 0M @> //TODO ';' should bind weaker than '<-'
