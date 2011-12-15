@@ -46,7 +46,7 @@ let ``static_property_int_without_setter`` () =
     raisesWith <@ C.eval<obj> (Prelude.openAsm + "Tests.NonGenericClass1.static_property_int_without_setter <- 3") = null @>
         (expectedErrors [|32|])
 
-[<Fact>]
+[<Fact(Skip="todo: show better error message")>]
 let ``static_property_int_without_getter`` () =
     raisesWith <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1.instance_property_int_without_getter") = 0 @>
         (expectedErrors [||])
