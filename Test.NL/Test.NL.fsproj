@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{82730e14-df66-4fe8-9eb6-bdb35c4fca65}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Test.NL</RootNamespace>
+    <AssemblyName>Test.NL</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <Name>Test.NL</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <Tailcalls>false</Tailcalls>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Debug\Test.NL.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <Tailcalls>true</Tailcalls>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Release\Test.NL.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <Tailcalls>false</Tailcalls>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Debug\Test.NL.xml</DocumentationFile>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <Tailcalls>true</Tailcalls>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Release\Test.NL.xml</DocumentationFile>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
+  <ItemGroup>
+    <None Include="packages.config" />
+    <Compile Include="Prelude.fs" />
+    <Compile Include="LiteralTests.fs" />
+    <Compile Include="NumericOpTests.fs" />
+    <Compile Include="VarTests.fs" />
+    <Compile Include="SequentialTests.fs" />
+    <Compile Include="ConstructorTests.fs" />
+    <Compile Include="MethodCallTests.fs" />
+    <Compile Include="IfThenElseTests.fs" />
+    <Compile Include="LogicOpTests.fs" />
+    <Compile Include="ComparisonOpTests.fs" />
+    <Compile Include="CastTests.fs" />
+    <Compile Include="RefAssemblyTests.fs" />
+    <Compile Include="WhileLoopTests.fs" />
+    <Compile Include="TySigTests.fs" />
+    <Compile Include="OptimizationTests.fs" />
+    <Compile Include="OpenNamespaceTests.fs" />
+    <Compile Include="OpenTypeTests.fs" />
+    <Compile Include="PathTests.fs" />
+    <Compile Include="NVTScopingTests.fs" />
+    <Compile Include="FieldTests.fs" />
+    <Compile Include="PropertyTests.fs" />
+    <Compile Include="PathResolutionTests.fs" />
+    <None Include="Test.AssemblyResolveTarget.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FSharp.PowerPack">
+      <HintPath>..\packages\FSPowerPack.Core.Community.2.0.0.0\Lib\Net40\FSharp.PowerPack.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="mscorlib" />
+    <Reference Include="FSharp.Core" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="Unquote">
+      <HintPath>..\..\Unquote\code\Unquote\bin\Release\Unquote.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit">
+      <HintPath>..\packages\xunit.1.8.0.1549\lib\xunit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NL\NL.fsproj">
+      <Name>NL</Name>
+      <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj">
+      <Name>Test.Helpers</Name>
+      <Project>{7fe87916-4378-4556-9931-ba9bea5c0101}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+	     Other similar extension points exist, see Microsoft.Common.targets.
+	<Target Name="BeforeBuild">
+	</Target>
+	<Target Name="AfterBuild">
+	</Target>
+	-->
+</Project>

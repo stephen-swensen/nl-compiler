@@ -1,0 +1,113 @@
+﻿{
+module Swensen.NL.Lexer
+open System
+open Parser
+open Microsoft.FSharp.Text.Lexing
+
+module EM = ErrorMessage
+
+let lexeme lexbuf =
+    LexBuffer<char>.LexemeString lexbuf
+
+let range (lexbuf:LexBuffer<char>) =
+    PositionRange(lexbuf.StartPos,lexbuf.EndPos)
+
+let keywords =
+    [
+        "open", OPEN
+        "in", IN
+        "if", IF
+        "then", THEN
+        "else", ELSE
+        "null", NULL
+        "type", TYPE
+        "true", BOOL(true)
+        "false", BOOL(false)
+        "while", WHILE
+        "break", BREAK
+        "continue", CONTINUE
+        "default", DEFAULT
+    ] |> Map.ofList
+}
+
+// These are some regular expression definitions
+let digit = ['0'-'9']
+let alpha = (['a' - 'z'] | ['A' - 'Z'])
+let whitespace = [' ' '\t' ]
+let newline = ('\n' | '\r' '\n')
+
+rule tokenize = parse
+| whitespace { tokenize lexbuf }
+| newline    { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
+
+// math
+| "+"   { PLUS }
+| "-"   { MINUS }
+| "*"   { TIMES }
+| "**"  { POW }
+| "/"   { DIV }
+
+//logic
+| "!"  { BANG }
+| "&&" { ANDAND }
+| "||" { OROR }
+//| "^"  { XOR }
+
+//compairson
+| "!=" { NOTEQ }
+| "==" { EQEQ }
+| ">"  { GT }
+| "<"  { LT }
+| ">=" { GTEQ }
+| "<=" { LTEQ }
+
+//various
+| "[" { LBRACKET }
+| "]" { RBRACKET }
+| "{" { LBRACE }
+| "}" { RBRACE }
+| "(" { LPAREN }
+| ")" { RPAREN }
+| "." { DOT }
+| "," { COMMA }
+| ";" { SEMICOLON }
+| "="  { EQ }
+| "<-" { SET }
+
+//string literal
+| '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
+
+//char literal
+| ''' _ ''' { CHAR (let s = lexeme lexbuf in s.[1]) }
+
+// Numeric constants
+| digit+							  
+    {
+        let input = lexeme lexbuf
+        match System.Int32.TryParse(input) with
+        | true, value -> INT32 (value)
+        | _ ->
+            EM.Int32_literal_out_of_range (range lexbuf) input
+            INT32 (0) //error recovery
+    }
+| digit+('.'digit+)?(['e''E']digit+)? 
+    { 
+        let input = lexeme lexbuf
+        match System.Double.TryParse(input) with
+        | true, value -> DOUBLE (value)
+        | _ ->
+            EM.Double_literal_out_of_range (range lexbuf) input
+            DOUBLE (0.0) //error recovery
+    }
+
+// Names
+| (alpha | '_')+(digit | alpha | '_')* 
+    { 
+        let input = (lexeme lexbuf).ToLower()
+        match keywords |> Map.tryFind input with
+        | Some(token) -> token
+        | None -> IDENT(input) 
+    }
+
+// EOF
+| eof { EOF }

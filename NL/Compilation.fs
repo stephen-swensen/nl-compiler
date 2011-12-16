@@ -1,0 +1,373 @@
+﻿module Swensen.NL.Compilation
+open Swensen.NL.Ail
+
+open System
+open System.Reflection
+open System.Reflection.Emit
+
+open Microsoft.FSharp.Text.Lexing
+open Lexer
+open Parser
+
+type EL = ErrorLogger
+
+let emitOpCodes (il:ILGenerator) ilExpr =
+    let isDefaultOfValueType = function
+        | Default(ty) when ty.IsValueType ->
+            true
+        | _ ->
+            false
+
+    //the loop label options is some if we are inside a while loop and gives a point to jump back when encounter continue or break
+    let rec emitWith loopLabel lenv ilExpr =
+        let emit = emitWith loopLabel lenv
+        let emitAll exps =
+            for arg in exps do 
+                emit arg
+
+        ///used by VarSet and Let expressions
+        let setLocalVar (local:LocalBuilder) assign =
+            if isDefaultOfValueType assign then
+                il.Emit(OpCodes.Ldloca, local)
+                il.Emit(OpCodes.Initobj, assign.Type)
+            else
+                emit assign
+                il.Emit(OpCodes.Stloc, local)
+
+        match ilExpr with
+        | Int32 x  -> il.Emit(OpCodes.Ldc_I4, x)
+        | Double x -> il.Emit(OpCodes.Ldc_R8, x)
+        | String x -> il.Emit(OpCodes.Ldstr, x)
+        | Char x   -> il.Emit(OpCodes.Ldc_I4_S, byte x)
+        | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
+        | Null ty  -> il.Emit(OpCodes.Ldnull)
+        | UMinus(x,_) -> 
+            emit x
+            il.Emit(OpCodes.Neg)
+        | NumericBinop(op,x,y,_) -> 
+            emitAll [x;y]
+            match op with
+            | ILNumericBinop.Plus  -> il.Emit(OpCodes.Add)
+            | ILNumericBinop.Minus -> il.Emit(OpCodes.Sub)
+            | ILNumericBinop.Times -> il.Emit(OpCodes.Mul)
+            | ILNumericBinop.Div   -> il.Emit(OpCodes.Div)
+        | ComparisonBinop(op,x,y) -> 
+            emitAll [x;y]
+            match op with
+            | Eq -> il.Emit(OpCodes.Ceq)
+            | Lt -> il.Emit(OpCodes.Clt)
+            | Gt -> il.Emit(OpCodes.Cgt)
+        | ILExpr.Let(name, assign, body,_) ->
+            let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
+            setLocalVar local assign
+            emitWith loopLabel (Map.add name local lenv) body
+        | VarGet(name, _) ->
+            let local = lenv |> Map.find name
+            il.Emit(OpCodes.Ldloc, local)
+        | VarSet(name, assign) ->
+            let local = lenv |> Map.find name
+            setLocalVar local assign
+        | Coerce(x,ty) ->
+            emit x
+            let convLookup = 
+                [
+                    //typeof<>, OpCodes.Conv_I
+                    typeof<int8>, OpCodes.Conv_I1
+                    typeof<int16>, OpCodes.Conv_I2
+                    typeof<int32>, OpCodes.Conv_I4
+                    typeof<int64>, OpCodes.Conv_I8
+                    typeof<single>, OpCodes.Conv_R4
+                    typeof<double>, OpCodes.Conv_R8
+                    //typeof<>, OpCodes.Conv_U
+                    typeof<uint8>, OpCodes.Conv_U1
+                    typeof<uint16>, OpCodes.Conv_U2
+                    typeof<uint32>, OpCodes.Conv_U4
+                    typeof<uint64>, OpCodes.Conv_U8
+                ] |> dict //can't use Map because Type does not support "comparison" constraints
+
+            match convLookup.TryGetValue ty with
+            | true, oc ->
+                il.Emit(oc)
+            | _ ->
+                failwithf "unsupported coersion: %A" ty //shouldn't be possible since already ty checked
+        | Cast(x,ty) -> //precondition: x.Type <> ty
+            emit x
+            if x.Type.IsValueType then
+                il.Emit(OpCodes.Box,x.Type)
+                if ty <> typeof<obj> then //box value type to an interface
+                    il.Emit(OpCodes.Castclass, ty)
+            elif ty.IsValueType then
+                il.Emit(OpCodes.Unbox_Any, ty)
+            else
+                il.Emit(OpCodes.Castclass, ty)
+        | StaticCall(meth,args) ->
+            args |> List.iter (emit)
+            il.Emit(OpCodes.Call, meth)
+        | InstanceCall(instance,meth,args) ->
+            let isValueAddress = emitValueAddressIfApplicable loopLabel lenv instance
+            if not isValueAddress && instance.Type.IsValueType then
+                let loc = il.DeclareLocal(instance.Type)
+                il.Emit(OpCodes.Stloc, loc)
+                il.Emit(OpCodes.Ldloca, loc)
+            
+            emitAll args
+            
+            if instance.Type.IsValueType then
+                il.Emit(OpCodes.Call, meth)
+            else
+                il.Emit(OpCodes.Callvirt, meth)
+        | Sequential(x,y,_) ->
+            emit x
+            if x.Type <> typeof<System.Void> then il.Emit(OpCodes.Pop)
+            emit y
+        | Ctor(ctor, args, _) -> 
+            emitAll args
+            il.Emit(OpCodes.Newobj, ctor)
+        | Typeof(ty) ->
+            //learned through C# ildasm
+            il.Emit(OpCodes.Ldtoken, ty)
+            il.Emit(OpCodes.Call, typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|]))
+        | Default(ty) ->
+            if not ty.IsValueType then
+                //although we could technically use initobj to emit a null reference of a non-value type, it is really only
+                //designed for value types and therefore we treat it as null here and don't consider it an optimization
+                //(unless we see some good reason in the optimization phase).
+                emit <| Null(ty)
+            else
+                let loc = il.DeclareLocal(ty)
+                il.Emit(OpCodes.Ldloca, loc)
+                il.Emit(OpCodes.Initobj, ty)
+                il.Emit(OpCodes.Ldloc, loc)
+        | LogicalNot(x) ->
+            emit x
+            il.Emit(OpCodes.Ldc_I4_0)
+            il.Emit(OpCodes.Ceq)
+        | IfThen(x,y) ->
+            let endIfLabel = il.DefineLabel()
+            emit x
+            il.Emit(OpCodes.Brfalse_S, endIfLabel)
+            emit y
+            il.MarkLabel(endIfLabel)
+        | IfThenElse(x,y,z,_) ->
+            let endIfLabel = il.DefineLabel()
+            let beginElseLabel = il.DefineLabel()
+            emit x
+            il.Emit(OpCodes.Brfalse_S, beginElseLabel)
+            emit y
+            il.Emit(OpCodes.Br, endIfLabel)
+            il.MarkLabel(beginElseLabel)
+            emit z
+            il.MarkLabel(endIfLabel)
+        | Nop -> ()
+        | WhileLoop(condition, body) ->
+            let beginConditionLabel = il.DefineLabel()
+            let endBodyLabel = il.DefineLabel()
+            il.MarkLabel(beginConditionLabel)
+            emit condition
+            il.Emit(OpCodes.Brfalse_S, endBodyLabel)
+            emitWith (Some(beginConditionLabel, endBodyLabel)) lenv body
+            if body.Type <> typeof<Void> then
+                il.Emit(OpCodes.Pop)
+            il.Emit(OpCodes.Br, beginConditionLabel)
+            il.MarkLabel(endBodyLabel)
+        | Continue ->
+            match loopLabel with
+            | Some(beginConditionLabel,_) ->
+                il.Emit(OpCodes.Br, beginConditionLabel)
+            | None ->
+                failwith "invalid continue"
+        | Break ->
+            match loopLabel with
+            | Some(_, endBodyLabel) ->
+                il.Emit(OpCodes.Br, endBodyLabel)
+            | None ->
+                failwith "invalid break"
+        | StaticFieldSet(fi, assign) ->            
+            if isDefaultOfValueType assign then
+                il.Emit(OpCodes.Ldsflda, fi)
+                il.Emit(OpCodes.Initobj, assign.Type)
+            else
+                emit assign
+                il.Emit(OpCodes.Stsfld, fi)
+        | StaticFieldGet(fi) ->
+            il.Emit(OpCodes.Ldsfld, fi)
+        | InstanceFieldSet(instance, fi, assign) ->
+            emitValueAddressIfApplicable loopLabel lenv instance |> ignore
+            if isDefaultOfValueType assign then
+                il.Emit(OpCodes.Ldflda, fi)
+                il.Emit(OpCodes.Initobj, assign.Type)
+            else
+                emit assign
+                il.Emit(OpCodes.Stfld, fi)
+        | InstanceFieldGet(instance, fi) ->
+            emitValueAddressIfApplicable loopLabel lenv instance |> ignore
+            il.Emit(OpCodes.Ldfld, fi)
+        | ILExpr.Error _ ->
+            failwith "Should not be emitting opcodes for an ilExpr with errors"
+
+    ///e.g. Given: SomeVar.field <- 3, we need the (ADDRESS OF)SomeVar.(ADDRESS OF)field <- 3 when SomeVar and field are value types (if they are object types,
+    ///we are already getting the address by nature.
+    and emitValueAddressIfApplicable loopLabel lenv expr : bool =
+        match expr with
+        | InstanceFieldGet(instance, fi) when fi.FieldType.IsValueType ->
+            emitValueAddressIfApplicable loopLabel lenv instance |> ignore
+            il.Emit(OpCodes.Ldflda, fi)
+            true
+        | StaticFieldGet(fi) when fi.FieldType.IsValueType ->
+            il.Emit(OpCodes.Ldsflda, fi)
+            true
+        | VarGet(name, ty) when ty.IsValueType ->
+            let local = lenv |> Map.find name
+            il.Emit(OpCodes.Ldloca, local)
+            true
+        | _ -> 
+            emitWith loopLabel lenv expr
+            false
+    //and emitValueInitForSetIfApplicable loopLabel
+
+    emitWith None Map.empty ilExpr |> ignore
+
+///parse from the lexbuf with the given semantic environment
+let parseWith env lexbuf =
+    try 
+        Parser.start Lexer.tokenize lexbuf 
+        |> SemanticAnalysis.tycheckWith env
+    with
+    | CompilerInterruptException ->
+        ILTopLevel.Error
+    //fslex/yacc do not use specific exception types
+    | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
+        EL.ActiveLogger.Log
+            (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Syntactic, ErrorLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
+        ILTopLevel.Error
+    | e ->
+        EL.ActiveLogger.Log
+            (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Internal, ErrorLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
+        ILTopLevel.Error
+
+///parse from the string with the given semantic environment
+let parseFromStringWith env code =
+    let lexbuf = 
+        let lexbuf = LexBuffer<char>.FromString(code)
+        lexbuf.EndPos <- { pos_bol = 0
+                           pos_fname=""
+                           pos_cnum=1
+                           pos_lnum=1 }
+        lexbuf
+
+    parseWith env lexbuf
+
+///parseFromString with the "default" environment
+let parseFromString = parseFromStringWith SemanticEnvironment.Default
+
+
+
+//should have "tryEval" which doesn't throw?
+
+///Evaluate an NL code string using the default environment.
+///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
+let eval<'a> code : 'a = 
+    ///Create a dynamic method from a typed expression using the default environment
+    let mkDm (ilExpr:ILExpr) =
+        let dm = DynamicMethod("Eval", ilExpr.Type, null)
+        let il = dm.GetILGenerator()
+        emitOpCodes il ilExpr
+        il.Emit(OpCodes.Ret)
+        dm
+
+    EL.InstallDefaultLogger() //may want to switch back to previous logger when exiting eval
+
+    let ilTopLevel = parseFromString code 
+    match EL.ActiveLogger.ErrorCount with
+    | 0 ->
+        let ilExpr =
+            match ilTopLevel with
+            | ILTopLevel.Exp(x) -> x
+            | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
+            | _ -> 
+                raise (EvaluationException("not a valid eval expression", [||]))
+
+        let dm = mkDm ilExpr
+        dm.Invoke(null,null) |> unbox
+    | _ ->
+        raise (EvaluationException("compiler errors", EL.ActiveLogger.Errors |> Seq.toArray))
+
+//TODO: the following methods are used for nlc.exe and nli.exe. in the future we will have 
+//specialized methodss for the Compiler service, vs. nlc.exe, vs. nli.exe with APPRORPIATE ERRORLOGGERS installed.
+
+//todo: currently this function compilies an expression to a single method
+//      set as the entry point of an assembly, obviously this needs to evolve.
+///ast -> assemblyName -> unit
+let compileFromAil ail asmName =
+    let asmFileName = asmName + ".exe"
+    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
+    let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".netmodule", asmFileName, false) //need to specify asmFileName here!
+    let tyBuilder = modBuilder.DefineType(asmName + ".Application", TypeAttributes.Public)
+    let methBuilder = tyBuilder.DefineMethod("Run", MethodAttributes.Public ||| MethodAttributes.Static, typeof<System.Void>, null)
+    
+    let ilExpr =
+        match ail with
+        | ILTopLevel.Exp(x) -> x
+        | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
+        | _ -> 
+            failwithf "not a valid compiler expression: %A" ail //todo: remove
+
+    let il = methBuilder.GetILGenerator()
+    emitOpCodes il ilExpr
+    il.Emit(OpCodes.Ret)
+
+    tyBuilder.CreateType() |> ignore
+    asmBuilder.SetEntryPoint(methBuilder, PEFileKinds.ConsoleApplication)
+    asmBuilder.Save(asmFileName)
+
+///Compile the given source code string into an assembly
+///code -> assemblyName -> unit
+let compileFromString = 
+    parseFromString>>compileFromAil
+
+///Compile all the given source code files into a single assembly
+///fileNames -> assemblyName -> unit
+let compileFromFiles fileNames =
+    fileNames
+    |> Seq.map System.IO.File.ReadAllText
+    |> String.concat System.Environment.NewLine
+    //|> (fun text -> printfn "%s" text; text)
+    |> compileFromString
+
+//type NliState =
+//    {
+//        Assemblies: Assembly list
+//        Namespaces: string list
+//        Variables: (string,(obj*Type)) Map
+//    }
+//    with
+//        static member Empty = {Assemblies = []; Namespaces=[]; Variables=Map.empty}
+//        static member Default =
+//            let se = Semant.SemanticEnvironment.Default
+//            { NliState.Empty with Assemblies=se.Assemblies; Namespaces=se.Namespaces }
+//
+/////The NL interactive
+//type Nli() = 
+//    ///head of list is most recent, this should not be externally mutable
+//    let mutable historicalState: NliState list = []
+//    ///the current state, this can be externally mutable if so desired
+//    let mutable currentState: NliState = NliState.Default
+//
+//    ///evaluate the code string in the Nli environment
+//    let eval code =
+//        //WE NEED THE RAW AST FIRST
+//        let lexbuf = 
+//            let lexbuf = LexBuffer<char>.FromString(code)
+//            lexbuf.EndPos <- { pos_bol = 0
+//                               pos_fname=""
+//                               pos_cnum=1
+//                               pos_lnum=1 }
+//            lexbuf
+//
+//        let ast = parseFromStringWith { Semant.SemanticEnvironment.Empty with Assemblies=currentState.Assemblies; Namespaces=currentState.Namespaces; Variables=currentState.Variables |> Map.map (fun _ (_,ty)->ty) } code
+//        let dm = System.Reflection.Emit.DynamicMethod("Eval", ast.Type, null)
+//            let il = dm.GetILGenerator()
+//            emitOpCodes il (Return(ast, ast.Type))
+//            dm
+//
+//        for a in currentState.Assemblies do
