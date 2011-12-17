@@ -65,6 +65,12 @@ let ``literal typeof generic type`` () =
     test <@ C.eval "type[dictionary[string,int32]]" = typeof<Dictionary<string,int>> @>
 
 [<Fact>]
+let ``literal typeof could not resolve type`` () =
+    raisesWith 
+        <@ C.eval<obj> "type[INVALID_TYPE]" @>
+        (expectedErrors [|1|])
+
+[<Fact>]
 let ``resolve simple fully qualified generic signature in null expression`` () =
     test <@ C.eval "null[system.collections.generic.list[system.int32]]" = null @>
 
