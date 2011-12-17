@@ -67,3 +67,36 @@ let ``in place mutation of a instance class field`` () =
 [<Fact>]
 let ``in place mutation of a instance struct field`` () =
     test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_field_ngs1.instance_field_int <- 3; x.instance_field_ngs1.instance_field_int") = 3 @>
+
+[<Fact>]
+let ``incompatible static field assignment type`` () =
+    raisesWith <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1.static_field_int <- object()") @>
+        (expectedErrors [|30|])
+
+[<Fact>]
+let ``incompatible instance field assignment type`` () =
+    raisesWith <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_field_int <- object()") @>
+        (expectedErrors [|30|])
+
+[<Fact>]
+let ``implicit static field assignment type down cast`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "Tests.NonGenericClass1.static_field_object <- 3; 
+                     temp = Tests.NonGenericClass1.static_field_object in 
+                     Tests.NonGenericClass1.static_field_object <- 0; 
+                     temp[int32]") = 3 @>
+
+[<Fact>]
+let ``implicit instance field assignment type down cast`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "x = Tests.NonGenericClass1() in
+                     x.instance_field_object <- 3; 
+                     x.instance_field_object[int32]") = 3 @>
+
+[<Fact(Skip="currently not supported")>] //should have a version for instance too
+let ``implicit static field assignment type coersion`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "Tests.NonGenericClass1.static_field_double <- 3; 
+                     temp = Tests.NonGenericClass1.static_field_double in 
+                     Tests.NonGenericClass1.static_field_double <- 0.0; 
+                     temp") @>
