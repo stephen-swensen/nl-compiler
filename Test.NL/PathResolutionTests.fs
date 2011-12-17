@@ -26,3 +26,7 @@ let ``expr get class field then call method`` () =
 [<Fact>]
 let ``expr get class field then get class property then call method`` () =
     test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_ngc2.instance_property_ngs1.InstanceNonGenericMethod()") = 0 @>
+
+[<Fact>]
+let ``set instance field of field of an expression is valid`` () = //but do we really want it to be?
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_ngs1.instance_field_int <- 0") = null @>
