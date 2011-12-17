@@ -61,3 +61,37 @@ let ``set static_property_int_without_getter raises good error messaage`` () =
 [<Fact>] //Csharp forbids this, something we might consider
 let ``inert attempt at in place mutation of struct property`` () =
     test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_ngs1.instance_property_int <- 3; x.instance_property_ngs1.instance_property_int") = 0 @>
+
+
+[<Fact>]
+let ``incompatible static property assignment type`` () =
+    raisesWith <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1.static_property_int <- object()") @>
+        (expectedErrors [|31|])
+
+[<Fact>]
+let ``incompatible instance property assignment type`` () =
+    raisesWith <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int <- object()") @>
+        (expectedErrors [|31|])
+
+[<Fact>]
+let ``implicit static property assignment type down cast`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "Tests.NonGenericClass1.static_property_object <- 3; 
+                     temp = Tests.NonGenericClass1.static_property_object in 
+                     Tests.NonGenericClass1.static_property_object <- 0; 
+                     temp[int32]") = 3 @>
+
+[<Fact>]
+let ``implicit instance property assignment type down cast`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "x = Tests.NonGenericClass1() in
+                     x.instance_property_object <- 3; 
+                     x.instance_property_object[int32]") = 3 @>
+
+[<Fact(Skip="currently not supported")>] //should have a version for instance too
+let ``implicit static property assignment type coersion`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "Tests.NonGenericClass1.static_property_double <- 3; 
+                     temp = Tests.NonGenericClass1.static_property_double in 
+                     Tests.NonGenericClass1.static_property_double <- 0.0; 
+                     temp") @>
