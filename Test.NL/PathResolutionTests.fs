@@ -36,3 +36,9 @@ let ``expr get class field then get class property then call method`` () =
 [<Fact>]
 let ``set instance field of field of an expression is valid`` () = //but do we really want it to be?
     test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_ngs1.instance_field_int <- 0") = null @>
+
+[<Fact>]
+let ``instance field or property get on expression not found`` () = //but do we really want it to be?
+    raisesWith 
+        <@ C.eval (Prelude.openPrefix + "NonGenericClass1().INVALID_FIELD_OR_PROPERTY; ()") = null @>
+        (expectedErrors [|29|])

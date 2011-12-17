@@ -40,6 +40,18 @@ let ``call generic static method on generic type`` () =
     test <@ C.eval (openPrefix + "StaticGenericClass1[string].StaticGenericMethod[int32]()") = 0 @>
 
 [<Fact>]
+let ``call generic static method on invalid generic type`` () =
+    raisesWith 
+        <@ C.eval (openPrefix + "INVALID_TYPE[string].StaticGenericMethod[int32]()") = 0 @>
+        (expectedErrors [|1|])
+
+[<Fact>]
+let ``call invalid generic static method on generic type`` () =
+    raisesWith 
+        <@ C.eval (openPrefix + "StaticGenericClass1[string].INVALID_METHOD[int32]()") = 0 @>
+        (expectedErrors [|11|])
+
+[<Fact>]
 let ``call generic static method with explicit generic args and no type-wise overloads on non-generic static type`` () = //these could be inferable
     test <@ C.eval "tuple.create[int32,datetime](3, datetime())" = (3, System.DateTime()) @>
 
