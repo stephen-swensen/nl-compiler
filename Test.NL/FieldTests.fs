@@ -100,3 +100,7 @@ let ``implicit static field assignment type coersion`` () =
                      temp = Tests.NonGenericClass1.static_field_double in 
                      Tests.NonGenericClass1.static_field_double <- 0.0; 
                      temp") @>
+
+[<Fact>]
+let ``set instance field of an expression is valid`` () = //but do we really want it to be?
+    test <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_int <- 0") = null @>
