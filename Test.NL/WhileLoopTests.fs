@@ -65,3 +65,7 @@ let ``condition is not boolean error`` () =
     raisesWith 
         <@ C.eval "while 'c' { () }" @>
         (expectedErrors [|6|])
+
+[<Fact>]
+let ``while loop with non void body discards value from the IL stack`` () =
+    test <@ C.eval "x=0 in while x<5 { x<-x+1; 3 }; x" = 5 @>
