@@ -80,7 +80,7 @@ let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[])
             |> Seq.toArray
         match possibleMeths.Length with
         | 1 -> Some(possibleMeths.[0])
-        | _ -> None
+        | _ -> None //i.e. ambiguous
 
 let tryResolveOpImplicit, tryResolveOpExplicit =
     let tryResolveConversionOp name (onty:Type) fromty toty =
