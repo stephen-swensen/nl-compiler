@@ -47,6 +47,10 @@ namespace Tests
 
         public static object static_property_object { get; set; }
         public object instance_property_object { get; set; }
+
+        public static int same_name_different_value = 1;
+
+        public static int same_name_different_kind = 0;
     }
 
     public class NonGenericClass2
@@ -55,6 +59,9 @@ namespace Tests
         public int instance_field_int = 0;
         public NonGenericStruct1 instance_property_ngs1 { get { return new NonGenericStruct1(); } }
         public int InstanceNonGenericMethod() { return 0; }
+
+        public static int same_name_different_value = 2;
+        public static int same_name_different_kind() { return 0; }
     }
 
     public struct NonGenericStruct1
