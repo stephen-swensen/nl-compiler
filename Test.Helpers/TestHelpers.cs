@@ -20,6 +20,8 @@ namespace Tests
         public static int static_property_int { get { return static_field_int; } set { static_field_int = value; } }
         public static int static_field_int = 0;
         public static decimal static_field_decimal3 = 3M;
+        public static NonGenericStruct1 static_field_ngs1 = new NonGenericStruct1();
+        public NonGenericStruct1 instance_field_ngs1 = new NonGenericStruct1();
 
         public static NonGenericClass1 static_field_ngc1 = new NonGenericClass1();
         public NonGenericClass2 instance_field_ngc2 = new NonGenericClass2();
