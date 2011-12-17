@@ -36,17 +36,24 @@ let ``instance property has not setter`` () =
     raisesWith <@ C.eval<obj> (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int_without_setter <- 3") = null @>
         (expectedErrors [|32|])
 
+let ``get instance property has not getter raises eval exception`` () =
+    raises<EvaluationException> <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int_without_getter") @>
+
 [<Fact (Skip="telling me not found instead of doesn't have getter")>]
-let ``instance property has not getter`` () =
+let ``get instance property has not getter`` () =
     raisesWith <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int_without_getter") = 0 @>
         (expectedErrors [||])
 
 [<Fact>]
-let ``static_property_int_without_setter`` () =
+let ``set static_property_int_without_setter`` () =
     raisesWith <@ C.eval<obj> (Prelude.openAsm + "Tests.NonGenericClass1.static_property_int_without_setter <- 3") = null @>
         (expectedErrors [|32|])
 
+[<Fact>]
+let ``get static_property_int_without_getter raises evaluation exception`` () =
+    raises<EvaluationException> <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1.instance_property_int_without_getter") @>
+
 [<Fact(Skip="todo: show better error message")>]
-let ``static_property_int_without_getter`` () =
+let ``set static_property_int_without_getter raises good error messaage`` () =
     raisesWith <@ C.eval (Prelude.openAsm + "Tests.NonGenericClass1.instance_property_int_without_getter") = 0 @>
         (expectedErrors [||])
