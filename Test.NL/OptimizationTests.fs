@@ -282,3 +282,27 @@ let ``default char is optimized to its constant`` () =
 [<Fact>]
 let ``default bool is optimized to its constant`` () =
     test <@ C.parseFromString "default[boolean]" |> O.optimize = C.parseFromString "false" @>
+
+[<Fact>]
+let ``default non primitive is not optimized`` () =
+    test <@ let x = C.parseFromString "default[object]" in x |> O.optimize = x @>
+
+[<Fact>]
+let ``static field set assign is optimized`` () =
+    test <@ C.parseFromString (openPrefix + "NonGenericClass1.static_field_int <- 1 + 1") |> O.optimize = C.parseFromString (openPrefix + "NonGenericClass1.static_field_int <- 2") @>
+
+[<Fact>]
+let ``assign of instance field set is optimized`` () =
+    test <@ C.parseFromString (openPrefix + "x = NonGenericClass1() in x.instance_field_int <- 1 + 1") |> O.optimize = C.parseFromString (openPrefix + "x = NonGenericClass1() in x.instance_field_int <- 2") @>
+
+[<Fact(Skip="not sure how to find an example to show this")>]
+let ``instance of instance field set is optimized`` () =
+    ()
+
+[<Fact(Skip="not sure how to find an example to show this")>]
+let ``instance of instance field get is optimized`` () =
+    ()
+
+[<Fact>] //to at least test path of instance field get even though we can't test the instance actually being optimized
+let ``instance of instance field get is valid`` () =
+    test <@ C.parseFromString (openPrefix + "x = NonGenericClass1() in x.instance_field_int") |> O.optimize = C.parseFromString (openPrefix + "x = NonGenericClass1() in x.instance_field_int") @>
