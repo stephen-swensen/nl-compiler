@@ -43,3 +43,27 @@ let ``set class instance field`` () =
 [<Fact>]
 let ``set class instance field with default of value type`` () =
     test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_field_decimal3 <- default[decimal]; x.instance_field_decimal3") = 0M @>
+
+[<Fact>]
+let ``in place mutation of a static class field`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "Tests.NonGenericClass1.static_field_ngc1.instance_field_int <- 3; 
+                     temp = Tests.NonGenericClass1.static_field_ngc1.instance_field_int in
+                     Tests.NonGenericClass1.static_field_ngc1.instance_field_int <- 0;
+                     temp") = 3 @>
+
+[<Fact>]
+let ``in place mutation of a static struct field`` () =
+    test <@ C.eval (Prelude.openAsm + 
+                    "Tests.NonGenericClass1.static_field_ngs1.instance_field_int <- 3; 
+                     temp = Tests.NonGenericClass1.static_field_ngs1.instance_field_int in
+                     Tests.NonGenericClass1.static_field_ngs1.instance_field_int <- 0;
+                     temp") = 3 @>
+
+[<Fact>]
+let ``in place mutation of a instance class field`` () =
+    test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_field_ngc2.instance_field_int <- 3; x.instance_field_ngc2.instance_field_int") = 3 @>
+
+[<Fact>]
+let ``in place mutation of a instance struct field`` () =
+    test <@ C.eval (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_field_ngs1.instance_field_int <- 3; x.instance_field_ngs1.instance_field_int") = 3 @>
