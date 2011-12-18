@@ -14,6 +14,8 @@ namespace Tests
         public void InstanceVoidMethod() { }
         public int InstanceNonVoidMethod() { return 0; }
 
+        public int InstanceGenericMethodWithThreeTypeArgs<T,R,S>() { return 0; }
+
         //to test shadowing
         public static int Stopwatch() { return 0; }
 
