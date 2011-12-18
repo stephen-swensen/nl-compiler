@@ -42,3 +42,27 @@ let ``instance field or property get on expression not found`` () = //but do we 
     raisesWith 
         <@ C.eval (Prelude.openPrefix + "NonGenericClass1().INVALID_FIELD_OR_PROPERTY; ()") = null @>
         (expectedErrors [|29|])
+
+[<Fact>]
+let ``instance method of a var`` () =
+    test <@ C.eval (Prelude.openPrefix + "x = NonGenericClass1() in x.InstanceNonVoidMethod()") = 0 @>
+
+[<Fact>]
+let ``instance method of a vars instance field`` () =
+    test <@ C.eval (Prelude.openPrefix + "x = NonGenericClass1() in x.instance_field_int.ToString()") = "0" @>
+
+[<Fact>]
+let ``instance method of a vars instance property`` () =
+    test <@ C.eval (Prelude.openPrefix + "x = NonGenericClass1() in x.instance_property_int.ToString()") = "0" @>
+
+[<Fact>]
+let ``instance method of static field`` () =
+    test <@ C.eval (Prelude.openPrefix + "NonGenericClass1.static_field_int.ToString()") = "0" @>
+
+[<Fact>]
+let ``instance method of static property`` () =
+    test <@ C.eval (Prelude.openPrefix + "NonGenericClass1.static_property_int.ToString()") = "0" @>
+
+[<Fact>]
+let ``instance method of static fields instance field`` () =
+    test <@ C.eval (Prelude.openPrefix + "NonGenericClass1.static_field_ngs1.instance_field_int.ToString()") = "0" @>
