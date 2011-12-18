@@ -72,3 +72,7 @@ let ``instance method of static property not found`` () = //but do we really wan
     raisesWith 
         <@ C.eval (Prelude.openPrefix + "NonGenericClass1.static_property_int.INVALID()") @>
         (expectedErrors [|10|])
+
+[<Fact>]
+let ``long var name instance call`` () =
+    test <@ C.eval (Prelude.openPrefix + "x.x.x.x = 0 in x.x.x.x.tostring()") = "0" @>
