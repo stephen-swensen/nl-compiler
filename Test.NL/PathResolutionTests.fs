@@ -66,3 +66,9 @@ let ``instance method of static property`` () =
 [<Fact>]
 let ``instance method of static fields instance field`` () =
     test <@ C.eval (Prelude.openPrefix + "NonGenericClass1.static_field_ngs1.instance_field_int.ToString()") = "0" @>
+
+[<Fact>]
+let ``instance method of static property not found`` () = //but do we really want it to be?
+    raisesWith 
+        <@ C.eval (Prelude.openPrefix + "NonGenericClass1.static_property_int.INVALID()") @>
+        (expectedErrors [|10|])
