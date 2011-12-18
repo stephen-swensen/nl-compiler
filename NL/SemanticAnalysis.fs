@@ -448,55 +448,61 @@ let rec tycheckWith env synTopLevel =
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let genericTyArgs = resolveTySigs env genericTyArgs
 
-            let rec loop = function
-                | [] -> 
-                    EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text //TODO: may not be accurate any more!
-                    abort() //need error message too!
-                | hd::tl ->
-                    match hd with
-                    | NVT.Variable(name,ty) when name = path.LeadingPartsText -> //instance method call on variable
-                        match tryResolveMethod ty path.LastPartText instanceFlags genericTyArgs argTys with
-                        | None -> 
-                            EM.Invalid_instance_method pos path.LastPartText ty.Name (sprintTypes argTys)
-                            abort()
-                        | Some(meth) -> 
-                            ILExpr.InstanceCall(ILExpr.VarGet(path.LeadingPartsText,ty), meth, castArgsIfNeeded (meth.GetParameters()) args)
-                    | NVT.Namespace(ns) ->
-                        match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
-                        | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                            match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
+            let resolveFullPathCall (path:Path) genericTyArgs args argTys pos =
+                let attempt =
+                    env.NVTs
+                    |> Seq.tryPick (function
+                        | NVT.Variable(name,ty) when name = path.LeadingPartsText -> //instance method call on variable
+                            match tryResolveMethod ty path.LastPartText instanceFlags genericTyArgs argTys with
                             | None -> 
-                                EM.Invalid_static_method pos path.LastPartText ty.Name (sprintTypes argTys)
+                                EM.Invalid_instance_method pos path.LastPartText ty.Name (sprintTypes argTys)
                                 abort()
                             | Some(meth) -> 
-                                ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
-                        | None -> //constructors (generic or non-generic)
-                            match tryResolveType [ns] env.Assemblies path.Text genericTyArgs with
-                            | None -> 
-                                loop tl
-                            | Some(ty) ->
-                                if ty.IsValueType && args.Length = 0 then
-                                    if ty = typeof<System.Void> then
-                                        EM.Void_cannot_be_instantiated pos
-                                        ILExpr.Error(ty)
+                                Some(ILExpr.InstanceCall(ILExpr.VarGet(path.LeadingPartsText,ty), meth, castArgsIfNeeded (meth.GetParameters()) args))
+                        | NVT.Namespace(ns) ->
+                            match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
+                            | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
+                                match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
+                                | None -> 
+                                    EM.Invalid_static_method pos path.LastPartText ty.Name (sprintTypes argTys)
+                                    abort()
+                                | Some(meth) -> 
+                                    Some(ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args))
+                            | None -> //constructors (generic or non-generic)
+                                match tryResolveType [ns] env.Assemblies path.Text genericTyArgs with
+                                | None -> 
+                                    None
+                                | Some(ty) ->
+                                    if ty.IsValueType && args.Length = 0 then
+                                        if ty = typeof<System.Void> then
+                                            EM.Void_cannot_be_instantiated pos
+                                            Some(ILExpr.Error(ty))
+                                        else
+                                            Some(ILExpr.Default(ty))
                                     else
-                                        ILExpr.Default(ty)
-                                else
-                                    match ty.GetConstructor(argTys) with
-                                    | null -> 
-                                        EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
-                                        ILExpr.Error(ty)
-                                    | ctor ->
-                                        ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
-                    | NVT.Type(ty) when path.IsSinglePart -> //static methods of an open type
-                        match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
-                        | Some(meth) ->
-                            ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
-                        | None ->
-                            loop tl
-                    | _ ->
-                        loop tl
-            loop env.NVTs
+                                        match ty.GetConstructor(argTys) with
+                                        | null -> 
+                                            EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
+                                            Some(ILExpr.Error(ty))
+                                        | ctor ->
+                                            Some(ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty))
+                        | NVT.Type(ty) when path.IsSinglePart -> //static methods of an open type
+                            match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
+                            | Some(meth) ->
+                                Some(ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args))
+                            | None ->
+                                None
+                        | _ ->
+                            None)
+                
+                match attempt with
+                | None ->
+                    EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text //TODO: may not be accurate any more!
+                    abort() //need error message too!
+                | Some(ilExpr) ->
+                    ilExpr
+
+            resolveFullPathCall path genericTyArgs args argTys pos
         | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) -> //DONE
             let instance,methodName =
                 match path.LeadingPartsPath with
