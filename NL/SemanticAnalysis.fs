@@ -190,12 +190,12 @@ let resolveTySig env (tySig:TySig) =
         EM.Could_not_resolve_type tySig.Pos tySig.Name //todo: specific pos for ty name
         abort()
 
-let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
-    match tryResolveType namespaces assemblies name tyTys with
-    | Some(ty) -> ty
-    | None ->    
-        EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
-        abort()
+//let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
+//    match tryResolveType namespaces assemblies name tyTys with
+//    | Some(ty) -> ty
+//    | None ->    
+//        EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
+//        abort()
 
 let resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos =
     match tryResolveMethod ty methodName staticFlags methodGenericTyArgs argTys with

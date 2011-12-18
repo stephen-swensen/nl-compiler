@@ -23,4 +23,24 @@ let ``resolve field of open static class`` () =
 let ``resolve property of open static class`` () =
     test <@ C.eval (openPrefix + "open NonGenericClass1 in static_property_int") = 0 @>
 
+[<Fact>]
+let ``set field of open static class`` () =
+    test <@ C.eval (openPrefix + 
+                "open NonGenericClass1 in 
+                 static_field_int <- 3;
+                 temp = static_field_int in
+                 static_field_int <- 0;
+                 temp
+                ") = 3 @>
+
+[<Fact>]
+let ``set property of open static class`` () =
+    test <@ C.eval (openPrefix + 
+                "open NonGenericClass1 in 
+                 static_property_int <- 3;
+                 temp = static_property_int in
+                 static_property_int <- 0;
+                 temp
+                ") = 3 @>
+
     
