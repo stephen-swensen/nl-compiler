@@ -197,6 +197,22 @@ let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
         EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
         abort()
 
+let resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos =
+    match tryResolveMethod ty methodName staticFlags methodGenericTyArgs argTys with
+    | None -> 
+        EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
+        abort()
+    | Some(meth) -> 
+        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
+
+let resolveILExprInstanceCall (instance:ILExpr) (methodName:Path) methodGenericTyArgs args argTys =
+    match tryResolveMethod instance.Type methodName.Text instanceFlags methodGenericTyArgs argTys with
+    | None -> 
+        EM.Invalid_instance_method methodName.Pos methodName.Text instance.Type.Name (sprintTypes argTys)
+        abort()
+    | Some(meth) -> 
+        ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args)    
+
 module PathResolution =
     type FP =
         | Field of FieldInfo //N.B. CONSTANT FIELDS LIKE INT32.MAXVALUE CANNOT BE ACCESSED NORMALLY: CHECK FOR ISLITERAL FIELD ATTRIBUTE AND EMIT LITERAL VALUE (CAN USE GETVALUE REFLECTION) -- IF CAN'T DO THAT, CHECK FIELDINFO HANDLE AND IF THROWS WE KNOW WE NEED TO STOP
@@ -332,21 +348,13 @@ module PathResolution =
             env.NVTs
             |> Seq.tryPick (function
                 | NVT.Variable(name,ty) when name = path.LeadingPartsText -> //instance method call on variable
-                    match tryResolveMethod ty path.LastPartText instanceFlags genericTyArgs argTys with
-                    | None -> 
-                        EM.Invalid_instance_method pos path.LastPartText ty.Name (sprintTypes argTys)
-                        abort()
-                    | Some(meth) -> 
-                        Some(ILExpr.InstanceCall(ILExpr.VarGet(path.LeadingPartsText,ty), meth, castArgsIfNeeded (meth.GetParameters()) args))
+                    let instance = ILExpr.VarGet(path.LeadingPartsText,ty)
+                    let methodName = path.LastPartPath
+                    Some(resolveILExprInstanceCall instance methodName genericTyArgs args argTys)
                 | NVT.Namespace(ns) ->
                     match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
                     | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                        match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
-                        | None -> 
-                            EM.Invalid_static_method pos path.LastPartText ty.Name (sprintTypes argTys)
-                            abort()
-                        | Some(meth) -> 
-                            Some(ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args))
+                        Some(resolveILExprStaticCall ty path.LastPartText genericTyArgs args argTys pos)
                     | None -> //constructors (generic or non-generic)
                         match tryResolveType [ns] env.Assemblies path.Text genericTyArgs with
                         | None -> 
@@ -509,12 +517,7 @@ let rec tycheckWith env synTopLevel =
             | Some(ty) ->
                 let args = args |> List.map (tycheckExp)
                 let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-                match tryResolveMethod ty methodName staticFlags methodGenericTyArgs argTys with
-                | None -> 
-                    EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
-                    abort()
-                | Some(meth) -> 
-                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
+                resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos
         //this is our most complex part of the grammer...
         | SynExpr.PathCall(path, methodGenericTyArgs, args, pos) ->
             let args = args |> List.map (tycheckExp)
@@ -536,12 +539,7 @@ let rec tycheckWith env synTopLevel =
             match instance with
             | Some(instance) ->
                 let methodName = path.LastPartPath
-                match tryResolveMethod instance.Type methodName.Text instanceFlags methodGenericTyArgs argTys with
-                | None -> 
-                    EM.Invalid_instance_method methodName.Pos methodName.Text instance.Type.Name (sprintTypes argTys)
-                    abort()
-                | Some(meth) ->
-                    ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args)    
+                resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys
             | None ->
                 PR.resolveFullPathCall env path methodGenericTyArgs args argTys pos
         | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) -> //DONE
@@ -556,12 +554,7 @@ let rec tycheckWith env synTopLevel =
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
 
-            match tryResolveMethod instance.Type methodName.Text instanceFlags methodGenericTyArgs argTys with
-            | None -> 
-                EM.Invalid_instance_method methodName.Pos methodName.Text instance.Type.Name (sprintTypes argTys)
-                abort()
-            | Some(meth) ->
-                ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args)
+            resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys
         ///variable, static field, or static (non-parameterized) property
         | SynExpr.PathGet(path) -> //DONE
             match PR.tryResolveLeadingPathGet env path with
