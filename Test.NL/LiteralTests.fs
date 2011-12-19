@@ -1,14 +1,16 @@
 ﻿module Tests.LiteralTests
 
 open Xunit
+open Xunit.Extensions
+
 open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
 module C = Compilation
 
-[<Fact>]
-let ``literal Int32 exp`` () =
-    test <@ C.eval "3" = 3 @>
+[<Theory;EvalData>]
+let ``literal Int32 exp`` options =
+    test <@ C.evalWith options "3" = 3 @>
 
 [<Fact>]
 let ``literal Int32 out of range`` () =
