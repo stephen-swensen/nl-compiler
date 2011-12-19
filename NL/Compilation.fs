@@ -59,7 +59,7 @@ let eval<'a> code : 'a =
         il.Emit(OpCodes.Ret)
         dm
 
-    EL.InstallDefaultLogger() //may want to switch back to previous logger when exiting eval
+    EL.InstallErrorLogger() //may want to switch back to previous logger when exiting eval
 
     let ilTopLevel = parseFromString code 
     match EL.ActiveLogger.ErrorCount with
