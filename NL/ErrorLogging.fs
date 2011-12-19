@@ -109,14 +109,16 @@ type ErrorLogger() =
     static member ActiveLogger
         with get() = 
             if ErrorLogger.activeLogger = null then
-               ErrorLogger.InstallDefaultLogger()
+               ErrorLogger.InstallErrorLogger()
             ErrorLogger.activeLogger
         and set(v) = 
             ErrorLogger.activeLogger <- v
 
-    static member InstallDefaultLogger() =
+    ///Install the base, in-memory error logger
+    static member InstallErrorLogger() =
         ErrorLogger.activeLogger <- ErrorLogger()
 
+    ///Install the console error logger, which extends the base, in-memory error logger
     static member InstallConsoleLogger() =
         ErrorLogger.activeLogger <- ConsoleErrorLogger()
 
