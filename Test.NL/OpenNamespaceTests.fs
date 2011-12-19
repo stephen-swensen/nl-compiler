@@ -1,27 +1,27 @@
 ﻿module Tests.OpenNamespaceTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
 
 module C = Compilation
 
-[<Fact>]
-let ``system open by default`` () =
-    test <@ C.eval "string('c',3)" = "ccc" @>
+[<Theory;EvalData>]
+let ``system open by default`` options =
+    test <@ C.evalWith options "string('c',3)" = "ccc" @>
 
-[<Fact>]
-let ``system+collections+generic open by default`` () =
-    test <@ C.eval<obj> "list[int32]()" :? System.Collections.Generic.List<int32> @>
+[<Theory;EvalData>]
+let ``system+collections+generic open by default`` options =
+    test <@ C.evalWith<obj> options "list[int32]()" :? System.Collections.Generic.List<int32> @>
 
-[<Fact>]
-let ``open expression`` () =
-    test <@ C.eval<obj> "open System.Diagnostics in Stopwatch()" :? System.Diagnostics.Stopwatch @>
+[<Theory;EvalData>]
+let ``open expression`` options =
+    test <@ C.evalWith<obj> options "open System.Diagnostics in Stopwatch()" :? System.Diagnostics.Stopwatch @>
 
-[<Fact>]
-let ``connot resolve namespace`` () =
+[<Theory;EvalData>]
+let ``connot resolve namespace`` options =
     raisesWith 
-        <@ C.eval "open hello.world in ()" @>
+        <@ C.evalWith options "open hello.world in ()" @>
         (expectedErrors [|18|])
 
