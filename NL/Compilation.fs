@@ -121,40 +121,57 @@ let compileFromFiles fileNames =
     //|> (fun text -> printfn "%s" text; text)
     |> compileFromString
 
-//type NliState =
-//    {
-//        Assemblies: Assembly list
-//        Namespaces: string list
-//        Variables: (string,(obj*Type)) Map
-//    }
-//    with
-//        static member Empty = {Assemblies = []; Namespaces=[]; Variables=Map.empty}
-//        static member Default =
-//            let se = Semant.SemanticEnvironment.Default
-//            { NliState.Empty with Assemblies=se.Assemblies; Namespaces=se.Namespaces }
-//
-/////The NL interactive
-//type Nli() = 
-//    ///head of list is most recent, this should not be externally mutable
-//    let mutable historicalState: NliState list = []
-//    ///the current state, this can be externally mutable if so desired
-//    let mutable currentState: NliState = NliState.Default
-//
-//    ///evaluate the code string in the Nli environment
-//    let eval code =
-//        //WE NEED THE RAW AST FIRST
-//        let lexbuf = 
-//            let lexbuf = LexBuffer<char>.FromString(code)
-//            lexbuf.EndPos <- { pos_bol = 0
-//                               pos_fname=""
-//                               pos_cnum=1
-//                               pos_lnum=1 }
-//            lexbuf
-//
-//        let ast = parseFromStringWith { Semant.SemanticEnvironment.Empty with Assemblies=currentState.Assemblies; Namespaces=currentState.Namespaces; Variables=currentState.Variables |> Map.map (fun _ (_,ty)->ty) } code
-//        let dm = System.Reflection.Emit.DynamicMethod("Eval", ast.Type, null)
-//            let il = dm.GetILGenerator()
-//            emitOpCodes il (Return(ast, ast.Type))
-//            dm
-//
-//        for a in currentState.Assemblies do
+
+///The NL interactive
+type Nli() = 
+    let mutable asmCounter = 0I
+    let mutable env = SemanticEnvironment.Default
+    let mutable itCounter = 0I
+
+    member this.Submit(code:string) =
+        EL.InstallConsoleLogger()
+
+        let asmName = "NLI_" + asmCounter.ToString()
+        asmCounter <- asmCounter + 1I
+        
+        let asmFileName = asmName + ".dll"
+
+        let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
+        let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".module", asmFileName, false) //need to specify asmFileName here!
+        
+        let tyName = asmName + ".TOP_LEVEL"
+        let tyBuilder = modBuilder.DefineType(tyName, TypeAttributes.Public)
+        
+        let tyInitBuilder = tyBuilder.DefineTypeInitializer()
+
+        let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
+
+        //need to make optimization optional
+        match parseAndSemantWith env code with
+        | ILTopLevel.StmtList(stmts) -> 
+            let il = tyInitBuilder.GetILGenerator()
+            //need final it
+            for stmt in stmts do
+                match stmt with
+                | ILStmt.Do(x) ->
+                    if x.Type <> typeof<Void> then
+                        let fi = tyBuilder.DefineField("it_" + itCounter.ToString(), x.Type, fieldAttrs)
+                        itCounter <- itCounter + 1I
+                        Emission.emit il (ILExpr.StaticFieldSet(fi,x))
+                    else
+                        Emission.emit il x
+                | ILStmt.Let(name,x) -> 
+                    let fi = tyBuilder.DefineField(name, x.Type, fieldAttrs)
+                    Emission.emit il (ILExpr.StaticFieldSet(fi,x))
+
+            il.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
+
+        | ilTL ->
+            failwithf "not a valid NLI expression: %A" ilTL //todo: remove
+
+        let ty = tyBuilder.CreateType()
+        env <- env.ConsType(ty)
+
+        ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
+        |> Seq.map (fun fi -> fi.Name, fi.GetValue(null))
+        |> Seq.toArray
