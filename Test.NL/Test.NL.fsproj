@@ -57,6 +57,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <Compile Include="Prelude.fs" />
+    <Compile Include="EvalDataAttribute.fs" />
     <Compile Include="LiteralTests.fs" />
     <Compile Include="NumericOpTests.fs" />
     <Compile Include="VarTests.fs" />
@@ -95,6 +96,10 @@
     </Reference>
     <Reference Include="xunit">
       <HintPath>..\packages\xunit.1.8.0.1549\lib\xunit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\packages\xunit.extensions.1.8.0.1549\lib\xunit.extensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
