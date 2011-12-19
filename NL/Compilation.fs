@@ -15,7 +15,7 @@ type EL = ErrorLogger
 let parseWith env lexbuf =
     try 
         Parser.start Lexer.tokenize lexbuf 
-        |> SemanticAnalysis.tycheckWith env
+        |> SemanticAnalysis.semantWith env
     with
     | CompilerInterruptException ->
         ILTopLevel.Error
@@ -66,7 +66,7 @@ let eval<'a> code : 'a =
     | 0 ->
         let ilExpr =
             match ilTopLevel with
-            | ILTopLevel.Exp(x) -> x
+            | ILTopLevel.Expr(x) -> x
             | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
             | _ -> 
                 raise (EvaluationException("not a valid eval expression", [||]))
@@ -91,7 +91,7 @@ let compileFromAil ail asmName =
     
     let ilExpr =
         match ail with
-        | ILTopLevel.Exp(x) -> x
+        | ILTopLevel.Expr(x) -> x
         | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
         | _ -> 
             failwithf "not a valid compiler expression: %A" ail //todo: remove

@@ -392,9 +392,9 @@ module PathResolution =
 module PR = PathResolution
 
 ///Symantic analysis (type checking)
-let rec tycheckWith env synTopLevel =
-    let rec tycheckExpWith env synExpr=
-        let tycheckExp = tycheckExpWith env
+let rec semantWith env synTopLevel =
+    let rec semantExprWith env synExpr=
+        let semantExpr = semantExprWith env
 
         match synExpr with
         | SynExpr.Double x -> ILExpr.Double x
@@ -425,7 +425,7 @@ let rec tycheckWith env synTopLevel =
             else
                 ILExpr.Default(ty)
         | SynExpr.UMinus(x,pos) ->
-            let x = tycheckExp x
+            let x = semantExpr x
             if x.Type = typeof<Int64> ||
                x.Type = typeof<Int32> ||
                x.Type = typeof<Int16> ||
@@ -441,7 +441,7 @@ let rec tycheckWith env synTopLevel =
                 | meth ->
                     ILExpr.StaticCall(meth, [x])
         | SynExpr.Pow(x, y, pos) ->        
-            let x,y = tycheckExp x, tycheckExp y
+            let x,y = semantExpr x, semantExpr y
             //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
             match tryResolveMethod typeof<System.Math> "Pow" staticFlags [||] [|typeof<float>;typeof<float>|] with
             | None -> 
@@ -460,7 +460,7 @@ let rec tycheckWith env synTopLevel =
                     EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<float>)
         | SynExpr.NumericBinop(op,x,y,pos) ->
-            let x, y = tycheckExp x, tycheckExp y
+            let x, y = semantExpr x, semantExpr y
             match NumericTower.tallestTy x.Type y.Type with
             | Some(tallestTy) -> //primitive
                 ILExpr.mkNumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
@@ -485,7 +485,7 @@ let rec tycheckWith env synTopLevel =
                 | Some(meth) ->
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y]) 
         | SynExpr.ComparisonBinop(op, x, y, pos) ->
-            let x, y = tycheckExp x, tycheckExp y
+            let x, y = semantExpr x, semantExpr y
                         
             //first numeric tower value type cases
             match NumericTower.tallestTy x.Type y.Type with
@@ -515,12 +515,12 @@ let rec tycheckWith env synTopLevel =
                 EM.Could_not_resolve_type pos tyName //TODO: IMPROVE IDENT POS INFO
                 abort()
             | Some(ty) ->
-                let args = args |> List.map (tycheckExp)
+                let args = args |> List.map (semantExpr)
                 let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
                 resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos
         //this is our most complex part of the grammer...
         | SynExpr.PathCall(path, methodGenericTyArgs, args, pos) ->
-            let args = args |> List.map (tycheckExp)
+            let args = args |> List.map (semantExpr)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
 
@@ -546,11 +546,11 @@ let rec tycheckWith env synTopLevel =
             let instance, methodName =
                 match path.LeadingPartsPath with
                 | Some(leadingPath) ->
-                    tycheckExp <| SynExpr.ExprPathGet(instance, leadingPath), path.LastPartPath
+                    semantExpr <| SynExpr.ExprPathGet(instance, leadingPath), path.LastPartPath
                 | None ->
-                    tycheckExp instance, path
+                    semantExpr instance, path
 
-            let args = args |> List.map (tycheckExp)
+            let args = args |> List.map (semantExpr)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
 
@@ -566,10 +566,10 @@ let rec tycheckWith env synTopLevel =
             | Some(ilExpr, None) ->
                 ilExpr
         | SynExpr.ExprPathGet(x, path) -> //DONE
-            let x = tycheckExp x
+            let x = semantExpr x
             PR.resolveILExprInstancePathGet x path
         | SynExpr.PathSet(path, (assign, assignPos)) ->
-            let assign = tycheckExp assign
+            let assign = semantExpr assign
 
             let instance =
                 match path.LeadingPartsPath with
@@ -609,8 +609,8 @@ let rec tycheckWith env synTopLevel =
                         PR.validatePropertySet pi path assign.Type assignPos
                             (lazy(ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)))
         | SynExpr.ExprPathSet(instance, path, (assign,assignPos)) -> //TODO
-            let instance = tycheckExp instance
-            let assign = tycheckExp assign
+            let instance = semantExpr instance
+            let assign = semantExpr assign
             match path.LeadingPartsPath with
             | Some(leadingPath) -> 
                 let instance = PR.resolveILExprInstancePathGet instance leadingPath
@@ -618,46 +618,46 @@ let rec tycheckWith env synTopLevel =
             | None ->
                 PR.resolveILExprInstancePathSet instance path assign assignPos
         | SynExpr.Let(name, (assign, assignPos), body) ->
-            let assign = tycheckExp assign
+            let assign = semantExpr assign
             if assign.Type = typeof<Void> then
                 EM.Void_invalid_in_let_binding assignPos
         
-            let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
+            let body = semantExprWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
         | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)) as x, (_,pos)) ->
             EM.Unreachable_code_detected pos
-            tycheckExp x //error recovery
+            semantExpr x //error recovery
         | SynExpr.Sequential(x,(y,_)) ->
-            let x, y = tycheckExp x, tycheckExp y
+            let x, y = semantExpr x, semantExpr y
             ILExpr.Sequential(x,y,y.Type)
         | SynExpr.OpenNamespaceOrType(nsOrTy, x) ->
             match nsOrTy.GenericArgs with
             | [] when namespaceExists env.Assemblies nsOrTy.GenericName ->
-                tycheckExpWith (env.ConsNamespace(nsOrTy.GenericName)) x
+                semantExprWith (env.ConsNamespace(nsOrTy.GenericName)) x
             | _ ->
                 let tyTys = resolveTySigs env nsOrTy.GenericArgs
                 match tryResolveType env.Namespaces env.Assemblies nsOrTy.GenericName tyTys with
                 | Some(ty) ->
-                    tycheckExpWith (env.ConsType(ty)) x
+                    semantExprWith (env.ConsType(ty)) x
                 | None ->
                     EM.Namespace_or_type_not_found nsOrTy.Pos nsOrTy.Name (sprintAssemblies env.Assemblies)
-                    tycheckExp x
+                    semantExpr x
         | SynExpr.OpenAssembly((name,pos), x) ->
             let asm = tryLoadAssembly name
             match asm with
             | None -> 
                 EM.Could_not_resolve_assembly pos name
-                tycheckExp x
-            | Some(asm) -> tycheckExpWith {env with Assemblies=asm::env.Assemblies} x
+                semantExpr x
+            | Some(asm) -> semantExprWith {env with Assemblies=asm::env.Assemblies} x
         | SynExpr.LogicalNot(x,pos) ->
-            let x = tycheckExp x
+            let x = semantExpr x
             if x.Type <> typeof<bool> then
                 EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
                 ILExpr.Error(typeof<bool>)
             else
                 ILExpr.LogicalNot(x)
         | SynExpr.Cast(x, tySig, pos) ->
-            let x = tycheckExp x
+            let x = semantExpr x
             let ty = resolveTySig env tySig
             
             if ty = typeof<System.Void> then
@@ -686,14 +686,14 @@ let rec tycheckWith env synTopLevel =
                     ILExpr.Error(ty)
         | SynExpr.LogicBinop(op,(x,xpos),(y,ypos)) ->
             let x =
-                match tycheckExp x with
+                match semantExpr x with
                 | x when x.Type <> typeof<bool> -> 
                     EM.Expected_type_but_got_type xpos "System.Boolean" x.Type.Name
                     ILExpr.Error(typeof<bool>)
                 | x -> x
 
             let y = 
-                match tycheckExp y with
+                match semantExpr y with
                 | y when y.Type <> typeof<bool> ->
                     EM.Expected_type_but_got_type ypos "System.Boolean" y.Type.Name
                     ILExpr.Error(typeof<bool>)
@@ -704,16 +704,16 @@ let rec tycheckWith env synTopLevel =
             | SynLogicBinop.Or -> ILExpr.IfThenElse(x, ILExpr.Bool(true), y, typeof<bool>)
         | SynExpr.IfThenElse((condition, conditionPos),thenBranch,elseBranch,pos) ->
             let condition = 
-                let condition = tycheckExp condition
+                let condition = semantExpr condition
                 if condition.Type <> typeof<bool> then
                     EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
                     ILExpr.Error(typeof<bool>)
                 else
                     condition
-            let thenBranch = tycheckExp thenBranch
+            let thenBranch = semantExpr thenBranch
             match elseBranch with
             | Some(elseBranch) ->
-                let elseBranch = tycheckExp elseBranch
+                let elseBranch = semantExpr elseBranch
                 if thenBranch.Type <> elseBranch.Type then
                     //maybe could use 
                     EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
@@ -729,13 +729,13 @@ let rec tycheckWith env synTopLevel =
             ILExpr.Nop
         | SynExpr.WhileLoop((condition, conditionPos), body) ->
             let condition = 
-                let condition = tycheckExp condition
+                let condition = semantExpr condition
                 if condition.Type <> typeof<bool> then
                     EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
                     ILExpr.Error(typeof<bool>)
                 else
                     condition
-            let body = tycheckExpWith {env with IsLoopBody=true} body
+            let body = semantExprWith {env with IsLoopBody=true} body
             ILExpr.WhileLoop(condition, body)
         | SynExpr.Break(pos) ->
             if not env.IsLoopBody then
@@ -758,10 +758,10 @@ let rec tycheckWith env synTopLevel =
             | synStmt::synStmts ->
                 match synStmt with
                 | SynStmt.Do x ->
-                    let ilStmt = ILStmt.Do(tycheckExpWith env x)
+                    let ilStmt = ILStmt.Do(semantExprWith env x)
                     loop env synStmts (ilStmt::ilStmts)                
                 | SynStmt.Let(name, (assign,assignPos)) ->
-                    let assign = tycheckExpWith env assign
+                    let assign = semantExprWith env assign
                     if assign.Type = typeof<Void> then
                         EM.Void_invalid_in_let_binding assignPos
 
@@ -791,4 +791,4 @@ let rec tycheckWith env synTopLevel =
                             loop env synStmts ilStmts //error recovery
         ILTopLevel.StmtList(loop env xl [])
     | SynTopLevel.Expr(x) ->
-        ILTopLevel.Exp(tycheckExpWith env x)
+        ILTopLevel.Expr(semantExprWith env x)
