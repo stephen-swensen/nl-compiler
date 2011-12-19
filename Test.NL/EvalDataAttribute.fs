@@ -6,6 +6,7 @@ open System
 open System.Collections.Generic
 open System.Diagnostics.CodeAnalysis
 open System.Reflection
+open Xunit
 open Xunit.Extensions
 open System.Reflection
 

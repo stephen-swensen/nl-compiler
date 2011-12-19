@@ -71,7 +71,6 @@
     <Compile Include="RefAssemblyTests.fs" />
     <Compile Include="WhileLoopTests.fs" />
     <Compile Include="TySigTests.fs" />
-    <Compile Include="OptimizationTests.fs" />
     <Compile Include="OpenNamespaceTests.fs" />
     <Compile Include="OpenTypeTests.fs" />
     <Compile Include="PathTests.fs" />
@@ -79,6 +78,7 @@
     <Compile Include="FieldTests.fs" />
     <Compile Include="PropertyTests.fs" />
     <Compile Include="PathResolutionTests.fs" />
+    <Compile Include="OptimizationTests.fs" />
     <None Include="Test.AssemblyResolveTarget.dll" />
   </ItemGroup>
   <ItemGroup>

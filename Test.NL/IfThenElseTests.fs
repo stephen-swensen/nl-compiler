@@ -1,43 +1,43 @@
 ﻿module Tests.IfThenElseTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
 module C = Compilation
 
-[<Fact>]
-let ``ifthenelse condition must be boolean`` () =
+[<Theory;EvalData>]
+let ``ifthenelse condition must be boolean`` options =
     raisesWith 
-        <@ C.eval "if 0 { true } else { false }" @>
+        <@ C.evalWith options "if 0 { true } else { false }" @>
         (expectedErrors [|6|])
 
-[<Fact>]
-let ``ifthenelse type must be consistent`` () =
+[<Theory;EvalData>]
+let ``ifthenelse type must be consistent`` options =
     raisesWith 
-        <@ C.eval "if true { true } else { 0 }" @>
+        <@ C.evalWith options "if true { true } else { 0 }" @>
         (expectedErrors [|23|])
 
-[<Fact>]
-let ``simple ifthenelse exp condition is true`` () =
-    test <@ C.eval "if true { true } else { false }" = true @>
+[<Theory;EvalData>]
+let ``simple ifthenelse exp condition is true`` options =
+    test <@ C.evalWith options "if true { true } else { false }" = true @>
 
-[<Fact>]
-let ``simple ifthenelse exp condition is false`` () =
-    test <@ C.eval "if false { true } else { false }" = false @>
+[<Theory;EvalData>]
+let ``simple ifthenelse exp condition is false`` options =
+    test <@ C.evalWith options "if false { true } else { false }" = false @>
 
-[<Fact>]
-let ``ifthen void`` () =
-    test <@ C.eval "if true { console.writeline(1) }" = () @>
+[<Theory;EvalData>]
+let ``ifthen void`` options =
+    test <@ C.evalWith options "if true { console.writeline(1) }" = () @>
 
-[<Fact>]
-let ``ifthenelse with explicit else void`` () =
-    test <@ C.eval "if false { console.writeline(1) } else { () }" = () @>
+[<Theory;EvalData>]
+let ``ifthenelse with explicit else void`` options =
+    test <@ C.evalWith options "if false { console.writeline(1) } else { () }" = () @>
 
-[<Fact>]
-let ``ifthen default valuetype`` () =
-    test <@ C.eval "if false { true }" = false @>
+[<Theory;EvalData>]
+let ``ifthen default valuetype`` options =
+    test <@ C.evalWith options "if false { true }" = false @>
 
-[<Fact>]
-let ``ifthen default reftype`` () =
-    test <@ C.eval "if false { \"asdf\" }" = null @>
+[<Theory;EvalData>]
+let ``ifthen default reftype`` options =
+    test <@ C.evalWith options "if false { \"asdf\" }" = null @>
 

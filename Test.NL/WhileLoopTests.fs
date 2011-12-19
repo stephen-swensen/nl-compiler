@@ -1,71 +1,71 @@
 ﻿module Tests.WhileLoopTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
 module C = Compilation
 
-[<Fact>]
-let ``break not allowed outside of while loop`` () =
+[<Theory;EvalData>]
+let ``break not allowed outside of while loop`` options =
     raisesWith 
-        <@ C.eval "break()" @>
+        <@ C.evalWith options "break()" @>
         (expectedErrors [|8|])
 
-[<Fact>]
-let ``continue not allowed outside of while loop`` () =
+[<Theory;EvalData>]
+let ``continue not allowed outside of while loop`` options =
     raisesWith 
-        <@ C.eval "continue()" @>
+        <@ C.evalWith options "continue()" @>
         (expectedErrors [|9|])
 
-[<Fact>]
-let ``simple while loop`` () =
-    test <@ C.eval "x=0 in while x<5 { x<-x+1 }; x" = 5 @>
+[<Theory;EvalData>]
+let ``simple while loop`` options =
+    test <@ C.evalWith options "x=0 in while x<5 { x<-x+1 }; x" = 5 @>
 
-[<Fact>]
-let ``while loop with break`` () =
-    test <@ C.eval "x=0 in while x<5 { x<-x+1; if x == 3 { break() } }; x" = 3 @>
+[<Theory;EvalData>]
+let ``while loop with break`` options =
+    test <@ C.evalWith options "x=0 in while x<5 { x<-x+1; if x == 3 { break() } }; x" = 3 @>
 
-[<Fact>]
-let ``return value is void so can't assign`` () =
+[<Theory;EvalData>]
+let ``return value is void so can't assign`` options =
     raisesWith 
-        <@ C.eval "y = x = 0 in while x<5 { x<-x+1 } in ()" @>
+        <@ C.evalWith options "y = x = 0 in while x<5 { x<-x+1 } in ()" @>
         (expectedErrors [|16|])
 
-[<Fact>]
-let ``continue`` () =
-    test <@ C.eval "x=0 in y=0 in while x<5 { x<-x+1; if x == 3 { continue() } else { y<-y+1 } }; y " = 4 @>
+[<Theory;EvalData>]
+let ``continue`` options =
+    test <@ C.evalWith options "x=0 in y=0 in while x<5 { x<-x+1; if x == 3 { continue() } else { y<-y+1 } }; y " = 4 @>
 
-[<Fact>]
-let ``nested`` () =
-    test <@ C.eval "x=0 in y=0 in while x<5 { x<-x+1; z=0 in while z<5 { z<-z+1; y<-y+1 } }; y " = 25 @>
+[<Theory;EvalData>]
+let ``nested`` options =
+    test <@ C.evalWith options "x=0 in y=0 in while x<5 { x<-x+1; z=0 in while z<5 { z<-z+1; y<-y+1 } }; y " = 25 @>
 
-[<Fact>]
-let ``nested breaks`` () =
-    test <@ C.eval "x = 0 in while true { while true { break() }; break() }; x" = 0 @>
+[<Theory;EvalData>]
+let ``nested breaks`` options =
+    test <@ C.evalWith options "x = 0 in while true { while true { break() }; break() }; x" = 0 @>
 
-[<Fact>]
-let ``nested continue`` () =
-    test <@ C.eval "y=0 in while true { x=0 in while x<5 { x<-x+1; if x == 3 { continue() } else { y<-y+1 } } ; break() }; y" = 4 @>
+[<Theory;EvalData>]
+let ``nested continue`` options =
+    test <@ C.evalWith options "y=0 in while true { x=0 in while x<5 { x<-x+1; if x == 3 { continue() } else { y<-y+1 } } ; break() }; y" = 4 @>
 
-[<Fact>]
-let ``unreachable break error`` () =
+[<Theory;EvalData>]
+let ``unreachable break error`` options =
     raisesWith 
-        <@ C.eval "while false { break(); () }" @>
+        <@ C.evalWith options "while false { break(); () }" @>
         (expectedErrors [|17|])
 
-[<Fact>]
-let ``unreachable continue error`` () =
+[<Theory;EvalData>]
+let ``unreachable continue error`` options =
     raisesWith 
-        <@ C.eval "while false { continue(); () }" @>
+        <@ C.evalWith options "while false { continue(); () }" @>
         (expectedErrors [|17|])
 
-[<Fact>]
-let ``condition is not boolean error`` () =
+[<Theory;EvalData>]
+let ``condition is not boolean error`` options =
     raisesWith 
-        <@ C.eval "while 'c' { () }" @>
+        <@ C.evalWith options "while 'c' { () }" @>
         (expectedErrors [|6|])
 
-[<Fact>]
-let ``while loop with non void body discards value from the IL stack`` () =
-    test <@ C.eval "x=0 in while x<5 { x<-x+1; 3 }; x" = 5 @>
+[<Theory;EvalData>]
+let ``while loop with non void body discards value from the IL stack`` options =
+    test <@ C.evalWith options "x=0 in while x<5 { x<-x+1; 3 }; x" = 5 @>
