@@ -126,7 +126,7 @@ let optimize (tl:ILTopLevel) =
             failwith "Should not be optimizing an expression with errors"
 
     match tl with
-    | ILTopLevel.Exp(x) -> optimizeExp x |> ILTopLevel.Exp
+    | ILTopLevel.Expr(x) -> optimizeExp x |> ILTopLevel.Expr
     | ILTopLevel.StmtList(xl) ->
         xl 
         |> List.map (fun x ->
