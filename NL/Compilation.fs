@@ -123,10 +123,12 @@ let compileFromFiles fileNames =
 
 
 ///The NL interactive
-type Nli() = 
+type Nli(options: CompilerOptions) = 
     let mutable asmCounter = 0I
-    let mutable env = SemanticEnvironment.Default
+    let mutable env = options.SemanticEnvironment
     let mutable itCounter = 0I
+
+    new () = Nli(CompilerOptions.Default)
 
     member this.Submit(code:string) =
         EL.InstallConsoleLogger()
@@ -144,11 +146,18 @@ type Nli() =
         
         let tyInitBuilder = tyBuilder.DefineTypeInitializer()
 
-        let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
+        let stmts =
+            let ilTopLevel =
+                let ilTopLevel = parseAndSemantWith env code
+                if options.Optimize then ilTopLevel |> Optimization.optimize else ilTopLevel
 
-        //need to make optimization optional
-        match parseAndSemantWith env code with
-        | ILTopLevel.StmtList(stmts) -> 
+            match ilTopLevel with
+            | ILTopLevel.StmtList(stmts) -> stmts
+            | ILTopLevel.Expr(x) -> [ILStmt.Do(x)]
+            | _ -> failwithf "not a valid NLI expression: %A" ilTopLevel //todo: remove
+        
+        let emit () =
+            let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
             let il = tyInitBuilder.GetILGenerator()
             //need final it
             for stmt in stmts do
@@ -166,8 +175,8 @@ type Nli() =
 
             il.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
 
-        | ilTL ->
-            failwithf "not a valid NLI expression: %A" ilTL //todo: remove
+
+        emit ()
 
         let ty = tyBuilder.CreateType()
         env <- env.ConsType(ty)
