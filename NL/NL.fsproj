@@ -69,7 +69,10 @@
     <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="Optimization.fs" />
     <Compile Include="Emission.fs" />
+    <Compile Include="CompilerOptions.fs" />
     <Compile Include="Compilation.fs" />
+    <Compile Include="Nli.fs" />
+    <Compile Include="Evaluation.fs" />
     <None Include="Script.fsx" />
   </ItemGroup>
   <ItemGroup>

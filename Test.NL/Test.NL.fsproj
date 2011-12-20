@@ -58,6 +58,7 @@
     <None Include="packages.config" />
     <Compile Include="Prelude.fs" />
     <Compile Include="EvalDataAttribute.fs" />
+    <Compile Include="NliDataAttribute.fs" />
     <Compile Include="LiteralTests.fs" />
     <Compile Include="NumericOpTests.fs" />
     <Compile Include="VarTests.fs" />
@@ -80,6 +81,8 @@
     <Compile Include="PathResolutionTests.fs" />
     <Compile Include="OptimizationTests.fs" />
     <None Include="Test.AssemblyResolveTarget.dll" />
+    <Compile Include="EvalTests.fs" />
+    <Compile Include="NliTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">

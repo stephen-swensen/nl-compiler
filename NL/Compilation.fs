@@ -11,12 +11,6 @@ open Parser
 
 type EL = ErrorLogger
 
-type CompilerOptions = { Optimize:bool ; SemanticEnvironment:SemanticEnvironment }
-[<RequireQualifiedAccess>]
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
-module CompilerOptions =
-    let Default = { Optimize=true ; SemanticEnvironment=SemanticEnvironment.Default }
-
 let parseAndSemantWith env code =
     let lexbuf = LexBuffer<char>.FromString(code)
     lexbuf.EndPos <- 
@@ -45,42 +39,6 @@ let parseAndSemantWith env code =
         ILTopLevel.Error
 
 let parseAndSemant = parseAndSemantWith SemanticEnvironment.Default
-
-//should have "tryEval" which doesn't throw?
-
-///Evaluate an NL code string using the default environment.
-///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
-let evalWith<'a> options code : 'a = 
-    ///Create a dynamic method from a typed expression using the default environment
-    let mkDm (ilExpr:ILExpr) =
-        let dm = DynamicMethod("Eval", ilExpr.Type, null)
-        let il = dm.GetILGenerator()
-        Emission.emit il ilExpr
-        il.Emit(OpCodes.Ret)
-        dm
-
-    EL.InstallErrorLogger() //may want to switch back to previous logger when exiting eval
-
-    let ilTopLevel = parseAndSemantWith options.SemanticEnvironment code 
-    match EL.ActiveLogger.ErrorCount with
-    | 0 ->
-        let ilTopLevel = if options.Optimize then Optimization.optimize ilTopLevel else ilTopLevel
-        let ilExpr =
-            match ilTopLevel with
-            | ILTopLevel.Expr(x) -> x
-            | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
-            | _ -> 
-                raise (EvaluationException("not a valid eval expression", [||]))
-
-        let dm = mkDm ilExpr
-        dm.Invoke(null,null) |> unbox
-    | _ ->
-        raise (EvaluationException("compiler errors", EL.ActiveLogger.Errors |> Seq.toArray))
-
-let eval<'a> = evalWith<'a> CompilerOptions.Default
-
-//TODO: the following methods are used for nlc.exe and nli.exe. in the future we will have 
-//specialized methodss for the Compiler service, vs. nlc.exe, vs. nli.exe with APPRORPIATE ERRORLOGGERS installed.
 
 //todo: currently this function compilies an expression to a single method
 //      set as the entry point of an assembly, obviously this needs to evolve.
@@ -120,71 +78,3 @@ let compileFromFiles fileNames =
     |> String.concat System.Environment.NewLine
     //|> (fun text -> printfn "%s" text; text)
     |> compileFromString
-
-
-///The NL interactive
-type Nli(options: CompilerOptions) = 
-    let mutable asmCounter = 0I
-    let mutable env = options.SemanticEnvironment
-    let mutable itCounter = 0I
-
-    new () = Nli(CompilerOptions.Default)
-
-    member this.Submit(code:string) =
-        EL.InstallConsoleLogger()
-
-        let asmName = "NLI_" + asmCounter.ToString()
-        asmCounter <- asmCounter + 1I
-        
-        let asmFileName = asmName + ".dll"
-
-        let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
-        let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".module", asmFileName, false) //need to specify asmFileName here!
-        
-        let tyName = asmName + ".TOP_LEVEL"
-        let tyBuilder = modBuilder.DefineType(tyName, TypeAttributes.Public)
-        
-        let tyInitBuilder = tyBuilder.DefineTypeInitializer()
-
-        let stmts =
-            let ilTopLevel =
-                let ilTopLevel = parseAndSemantWith env code
-                if options.Optimize then ilTopLevel |> Optimization.optimize else ilTopLevel
-
-            match ilTopLevel with
-            | ILTopLevel.StmtList(stmts) -> stmts
-            | ILTopLevel.Expr(x) -> [ILStmt.Do(x)]
-            | _ -> failwithf "not a valid NLI expression: %A" ilTopLevel //todo: remove
-        
-        let emit () =
-            let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
-            let il = tyInitBuilder.GetILGenerator()
-            //need final it
-            for stmt in stmts do
-                match stmt with
-                | ILStmt.Do(x) ->
-                    if x.Type <> typeof<Void> then
-                        let fi = tyBuilder.DefineField("it_" + itCounter.ToString(), x.Type, fieldAttrs)
-                        itCounter <- itCounter + 1I
-                        Emission.emit il (ILExpr.StaticFieldSet(fi,x))
-                    else
-                        Emission.emit il x
-                | ILStmt.Let(name,x) -> 
-                    let fi = tyBuilder.DefineField(name, x.Type, fieldAttrs)
-                    Emission.emit il (ILExpr.StaticFieldSet(fi,x))
-
-            il.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
-
-
-        emit ()
-
-        let ty = tyBuilder.CreateType()
-        env <- env.ConsType(ty)
-
-        //force the ty static constructor to execute (i.e. when we have no fields to init, just code to run)
-        //http://stackoverflow.com/a/4181676/236255
-        System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
-        
-        ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
-        |> Seq.map (fun fi -> fi.Name, fi.GetValue(null))
-        |> Seq.toArray
