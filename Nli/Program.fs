@@ -3,7 +3,7 @@ open Swensen.NL
 open System
 
 
-let rec loop(nli:Compilation.Nli) =
+let rec loop(nli:Nli) =
     printf "> "
     match Console.ReadLine() with
     | "exit" -> ()
@@ -22,6 +22,6 @@ let rec loop(nli:Compilation.Nli) =
 [<EntryPoint>]
 let main(args:string[]) =
     printfn "NL Interactive"
-    let nli = new Compilation.Nli()
+    let nli = new Nli()
     loop(nli)
     0

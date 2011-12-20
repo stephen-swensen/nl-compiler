@@ -8,7 +8,7 @@ open System
 open Ast
 open Microsoft.FSharp.Text.Lexing
 
-module C = Compilation
+open Evaluation
 
 let range (xln,xcol) (yln,ycol) =
     let xpos = { pos_bol = 0

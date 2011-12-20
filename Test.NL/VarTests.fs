@@ -3,60 +3,60 @@
 open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
-module C = Compilation
+open Evaluation
 
 [<Theory;EvalData>]
 let ``var binding to literal value`` options =
-    test <@ C.evalWith options "x = 3 in x" = 3 @>
+    test <@ evalWith options "x = 3 in x" = 3 @>
 
 [<Theory;EvalData>]
 let ``var binding to complex expression`` options =
-    test <@ C.evalWith options "x = 3 + 3 in x" = 6 @>
+    test <@ evalWith options "x = 3 + 3 in x" = 6 @>
 
 [<Theory;EvalData>]
 let ``var binding used in complex body expression`` options =
-    test <@ C.evalWith options "x = 3 in x + x + 3" = 9 @>
+    test <@ evalWith options "x = 3 in x + x + 3" = 9 @>
 
 [<Theory;EvalData>]
 let ``nested var binding`` options =
-    test <@ C.evalWith options "x = 3 in y = 5 in x + y" = 8 @>
+    test <@ evalWith options "x = 3 in y = 5 in x + y" = 8 @>
 
 [<Theory;EvalData>]
 let ``var shadowing`` options =
-    test <@ C.evalWith options "x = 3 in y = 5 in x = 5 in x + y" = 10 @>
+    test <@ evalWith options "x = 3 in y = 5 in x = 5 in x + y" = 10 @>
 
 [<Theory;EvalData>]
 let ``var ids are case insensitive`` options =
-    test <@ C.evalWith options "x.x.x = 3 in X.x.X" = 3 @>
+    test <@ evalWith options "x.x.x = 3 in X.x.X" = 3 @>
 
 [<Theory;EvalData>]
 let ``Void not valid in let binding`` options =
     raisesWith 
-        <@ C.evalWith options "x = console.writeline(\"asdf\") in x" @>
+        <@ evalWith options "x = console.writeline(\"asdf\") in x" @>
         (expectedErrors [|16|])
 
 [<Theory;EvalData>]
 let ``Var set`` options =
-    test <@ C.evalWith options "x = 3 in (x <- 2) ; x" = 2 @>
+    test <@ evalWith options "x = 3 in (x <- 2) ; x" = 2 @>
 
 [<Theory;EvalData>]
 let ``Var set stronger precedence than semicolon`` options =
-    test <@ C.evalWith options "x = 3 in x <- 2 ; x" = 2 @>
+    test <@ evalWith options "x = 3 in x <- 2 ; x" = 2 @>
 
 [<Theory;EvalData>]
 let ``var not found`` options =
     raisesWith 
-        <@ C.evalWith options "x; ()" @>
+        <@ evalWith options "x; ()" @>
         (expectedErrors [|5|])
 
 [<Theory;EvalData>]
 let ``var set type mismatch error`` options =
     raisesWith 
-        <@ C.evalWith options "x = 3 in x <- 'c'" @>
+        <@ evalWith options "x = 3 in x <- 'c'" @>
         (expectedErrors [|4|])
 
 [<Theory;EvalData>]
 let ``var set var not found error`` options =
     raisesWith 
-        <@ C.evalWith options "x <- 'c'" @>
+        <@ evalWith options "x <- 'c'" @>
         (expectedErrors [|5|])

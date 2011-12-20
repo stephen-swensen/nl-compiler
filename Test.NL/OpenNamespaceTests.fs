@@ -5,23 +5,23 @@ open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
 
-module C = Compilation
+open Evaluation
 
 [<Theory;EvalData>]
 let ``system open by default`` options =
-    test <@ C.evalWith options "string('c',3)" = "ccc" @>
+    test <@ evalWith options "string('c',3)" = "ccc" @>
 
 [<Theory;EvalData>]
 let ``system+collections+generic open by default`` options =
-    test <@ C.evalWith<obj> options "list[int32]()" :? System.Collections.Generic.List<int32> @>
+    test <@ evalWith<obj> options "list[int32]()" :? System.Collections.Generic.List<int32> @>
 
 [<Theory;EvalData>]
 let ``open expression`` options =
-    test <@ C.evalWith<obj> options "open System.Diagnostics in Stopwatch()" :? System.Diagnostics.Stopwatch @>
+    test <@ evalWith<obj> options "open System.Diagnostics in Stopwatch()" :? System.Diagnostics.Stopwatch @>
 
 [<Theory;EvalData>]
 let ``connot resolve namespace`` options =
     raisesWith 
-        <@ C.evalWith options "open hello.world in ()" @>
+        <@ evalWith options "open hello.world in ()" @>
         (expectedErrors [|18|])
 
