@@ -8,7 +8,7 @@ let main args =
         | [|fileNames; asmName|] -> fileNames.Split('|'), asmName // | is an invalid path name so good delimiter
         | _ -> failwithf "Could not parse args: %A\n\nSyntax is nlc \"filename1.nl|filename2.nl|...\" \"assembly name\"" args
     try
-        Swensen.NL.ErrorLogger.InstallConsoleLogger()
+        
         Compilation.compileFromFiles fileNames asmName
         0
     with e ->
