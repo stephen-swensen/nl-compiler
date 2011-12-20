@@ -1,6 +1,6 @@
 ﻿module Tests.PathTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
@@ -8,7 +8,7 @@ open System
 open Ast
 open Microsoft.FSharp.Text.Lexing
 
-module C = Compilation
+open Evaluation
 
 let range (xln,xcol) (yln,ycol) =
     let xpos = { pos_bol = 0

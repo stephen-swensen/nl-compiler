@@ -80,7 +80,7 @@ let tryResolveMethod (ty:Type) (name:string) bindingFlags (genericTyArgs:Type[])
             |> Seq.toArray
         match possibleMeths.Length with
         | 1 -> Some(possibleMeths.[0])
-        | _ -> None
+        | _ -> None //i.e. ambiguous
 
 let tryResolveOpImplicit, tryResolveOpExplicit =
     let tryResolveConversionOp name (onty:Type) fromty toty =
@@ -190,15 +190,30 @@ let resolveTySig env (tySig:TySig) =
         EM.Could_not_resolve_type tySig.Pos tySig.Name //todo: specific pos for ty name
         abort()
 
-let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
-    match tryResolveType namespaces assemblies name tyTys with
-    | Some(ty) -> ty
-    | None ->    
-        EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
+//let resolveType namespaces assemblies name tyTys (originalTySig:TySig) =
+//    match tryResolveType namespaces assemblies name tyTys with
+//    | Some(ty) -> ty
+//    | None ->    
+//        EM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
+//        abort()
+
+let resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos =
+    match tryResolveMethod ty methodName staticFlags methodGenericTyArgs argTys with
+    | None -> 
+        EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
         abort()
+    | Some(meth) -> 
+        ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
+
+let resolveILExprInstanceCall (instance:ILExpr) (methodName:Path) methodGenericTyArgs args argTys =
+    match tryResolveMethod instance.Type methodName.Text instanceFlags methodGenericTyArgs argTys with
+    | None -> 
+        EM.Invalid_instance_method methodName.Pos methodName.Text instance.Type.Name (sprintTypes argTys)
+        abort()
+    | Some(meth) -> 
+        ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args)    
 
 module PathResolution =
-
     type FP =
         | Field of FieldInfo //N.B. CONSTANT FIELDS LIKE INT32.MAXVALUE CANNOT BE ACCESSED NORMALLY: CHECK FOR ISLITERAL FIELD ATTRIBUTE AND EMIT LITERAL VALUE (CAN USE GETVALUE REFLECTION) -- IF CAN'T DO THAT, CHECK FIELDINFO HANDLE AND IF THROWS WE KNOW WE NEED TO STOP
         | Property of PropertyInfo
@@ -262,6 +277,25 @@ module PathResolution =
                 tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest
             | _ -> None) 
 
+    let rec tryResolveILExprInstancePathGet (ilExpr:ILExpr) (path:Path) =
+        let path,rest = path.FirstPartPathWithRest
+        let ilExpr =
+            match tryResolveField ilExpr.Type path.Text instanceFlags with
+            | Some(fi) -> Some(ILExpr.InstanceFieldGet(ilExpr,fi))
+            | None ->
+                match tryResolveMethod ilExpr.Type ("get_" + path.Text) instanceFlags [||] [||] with
+                | Some(mi) -> Some(ILExpr.InstanceCall(ilExpr,mi,[]))
+                | None -> 
+                    None
+
+        match ilExpr, rest with
+        | Some(ilExpr), Some(rest) -> tryResolveILExprInstancePathGet ilExpr rest
+        | Some(ilExpr), None -> Some(ilExpr)
+        | None, _ -> None
+
+    //the reason we don't just implement this in terms of tryResolveILExprInstancePathGet is because we 
+    //want the precise point of ailure in the rest chain (of course, we could implement tryResolveILExprInstancePathGet
+    //with more info returned...)
     let rec resolveILExprInstancePathGet (ilExpr:ILExpr) (path:Path) =
         let path,rest = path.FirstPartPathWithRest
         let ilExpr =
@@ -308,12 +342,59 @@ module PathResolution =
             EM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
             ILExpr.Error(typeof<Void>)
 
+    ///resolves the full path call not allowing any leading chaining
+    let resolveFullPathCall env (path:Path) genericTyArgs args argTys pos =
+        let attempt =
+            env.NVTs
+            |> Seq.tryPick (function
+                | NVT.Variable(name,ty) when name = path.LeadingPartsText -> //instance method call on variable
+                    let instance = ILExpr.VarGet(path.LeadingPartsText,ty)
+                    let methodName = path.LastPartPath
+                    Some(resolveILExprInstanceCall instance methodName genericTyArgs args argTys)
+                | NVT.Namespace(ns) ->
+                    match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
+                    | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
+                        Some(resolveILExprStaticCall ty path.LastPartText genericTyArgs args argTys pos)
+                    | None -> //constructors (generic or non-generic)
+                        match tryResolveType [ns] env.Assemblies path.Text genericTyArgs with
+                        | None -> 
+                            None
+                        | Some(ty) ->
+                            if ty.IsValueType && args.Length = 0 then
+                                if ty = typeof<System.Void> then
+                                    EM.Void_cannot_be_instantiated pos
+                                    Some(ILExpr.Error(ty))
+                                else
+                                    Some(ILExpr.Default(ty))
+                            else
+                                match ty.GetConstructor(argTys) with
+                                | null -> 
+                                    EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
+                                    Some(ILExpr.Error(ty))
+                                | ctor ->
+                                    Some(ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty))
+                | NVT.Type(ty) when path.IsSinglePart -> //static methods of an open type
+                    match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
+                    | Some(meth) ->
+                        Some(ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args))
+                    | None ->
+                        None
+                | _ ->
+                    None)
+                
+        match attempt with
+        | None ->
+            EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text //TODO: may not be accurate any more!
+            abort() //need error message too!
+        | Some(ilExpr) ->
+            ilExpr
+
 module PR = PathResolution
 
 ///Symantic analysis (type checking)
-let rec tycheckWith env synTopLevel =
-    let rec tycheckExpWith env synExpr=
-        let tycheckExp = tycheckExpWith env
+let rec semantWith env synTopLevel =
+    let rec semantExprWith env synExpr=
+        let semantExpr = semantExprWith env
 
         match synExpr with
         | SynExpr.Double x -> ILExpr.Double x
@@ -344,7 +425,7 @@ let rec tycheckWith env synTopLevel =
             else
                 ILExpr.Default(ty)
         | SynExpr.UMinus(x,pos) ->
-            let x = tycheckExp x
+            let x = semantExpr x
             if x.Type = typeof<Int64> ||
                x.Type = typeof<Int32> ||
                x.Type = typeof<Int16> ||
@@ -360,7 +441,7 @@ let rec tycheckWith env synTopLevel =
                 | meth ->
                     ILExpr.StaticCall(meth, [x])
         | SynExpr.Pow(x, y, pos) ->        
-            let x,y = tycheckExp x, tycheckExp y
+            let x,y = semantExpr x, semantExpr y
             //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
             match tryResolveMethod typeof<System.Math> "Pow" staticFlags [||] [|typeof<float>;typeof<float>|] with
             | None -> 
@@ -379,7 +460,7 @@ let rec tycheckWith env synTopLevel =
                     EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<float>)
         | SynExpr.NumericBinop(op,x,y,pos) ->
-            let x, y = tycheckExp x, tycheckExp y
+            let x, y = semantExpr x, semantExpr y
             match NumericTower.tallestTy x.Type y.Type with
             | Some(tallestTy) -> //primitive
                 ILExpr.mkNumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
@@ -404,7 +485,7 @@ let rec tycheckWith env synTopLevel =
                 | Some(meth) ->
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y]) 
         | SynExpr.ComparisonBinop(op, x, y, pos) ->
-            let x, y = tycheckExp x, tycheckExp y
+            let x, y = semantExpr x, semantExpr y
                         
             //first numeric tower value type cases
             match NumericTower.tallestTy x.Type y.Type with
@@ -434,87 +515,46 @@ let rec tycheckWith env synTopLevel =
                 EM.Could_not_resolve_type pos tyName //TODO: IMPROVE IDENT POS INFO
                 abort()
             | Some(ty) ->
-                let args = args |> List.map (tycheckExp)
+                let args = args |> List.map (semantExpr)
                 let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-                match tryResolveMethod ty methodName staticFlags methodGenericTyArgs argTys with
-                | None -> 
-                    EM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
-                    abort()
-                | Some(meth) -> 
-                    ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
+                resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos
         //this is our most complex part of the grammer...
-        | SynExpr.PathCall(path, genericTyArgs, args, pos) ->
-            let args = args |> List.map (tycheckExp)
-            let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-            let genericTyArgs = resolveTySigs env genericTyArgs
-
-            let rec loop = function
-                | [] -> 
-                    EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text //TODO: may not be accurate any more!
-                    abort() //need error message too!
-                | hd::tl ->
-                    match hd with
-                    | NVT.Variable(name,ty) when name = path.LeadingPartsText -> //instance method call on variable
-                        match tryResolveMethod ty path.LastPartText instanceFlags genericTyArgs argTys with
-                        | None -> 
-                            EM.Invalid_instance_method pos path.LastPartText ty.Name (sprintTypes argTys)
-                            abort()
-                        | Some(meth) -> 
-                            ILExpr.InstanceCall(ILExpr.VarGet(path.LeadingPartsText,ty), meth, castArgsIfNeeded (meth.GetParameters()) args)
-                    | NVT.Namespace(ns) ->
-                        match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
-                        | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                            match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
-                            | None -> 
-                                EM.Invalid_static_method pos path.LastPartText ty.Name (sprintTypes argTys)
-                                abort()
-                            | Some(meth) -> 
-                                ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
-                        | None -> //constructors (generic or non-generic)
-                            match tryResolveType [ns] env.Assemblies path.Text genericTyArgs with
-                            | None -> 
-                                loop tl
-                            | Some(ty) ->
-                                if ty.IsValueType && args.Length = 0 then
-                                    if ty = typeof<System.Void> then
-                                        EM.Void_cannot_be_instantiated pos
-                                        ILExpr.Error(ty)
-                                    else
-                                        ILExpr.Default(ty)
-                                else
-                                    match ty.GetConstructor(argTys) with
-                                    | null -> 
-                                        EM.Could_not_resolve_constructor pos ty.Name (args |> List.map(fun arg -> arg.Type) |> sprintTypes)
-                                        ILExpr.Error(ty)
-                                    | ctor ->
-                                        ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty)
-                    | NVT.Type(ty) when path.IsSinglePart -> //static methods of an open type
-                        match tryResolveMethod ty path.LastPartText staticFlags genericTyArgs argTys with
-                        | Some(meth) ->
-                            ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
-                        | None ->
-                            loop tl
-                    | _ ->
-                        loop tl
-            loop env.NVTs
-        | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) -> //DONE
-            let instance,methodName =
-                match path.LeadingPartsPath with
-                | Some(leadingPath) ->
-                    tycheckExp <| SynExpr.ExprPathGet(instance, leadingPath), path.LastPartText
-                | None ->
-                    tycheckExp instance, path.Text
-
-            let args = args |> List.map (tycheckExp)
+        | SynExpr.PathCall(path, methodGenericTyArgs, args, pos) ->
+            let args = args |> List.map (semantExpr)
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
 
-            match tryResolveMethod instance.Type methodName instanceFlags methodGenericTyArgs argTys with
-            | None -> 
-                EM.Invalid_instance_method pos methodName instance.Type.Name (sprintTypes argTys)
-                abort()
-            | Some(meth) ->
-            ILExpr.InstanceCall(instance, meth, castArgsIfNeeded (meth.GetParameters()) args)
+            let instance =
+                match path.LeadingPartsPath with
+                | Some(path) -> 
+                    match PR.tryResolveLeadingPathGet env path with
+                    | None ->
+                        None
+                    | Some(ilExpr, Some(rest)) -> 
+                        PR.tryResolveILExprInstancePathGet ilExpr rest
+                    | Some(ilExpr, None) ->
+                        Some(ilExpr)
+                | None -> None
+
+            match instance with
+            | Some(instance) ->
+                let methodName = path.LastPartPath
+                resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys
+            | None ->
+                PR.resolveFullPathCall env path methodGenericTyArgs args argTys pos
+        | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) -> //DONE
+            let instance, methodName =
+                match path.LeadingPartsPath with
+                | Some(leadingPath) ->
+                    semantExpr <| SynExpr.ExprPathGet(instance, leadingPath), path.LastPartPath
+                | None ->
+                    semantExpr instance, path
+
+            let args = args |> List.map (semantExpr)
+            let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
+            let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
+
+            resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys
         ///variable, static field, or static (non-parameterized) property
         | SynExpr.PathGet(path) -> //DONE
             match PR.tryResolveLeadingPathGet env path with
@@ -526,10 +566,10 @@ let rec tycheckWith env synTopLevel =
             | Some(ilExpr, None) ->
                 ilExpr
         | SynExpr.ExprPathGet(x, path) -> //DONE
-            let x = tycheckExp x
+            let x = semantExpr x
             PR.resolveILExprInstancePathGet x path
-        | SynExpr.PathSet(path, (assign, assignPos)) -> //TODO
-            let assign = tycheckExp assign
+        | SynExpr.PathSet(path, (assign, assignPos)) ->
+            let assign = semantExpr assign
 
             let instance =
                 match path.LeadingPartsPath with
@@ -569,8 +609,8 @@ let rec tycheckWith env synTopLevel =
                         PR.validatePropertySet pi path assign.Type assignPos
                             (lazy(ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)))
         | SynExpr.ExprPathSet(instance, path, (assign,assignPos)) -> //TODO
-            let instance = tycheckExp instance
-            let assign = tycheckExp assign
+            let instance = semantExpr instance
+            let assign = semantExpr assign
             match path.LeadingPartsPath with
             | Some(leadingPath) -> 
                 let instance = PR.resolveILExprInstancePathGet instance leadingPath
@@ -578,46 +618,46 @@ let rec tycheckWith env synTopLevel =
             | None ->
                 PR.resolveILExprInstancePathSet instance path assign assignPos
         | SynExpr.Let(name, (assign, assignPos), body) ->
-            let assign = tycheckExp assign
+            let assign = semantExpr assign
             if assign.Type = typeof<Void> then
                 EM.Void_invalid_in_let_binding assignPos
         
-            let body = tycheckExpWith (env.ConsVariable(name, assign.Type)) body
+            let body = semantExprWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
         | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)) as x, (_,pos)) ->
             EM.Unreachable_code_detected pos
-            tycheckExp x //error recovery
+            semantExpr x //error recovery
         | SynExpr.Sequential(x,(y,_)) ->
-            let x, y = tycheckExp x, tycheckExp y
+            let x, y = semantExpr x, semantExpr y
             ILExpr.Sequential(x,y,y.Type)
         | SynExpr.OpenNamespaceOrType(nsOrTy, x) ->
             match nsOrTy.GenericArgs with
             | [] when namespaceExists env.Assemblies nsOrTy.GenericName ->
-                tycheckExpWith (env.ConsNamespace(nsOrTy.GenericName)) x
+                semantExprWith (env.ConsNamespace(nsOrTy.GenericName)) x
             | _ ->
                 let tyTys = resolveTySigs env nsOrTy.GenericArgs
                 match tryResolveType env.Namespaces env.Assemblies nsOrTy.GenericName tyTys with
                 | Some(ty) ->
-                    tycheckExpWith (env.ConsType(ty)) x
+                    semantExprWith (env.ConsType(ty)) x
                 | None ->
                     EM.Namespace_or_type_not_found nsOrTy.Pos nsOrTy.Name (sprintAssemblies env.Assemblies)
-                    tycheckExp x
+                    semantExpr x
         | SynExpr.OpenAssembly((name,pos), x) ->
             let asm = tryLoadAssembly name
             match asm with
             | None -> 
                 EM.Could_not_resolve_assembly pos name
-                tycheckExp x
-            | Some(asm) -> tycheckExpWith {env with Assemblies=asm::env.Assemblies} x
+                semantExpr x
+            | Some(asm) -> semantExprWith {env with Assemblies=asm::env.Assemblies} x
         | SynExpr.LogicalNot(x,pos) ->
-            let x = tycheckExp x
+            let x = semantExpr x
             if x.Type <> typeof<bool> then
                 EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
                 ILExpr.Error(typeof<bool>)
             else
                 ILExpr.LogicalNot(x)
         | SynExpr.Cast(x, tySig, pos) ->
-            let x = tycheckExp x
+            let x = semantExpr x
             let ty = resolveTySig env tySig
             
             if ty = typeof<System.Void> then
@@ -646,14 +686,14 @@ let rec tycheckWith env synTopLevel =
                     ILExpr.Error(ty)
         | SynExpr.LogicBinop(op,(x,xpos),(y,ypos)) ->
             let x =
-                match tycheckExp x with
+                match semantExpr x with
                 | x when x.Type <> typeof<bool> -> 
                     EM.Expected_type_but_got_type xpos "System.Boolean" x.Type.Name
                     ILExpr.Error(typeof<bool>)
                 | x -> x
 
             let y = 
-                match tycheckExp y with
+                match semantExpr y with
                 | y when y.Type <> typeof<bool> ->
                     EM.Expected_type_but_got_type ypos "System.Boolean" y.Type.Name
                     ILExpr.Error(typeof<bool>)
@@ -664,16 +704,16 @@ let rec tycheckWith env synTopLevel =
             | SynLogicBinop.Or -> ILExpr.IfThenElse(x, ILExpr.Bool(true), y, typeof<bool>)
         | SynExpr.IfThenElse((condition, conditionPos),thenBranch,elseBranch,pos) ->
             let condition = 
-                let condition = tycheckExp condition
+                let condition = semantExpr condition
                 if condition.Type <> typeof<bool> then
                     EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
                     ILExpr.Error(typeof<bool>)
                 else
                     condition
-            let thenBranch = tycheckExp thenBranch
+            let thenBranch = semantExpr thenBranch
             match elseBranch with
             | Some(elseBranch) ->
-                let elseBranch = tycheckExp elseBranch
+                let elseBranch = semantExpr elseBranch
                 if thenBranch.Type <> elseBranch.Type then
                     //maybe could use 
                     EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
@@ -689,13 +729,13 @@ let rec tycheckWith env synTopLevel =
             ILExpr.Nop
         | SynExpr.WhileLoop((condition, conditionPos), body) ->
             let condition = 
-                let condition = tycheckExp condition
+                let condition = semantExpr condition
                 if condition.Type <> typeof<bool> then
                     EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
                     ILExpr.Error(typeof<bool>)
                 else
                     condition
-            let body = tycheckExpWith {env with IsLoopBody=true} body
+            let body = semantExprWith {env with IsLoopBody=true} body
             ILExpr.WhileLoop(condition, body)
         | SynExpr.Break(pos) ->
             if not env.IsLoopBody then
@@ -718,10 +758,10 @@ let rec tycheckWith env synTopLevel =
             | synStmt::synStmts ->
                 match synStmt with
                 | SynStmt.Do x ->
-                    let ilStmt = ILStmt.Do(tycheckExpWith env x)
+                    let ilStmt = ILStmt.Do(semantExprWith env x)
                     loop env synStmts (ilStmt::ilStmts)                
                 | SynStmt.Let(name, (assign,assignPos)) ->
-                    let assign = tycheckExpWith env assign
+                    let assign = semantExprWith env assign
                     if assign.Type = typeof<Void> then
                         EM.Void_invalid_in_let_binding assignPos
 
@@ -751,4 +791,4 @@ let rec tycheckWith env synTopLevel =
                             loop env synStmts ilStmts //error recovery
         ILTopLevel.StmtList(loop env xl [])
     | SynTopLevel.Expr(x) ->
-        ILTopLevel.Exp(tycheckExpWith env x)
+        ILTopLevel.Expr(semantExprWith env x)

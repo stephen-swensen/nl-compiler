@@ -2,22 +2,26 @@
 open Swensen.NL
 open System
 
-let rec loop() =
+
+let rec loop(nli:Nli) =
     printf "> "
     match Console.ReadLine() with
     | "exit" -> ()
-    | str ->
+    | code ->
         try
-            printfn "%A" (Compilation.eval str)
+            let results = nli.Submit(code)
+            for fName,fValue in results do
+                printfn "%s = %A" fName fValue
         with
         | :? EvaluationException as e ->
             printfn "%A" e.Errors
         | e -> printfn "%A" e
 
-        loop()
+        loop(nli)
 
 [<EntryPoint>]
 let main(args:string[]) =
     printfn "NL Interactive"
-    loop()
+    let nli = new Nli()
+    loop(nli)
     0

@@ -1,26 +1,26 @@
 ﻿module Tests.SequentialTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
-module C = Compilation
+open Evaluation
 
-[<Fact>]
-let ``sequential expression`` () =
-    test <@ C.eval "3;4" = 4 @>
+[<Theory;EvalData>]
+let ``sequential expression`` options =
+    test <@ evalWith options "3;4" = 4 @>
 
-[<Fact>]
-let ``multiple sequential expressions`` () =
-    test <@ C.eval "3;4;5" = 5 @>
+[<Theory;EvalData>]
+let ``multiple sequential expressions`` options =
+    test <@ evalWith options "3;4;5" = 5 @>
 
-[<Fact>]
-let ``sequential expressions have weak right associativity`` () =
-    test <@ C.eval "2 + 3 ; 3 + 5" = 8 @>
+[<Theory;EvalData>]
+let ``sequential expressions have weak right associativity`` options =
+    test <@ evalWith options "2 + 3 ; 3 + 5" = 8 @>
 
-[<Fact>]
-let ``sequential expression with lhs void (result does not need to be popped from the stack)`` () =
-    test <@ C.eval "system.console.writeline(1); 4" = 4 @>
+[<Theory;EvalData>]
+let ``sequential expression with lhs void (result does not need to be popped from the stack)`` options =
+    test <@ evalWith options "system.console.writeline(1); 4" = 4 @>
 
-[<Fact>]
-let ``sequential expression with lhs nop`` () =
-    test <@ C.eval "(); 4" = 4 @>
+[<Theory;EvalData>]
+let ``sequential expression with lhs nop`` options =
+    test <@ evalWith options "(); 4" = 4 @>
