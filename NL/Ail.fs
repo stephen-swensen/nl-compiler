@@ -158,6 +158,6 @@ type ILStmt =
 
 ///represents a semantically checked top level language element
 type ILTopLevel =
-    | Exp               of ILExpr
+    | Expr               of ILExpr
     | StmtList          of ILStmt list
     | Error

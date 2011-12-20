@@ -1,58 +1,58 @@
 ﻿module Tests.ConstructorTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
 
-module C = Compilation
+open Evaluation
 
-[<Fact>]
-let ``constructor`` () =
-    test <@ C.eval<obj> "system.collections.arraylist()" :? System.Collections.ArrayList @>
+[<Theory;EvalData>]
+let ``constructor`` options =
+    test <@ evalWith<obj> options "system.collections.arraylist()" :? System.Collections.ArrayList @>
 
-[<Fact>]
-let ``default value of non-primitive value type`` () =
-    test <@ C.eval "biginteger()" = bigint() @>
+[<Theory;EvalData>]
+let ``default value of non-primitive value type`` options =
+    test <@ evalWith options "biginteger()" = bigint() @>
 
-[<Fact>]
-let ``default value of bool`` () =
-    test <@ C.eval "boolean()" = Unchecked.defaultof<bool> @>
+[<Theory;EvalData>]
+let ``default value of bool`` options =
+    test <@ evalWith options "boolean()" = Unchecked.defaultof<bool> @>
 
-[<Fact>]
-let ``default value of int32`` () =
-    test <@ C.eval "int32()" = Unchecked.defaultof<int32> @>
+[<Theory;EvalData>]
+let ``default value of int32`` options =
+    test <@ evalWith options "int32()" = Unchecked.defaultof<int32> @>
 
-[<Fact>]
-let ``default value of double`` () =
-    test <@ C.eval "double()" = Unchecked.defaultof<double> @>
+[<Theory;EvalData>]
+let ``default value of double`` options =
+    test <@ evalWith options "double()" = Unchecked.defaultof<double> @>
 
-[<Fact>]
-let ``default value of char`` () =
-    test <@ C.eval "char()" = Unchecked.defaultof<char> @>
+[<Theory;EvalData>]
+let ``default value of char`` options =
+    test <@ evalWith options "char()" = Unchecked.defaultof<char> @>
 
-[<Fact>]
-let ``resolve simple fully qualified generic signature in constructor`` () =
-    test <@ C.eval<obj> "system.collections.generic.list[system.int32]()" :? System.Collections.Generic.List<int> @>
+[<Theory;EvalData>]
+let ``resolve simple fully qualified generic signature in constructor`` options =
+    test <@ evalWith<obj> options "system.collections.generic.list[system.int32]()" :? System.Collections.Generic.List<int> @>
 
-[<Fact>]
-let ``resolve simple non qualified generic signature in constructor`` () =
-    test <@ C.eval<obj> "list[int32]()" :? System.Collections.Generic.List<int> @>
+[<Theory;EvalData>]
+let ``resolve simple non qualified generic signature in constructor`` options =
+    test <@ evalWith<obj> options "list[int32]()" :? System.Collections.Generic.List<int> @>
 
-[<Fact>]
-let ``resolve nested non qualified generic signature in constructor`` () =
-    test <@ C.eval<obj> "list[list[int32]]()" :? ResizeArray<ResizeArray<int>> @>
+[<Theory;EvalData>]
+let ``resolve nested non qualified generic signature in constructor`` options =
+    test <@ evalWith<obj> options "list[list[int32]]()" :? ResizeArray<ResizeArray<int>> @>
 
-[<Fact>]
-let ``resolve constructor with list of generic args`` () =
-    test <@ C.eval<obj> "dictionary[string,string]()" :? Dictionary<string,string> @>
+[<Theory;EvalData>]
+let ``resolve constructor with list of generic args`` options =
+    test <@ evalWith<obj> options "dictionary[string,string]()" :? Dictionary<string,string> @>
 
-[<Fact>]
-let ``resolve complex generic signature in constructor`` () =
-    test <@ C.eval<obj> "dictionary[list[int32],dictionary[string,list[int32]]]()" :? Dictionary<ResizeArray<int>,Dictionary<string,ResizeArray<int>>> @>
+[<Theory;EvalData>]
+let ``resolve complex generic signature in constructor`` options =
+    test <@ evalWith<obj> options "dictionary[list[int32],dictionary[string,list[int32]]]()" :? Dictionary<ResizeArray<int>,Dictionary<string,ResizeArray<int>>> @>
 
-[<Fact>]
-let ``Void cannot be instantiated`` () =
+[<Theory;EvalData>]
+let ``Void cannot be instantiated`` options =
     raisesWith 
-        <@ C.eval "System.Void()" @>
+        <@ evalWith options "System.Void()" @>
         (expectedErrors [|14|])

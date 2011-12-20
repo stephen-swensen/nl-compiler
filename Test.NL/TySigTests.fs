@@ -1,10 +1,10 @@
 ﻿module Tests.TySigTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
-module C = Compilation
+open Evaluation
 
 let pos:PositionRange = Unchecked.defaultof<PositionRange>
 

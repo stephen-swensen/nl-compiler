@@ -57,6 +57,8 @@
   <ItemGroup>
     <None Include="packages.config" />
     <Compile Include="Prelude.fs" />
+    <Compile Include="EvalDataAttribute.fs" />
+    <Compile Include="NliDataAttribute.fs" />
     <Compile Include="LiteralTests.fs" />
     <Compile Include="NumericOpTests.fs" />
     <Compile Include="VarTests.fs" />
@@ -70,7 +72,6 @@
     <Compile Include="RefAssemblyTests.fs" />
     <Compile Include="WhileLoopTests.fs" />
     <Compile Include="TySigTests.fs" />
-    <Compile Include="OptimizationTests.fs" />
     <Compile Include="OpenNamespaceTests.fs" />
     <Compile Include="OpenTypeTests.fs" />
     <Compile Include="PathTests.fs" />
@@ -78,7 +79,10 @@
     <Compile Include="FieldTests.fs" />
     <Compile Include="PropertyTests.fs" />
     <Compile Include="PathResolutionTests.fs" />
+    <Compile Include="OptimizationTests.fs" />
     <None Include="Test.AssemblyResolveTarget.dll" />
+    <Compile Include="EvalTests.fs" />
+    <Compile Include="NliTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
@@ -95,6 +99,10 @@
     </Reference>
     <Reference Include="xunit">
       <HintPath>..\packages\xunit.1.8.0.1549\lib\xunit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\packages\xunit.extensions.1.8.0.1549\lib\xunit.extensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

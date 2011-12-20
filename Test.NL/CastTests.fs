@@ -1,89 +1,89 @@
 ﻿module Tests.CastTests
 
-open Xunit
+open Xunit;; open Xunit.Extensions
 open Swensen.Unquote
 open Swensen.NL
 open System.Collections.Generic
 
-module C = Compilation
+open Evaluation
 
-[<Fact>]
-let ``box primitive value type`` () =
-    test <@ C.eval "32[object]" = box 32 @>
+[<Theory;EvalData>]
+let ``box primitive value type`` options =
+    test <@ evalWith options "32[object]" = box 32 @>
 
-[<Fact>]
-let ``box and ubox value type`` () =
-    test <@ C.eval "32[object][int32]" = 32 @>
+[<Theory;EvalData>]
+let ``box and ubox value type`` options =
+    test <@ evalWith options "32[object][int32]" = 32 @>
 
-[<Fact>]
-let ``down cast ref type`` () =
-    test <@ C.eval "'c'[object]" = box 'c' @>
+[<Theory;EvalData>]
+let ``down cast ref type`` options =
+    test <@ evalWith options "'c'[object]" = box 'c' @>
 
-[<Fact>]
-let ``downcast and updown cast ref type`` () =
-    test <@ C.eval "'c'[object][char]" = 'c' @>
+[<Theory;EvalData>]
+let ``downcast and updown cast ref type`` options =
+    test <@ evalWith options "'c'[object][char]" = 'c' @>
 
-[<Fact>]
-let ``downcast and upcast ref type to and from interface`` () =
-    test <@ C.eval<obj> "open system.collections in arraylist()[ienumerable][arraylist]" |> ignore; true @>
+[<Theory;EvalData>]
+let ``downcast and upcast ref type to and from interface`` options =
+    test <@ evalWith<obj> options "open system.collections in arraylist()[ienumerable][arraylist]" |> ignore; true @>
 
-[<Fact>]
-let ``downcast and upcast value type to and from interface`` () =
-    test <@ C.eval<obj> "biginteger()[IComparable][biginteger]" |> ignore; true @>
+[<Theory;EvalData>]
+let ``downcast and upcast value type to and from interface`` options =
+    test <@ evalWith<obj> options "biginteger()[IComparable][biginteger]" |> ignore; true @>
 
-[<Fact>]
-let ``semantic error trying to cast sealed value type to anything other than object or implemented interface `` () =
+[<Theory;EvalData>]
+let ``semantic error trying to cast sealed value type to anything other than object or implemented interface `` options =
     raisesWith 
-        <@ C.eval "32[string]" @>
+        <@ evalWith options "32[string]" @>
         (expectedErrors [|22|])
 
-[<Fact>]
-let ``semantic error trying to cast sealed ref type to anything other than object or implemented interface `` () =
+[<Theory;EvalData>]
+let ``semantic error trying to cast sealed ref type to anything other than object or implemented interface `` options =
     raisesWith 
-        <@ C.eval "\"asdf\"[char]" @>
+        <@ evalWith options "\"asdf\"[char]" @>
         (expectedErrors [|22|])
 
-[<Fact>] //fixed
-let ``cast var - does not needs to be surrounded with parens`` () =
-    test <@ C.eval "x = 3 in x[object][int32]" = 3 @>
+[<Theory;EvalData>] //fixed
+let ``cast var - does not needs to be surrounded with parens`` options =
+    test <@ evalWith options "x = 3 in x[object][int32]" = 3 @>
 
-[<Fact>]
-let ``cast var has more than one generic ty arg`` () =
+[<Theory;EvalData>]
+let ``cast var has more than one generic ty arg`` options =
     raisesWith 
-        <@ C.eval "x = 3 in x[object,int32]" @>
+        <@ evalWith options "x = 3 in x[object,int32]" @>
         (expectedErrors [|-1|])
 
-[<Fact>]
-let ``cannot cast value to its own type`` () =
+[<Theory;EvalData>]
+let ``cannot cast value to its own type`` options =
     raisesWith 
-        <@ C.eval "3[int32]" @>
+        <@ evalWith options "3[int32]" @>
         (expectedErrors [|21|])
 
-[<Fact>]
-let ``cast int to double, a widening coersion`` () =
-    test <@ C.eval "3[double]" = 3.0 @>
+[<Theory;EvalData>]
+let ``cast int to double, a widening coersion`` options =
+    test <@ evalWith options "3[double]" = 3.0 @>
 
-[<Fact>]
-let ``cast double to int, a narrowing coersion`` () =
-    test <@ C.eval "3.0[int32]" = 3 @>
+[<Theory;EvalData>]
+let ``cast double to int, a narrowing coersion`` options =
+    test <@ evalWith options "3.0[int32]" = 3 @>
 
-[<Fact>]
-let ``cast int32 to biginteger, a biginteger.op_implicit `` () =
-    test <@ C.eval "3[biginteger]" = 3I @>
+[<Theory;EvalData>]
+let ``cast int32 to biginteger, a biginteger.op_implicit `` options =
+    test <@ evalWith options "3[biginteger]" = 3I @>
 
-[<Fact>]
-let ``cast biginteger to int32, a biginteger.op_explicit `` () =
-    test <@ C.eval "biginteger()[int32]" = 0 @>
+[<Theory;EvalData>]
+let ``cast biginteger to int32, a biginteger.op_explicit `` options =
+    test <@ evalWith options "biginteger()[int32]" = 0 @>
 
-[<Fact>]
-let ``casting to Void will always fail`` () =
+[<Theory;EvalData>]
+let ``casting to Void will always fail`` options =
     raisesWith 
-        <@ C.eval "3[object][System.Void]" @>
+        <@ evalWith options "3[object][System.Void]" @>
         (expectedErrors [|20|])
 
-[<Fact>]
-let ``could not resolve cast type`` () =
+[<Theory;EvalData>]
+let ``could not resolve cast type`` options =
     raisesWith 
-        <@ C.eval "3[invalid]" @>
+        <@ evalWith options "3[invalid]" @>
         (expectedErrors [|1|])
 

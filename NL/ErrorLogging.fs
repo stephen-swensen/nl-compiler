@@ -109,14 +109,16 @@ type ErrorLogger() =
     static member ActiveLogger
         with get() = 
             if ErrorLogger.activeLogger = null then
-               ErrorLogger.InstallDefaultLogger()
+               ErrorLogger.InstallErrorLogger()
             ErrorLogger.activeLogger
         and set(v) = 
             ErrorLogger.activeLogger <- v
 
-    static member InstallDefaultLogger() =
+    ///Install the base, in-memory error logger
+    static member InstallErrorLogger() =
         ErrorLogger.activeLogger <- ErrorLogger()
 
+    ///Install the console error logger, which extends the base, in-memory error logger
     static member InstallConsoleLogger() =
         ErrorLogger.activeLogger <- ConsoleErrorLogger()
 
@@ -224,7 +226,7 @@ module ErrorMessage =
         mk ErrorLevel.Error ErrorType.Semantic 28 pos "Path '%s' cannot contain any '%s' characters"
 
     let Instance_field_or_property_not_found pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 29 pos "Field, or property '%s' on instance type '%s' not found"
+        mk ErrorLevel.Error ErrorType.Semantic 29 pos "Field or property '%s' on instance of type '%s' not found"
 
     let Field_set_type_mismatch pos =
         mk ErrorLevel.Error ErrorType.Semantic 30 pos "Type mismatch: field '%s' of type '%s' cannot be assigned a value of the incompatible type '%s'"
