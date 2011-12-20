@@ -22,6 +22,6 @@ let rec loop(nli:Nli) =
 [<EntryPoint>]
 let main(args:string[]) =
     printfn "NL Interactive"
-    let nli = new Nli()
+    let nli = new Nli({ CompilerOptions.Default with InstallErrorLogger=ErrorLogger.InstallConsoleLogger })
     loop(nli)
     0
