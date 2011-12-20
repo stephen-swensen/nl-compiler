@@ -172,6 +172,10 @@ type Nli() =
         let ty = tyBuilder.CreateType()
         env <- env.ConsType(ty)
 
+        //force the ty static constructor to execute (i.e. when we have no fields to init, just code to run)
+        //http://stackoverflow.com/a/4181676/236255
+        System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
+        
         ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
         |> Seq.map (fun fi -> fi.Name, fi.GetValue(null))
         |> Seq.toArray
