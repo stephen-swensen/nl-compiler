@@ -13,15 +13,15 @@ type EL = ErrorLogger
 open Compilation
 
 ///The NL interactive
-type Nli(options: CompilerOptions) = 
+type Nli(?options: CompilerOptions) = 
+    let options = defaultArg options CompilerOptions.Default
+
     let mutable asmCounter = 0I
     let mutable env = options.SemanticEnvironment
     let mutable itCounter = 0I
 
-    new () = Nli(CompilerOptions.Default)
-
     member this.Submit(code:string) =
-        EL.InstallConsoleLogger()
+        options.InstallErrorLogger()
 
         let asmName = "NLI_" + asmCounter.ToString()
         asmCounter <- asmCounter + 1I

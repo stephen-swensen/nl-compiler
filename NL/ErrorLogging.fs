@@ -46,7 +46,7 @@ type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:Err
         | -1 -> "-1"
         | _ ->
             let errorCodeString = errorCode.ToString()
-            let leadingZeros = 
+            let leadingZeros = //following F#'s lead here, but kinda thinking no need for leading zeros or even leading "FS" (perhaps makes searching on google easier?)
                 match errorCodeString.Length with
                 | 1 -> "000"
                 | 2 -> "00"
@@ -71,6 +71,7 @@ type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:Err
             (if String.IsNullOrWhiteSpace this.Filename then "" else " in " + this.Filename)
             (if String.IsNullOrWhiteSpace msg then "" else ": " + msg)
 
+///The base, in-memory error logger
 [<AllowNullLiteral>]
 type ErrorLogger() =
     let errors = System.Collections.Generic.List<CompilerError>()
@@ -88,14 +89,6 @@ type ErrorLogger() =
 
         errors.Add(ce)
 
-//    abstract Clear : unit -> unit
-//    //clear the active logger
-//    default __.Clear() = 
-//        errors.Clear()
-//        errorCount <- 0
-//        warningCount <- 0
-
-
     ///The count of the number of compiler errors which have "Error" severity level
     member __.ErrorCount = errorCount
     ///The count of the number of compiler errors which have "Warning" severity level
@@ -109,18 +102,17 @@ type ErrorLogger() =
     static member ActiveLogger
         with get() = 
             if ErrorLogger.activeLogger = null then
-               ErrorLogger.InstallErrorLogger()
+               ErrorLogger.activeLogger <- ErrorLogger()
             ErrorLogger.activeLogger
         and set(v) = 
             ErrorLogger.activeLogger <- v
 
-    ///Install the base, in-memory error logger
-    static member InstallErrorLogger() =
-        ErrorLogger.activeLogger <- ErrorLogger()
+    static member InstallInMemoryLogger = fun () ->
+        ErrorLogger.activeLogger <- new ErrorLogger()
 
-    ///Install the console error logger, which extends the base, in-memory error logger
-    static member InstallConsoleLogger() =
-        ErrorLogger.activeLogger <- ConsoleErrorLogger()
+    static member InstallConsoleLogger = fun () ->
+        ErrorLogger.activeLogger <- new ConsoleErrorLogger()
+    
 
 and ConsoleErrorLogger() = 
     inherit ErrorLogger()

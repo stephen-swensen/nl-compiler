@@ -18,6 +18,8 @@ open Compilation
 ///Evaluate an NL code string using the default environment.
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let evalWith<'a> options code : 'a = 
+    options.InstallErrorLogger()
+
     ///Create a dynamic method from a typed expression using the default environment
     let mkDm (ilExpr:ILExpr) =
         let dm = DynamicMethod("Eval", ilExpr.Type, null)
@@ -25,8 +27,6 @@ let evalWith<'a> options code : 'a =
         Emission.emit il ilExpr
         il.Emit(OpCodes.Ret)
         dm
-
-    EL.InstallErrorLogger() //may want to switch back to previous logger when exiting eval
 
     let ilTopLevel = parseAndSemantWith options.SemanticEnvironment code 
     match EL.ActiveLogger.ErrorCount with

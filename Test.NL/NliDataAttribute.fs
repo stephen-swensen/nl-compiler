@@ -17,6 +17,7 @@ type NliDataAttribute() =
     inherit DataAttribute()
 
     override this.GetData(_:MethodInfo, _:Type[]) : IEnumerable<obj[]> =
+
         seq {
             yield [| { CompilerOptions.Default with Optimize=false } |]
             yield [| { CompilerOptions.Default with Optimize=true } |]
