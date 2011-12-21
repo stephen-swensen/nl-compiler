@@ -28,7 +28,7 @@ let evalWith<'a> options code : 'a =
         il.Emit(OpCodes.Ret)
         dm
 
-    let ilTopLevel = parseAndSemantWith options.SemanticEnvironment code 
+    let ilTopLevel = lexParseAndSemantWith options.SemanticEnvironment code 
     match EL.ActiveLogger.ErrorCount with
     | 0 ->
         let ilTopLevel = if options.Optimize then Optimization.optimize ilTopLevel else ilTopLevel
