@@ -161,3 +161,9 @@ type ILTopLevel =
     | Expr               of ILExpr
     | StmtList          of ILStmt list
     | Error
+
+    member this.NormalizedStmts = 
+        match this with
+        | ILTopLevel.StmtList(stmts) -> stmts
+        | ILTopLevel.Expr(x) -> [ILStmt.Do(x)]
+        | ILTopLevel.Error -> []

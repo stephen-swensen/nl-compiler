@@ -38,17 +38,13 @@ type Nli(?options: CompilerOptions) =
 
         let ilTopLevel = parseAndSemantWith env code
 
-        if EL.ActiveLogger.ErrorCount > 0 then
+        if EL.ActiveLogger.HasErrors then
             [||]
         else
             let ilTopLevel =
                 if options.Optimize then ilTopLevel |> Optimization.optimize else ilTopLevel
 
-            let stmts =
-                match ilTopLevel with
-                | ILTopLevel.StmtList(stmts) -> stmts
-                | ILTopLevel.Expr(x) -> [ILStmt.Do(x)]
-                | _ -> failwithf "not a valid NLI expression: %A" ilTopLevel //todo: remove
+            let stmts = ilTopLevel.NormalizedStmts
         
             let emit () =
                 let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
