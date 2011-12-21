@@ -6,7 +6,7 @@ open Swensen.NL
 open System.Collections.Generic
 
 [<Theory;NliData>]
-let ``single expression is equivalent to single statement`` options =
+let ``single expression is equivalent to single Do statement`` options =
     test <@ Nli(options).Submit("3") = Nli(options).Submit("3;;") @>
 
 [<Theory;NliData>]
@@ -25,3 +25,15 @@ let ``let statement`` options =
 let ``let and do statements intersparsed`` options =
     test <@ Nli(options).Submit("x = 1;;2;;3;;y=4;;5;;") 
              = [|("x", 1 :> obj);("it_0", 2 :> obj);("it_1", 3 :> obj);("y", 4 :> obj);("it_2", 5 :> obj)|] @>
+
+[<Theory;NliData>]
+let ``Submit throws NliException when errors found`` options =
+    raises<NliException> <@ Nli(options).Submit("INVALID") @>
+
+[<Theory;NliData>]
+let ``can reference variables from previous submits`` options =
+    test <@ 
+            let nli = Nli(options)
+            nli.Submit("x = 3;;") |> ignore 
+            nli.Submit("y = x + 2;;") = [|("y", 5 :> obj)|]
+         @>

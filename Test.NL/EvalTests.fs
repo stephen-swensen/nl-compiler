@@ -14,3 +14,6 @@ let ``single expression is equivalent to single statement`` options =
 let ``returns last value of several statements`` options =
     test <@ evalWith options "1;;2;;3;;4;;" = 4 @>
 
+[<Theory;NliData>]
+let ``eval throws EvaluationException when errors found`` options =
+    raises<EvaluationException> <@ Nli(options).Submit("INVALID") @>
