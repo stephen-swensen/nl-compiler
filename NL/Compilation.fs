@@ -11,7 +11,7 @@ open Parser
 
 type EL = ErrorLogger
 
-let parseAndSemantWith env code =
+let lexParseAndSemantWith env code =
     let lexbuf = LexBuffer<char>.FromString(code)
     lexbuf.EndPos <- 
         { 
@@ -38,7 +38,7 @@ let parseAndSemantWith env code =
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Internal, ErrorLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
         ILTopLevel.Error
 
-let parseAndSemant = parseAndSemantWith SemanticEnvironment.Default
+let lexParseAndSemant = lexParseAndSemantWith SemanticEnvironment.Default
 
 //todo: currently this function compilies an expression to a single method
 //      set as the entry point of an assembly, obviously this needs to evolve.
@@ -68,7 +68,7 @@ let compileFromAil ail asmName =
 ///Compile the given source code string into an assembly
 ///code -> assemblyName -> unit
 let compileFromString = 
-    (parseAndSemantWith SemanticEnvironment.Default)>>compileFromAil
+    (lexParseAndSemantWith SemanticEnvironment.Default)>>compileFromAil
 
 ///Compile all the given source code files into a single assembly
 ///fileNames -> assemblyName -> unit

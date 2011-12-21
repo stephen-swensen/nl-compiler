@@ -36,7 +36,7 @@ type Nli(?options: CompilerOptions) =
         
         let tyInitBuilder = tyBuilder.DefineTypeInitializer()
 
-        let ilTopLevel = parseAndSemantWith env code
+        let ilTopLevel = lexParseAndSemantWith env code
 
         if EL.ActiveLogger.HasErrors then
             [||]

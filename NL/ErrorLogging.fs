@@ -116,7 +116,9 @@ type ErrorLogger() =
     static member InstallConsoleLogger = fun () ->
         ErrorLogger.activeLogger <- new ConsoleErrorLogger()
     
-
+///Maybe make ErrorLogger event driven instead of inheritence driven (i.e.
+///have a "ErrorLogged" event which can have a "ConsoleListener" event attached
+///if desired).
 and ConsoleErrorLogger() = 
     inherit ErrorLogger()
     override  __.Log(ce:CompilerError) =
@@ -244,4 +246,4 @@ type EvaluationException(msg:string, errors:CompilerError[]) =
     override this.ToString() =
         sprintf "EvaluationException: %s %A" msg errors
 
-exception CompilerInternalErrorException
+//exception CompilerInternalErrorException
