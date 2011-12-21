@@ -62,15 +62,16 @@ rule tokenize = parse
 | "<=" { LTEQ }
 
 //various
-| "[" { LBRACKET }
-| "]" { RBRACKET }
-| "{" { LBRACE }
-| "}" { RBRACE }
-| "(" { LPAREN }
-| ")" { RPAREN }
-| "." { DOT }
-| "," { COMMA }
-| ";" { SEMICOLON }
+| "["  { LBRACKET }
+| "]"  { RBRACKET }
+| "{"  { LBRACE }
+| "}"  { RBRACE }
+| "("  { LPAREN }
+| ")"  { RPAREN }
+| "."  { DOT }
+| ","  { COMMA }
+| ";;" { DOUBLE_SEMICOLON }
+| ";"  { SEMICOLON }
 | "="  { EQ }
 | "<-" { SET }
 

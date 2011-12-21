@@ -7,7 +7,7 @@ open System.Collections.Generic
 open Evaluation
 
 [<Theory;EvalData>]
-let ``single statement is equivalent to single statement`` options =
+let ``single expression is equivalent to single statement`` options =
     test <@ evalWith options "3" = evalWith options "3;;" @>
 
 [<Theory(Skip="not sure if we even want to allow this");EvalData>]
