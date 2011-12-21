@@ -16,3 +16,12 @@ let ``issue 45: double semilcolon should not reduced to single semicolon in let 
 [<Theory;NliData>]
 let ``single Do statement is bound to 0th it`` options =
     test <@ Nli(options).Submit("3") = [|("it_0", 3 :> obj)|] @>
+
+[<Theory;NliData>]
+let ``let statement`` options =
+    test <@ Nli(options).Submit("x = 3;;") = [|("x", 3 :> obj)|] @>
+
+[<Theory;NliData>]
+let ``let and do statements intersparsed`` options =
+    test <@ Nli(options).Submit("x = 1;;2;;3;;y=4;;5;;") 
+             = [|("x", 1 :> obj);("it_0", 2 :> obj);("it_1", 3 :> obj);("y", 4 :> obj);("it_2", 5 :> obj)|] @>

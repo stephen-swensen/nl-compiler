@@ -239,7 +239,7 @@ expr:
 
 stmtList:
     | stmt { [$1] }
-    | stmt stmtList { $1::$2 }
+    | stmt stmtList { $2 @ [$1] } //TODO: FIX TO BE MORE EFFICIENT
 
 stmt:
     //open namespace
