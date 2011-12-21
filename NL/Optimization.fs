@@ -1,11 +1,12 @@
 ﻿module Swensen.NL.Optimization
 open Swensen.NL.Ail
 
+///Optimize the ILTopLevel tree. An exception will be raised if the tree contains any "errors".
 let optimize (tl:ILTopLevel) =
-    let rec optimizeExp exp = 
+    let rec optimizeExpr exp = 
         match exp with
         | ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty) -> //unreachable code elimination
-            let condition, thenBranch, elseBranch = optimizeExp condition, optimizeExp thenBranch, optimizeExp elseBranch
+            let condition, thenBranch, elseBranch = optimizeExpr condition, optimizeExpr thenBranch, optimizeExpr elseBranch
             match condition with
             | ILExpr.Bool(true) -> thenBranch
             | ILExpr.Bool(false) -> elseBranch
@@ -15,7 +16,7 @@ let optimize (tl:ILTopLevel) =
                 | _ ->
                     ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty)
         | ILExpr.IfThen(condition, thenBranch) -> //unreachable code elimination
-            let condition, thenBranch = optimizeExp condition, optimizeExp thenBranch
+            let condition, thenBranch = optimizeExpr condition, optimizeExpr thenBranch
             match condition with
             | ILExpr.Bool(true) -> thenBranch
             | ILExpr.Bool(false) -> ILExpr.Nop
@@ -25,7 +26,7 @@ let optimize (tl:ILTopLevel) =
                 | _ ->
                     ILExpr.IfThen(condition, thenBranch)
         | ILExpr.NumericBinop(op, x, y, ty) -> //numeric constants folding
-            let x, y = optimizeExp x, optimizeExp y
+            let x, y = optimizeExpr x, optimizeExpr y
             match x, y with
             | ILExpr.Int32(xval), ILExpr.Int32(yval) ->
                 ILExpr.Int32(op.Call(xval, yval))
@@ -33,18 +34,18 @@ let optimize (tl:ILTopLevel) =
                 ILExpr.Double((op.Call(xval, yval)))
             | _ -> ILExpr.NumericBinop(op, x, y, ty)    
         | ILExpr.StaticCall(mi, args) ->
-            let args = args |> List.map optimizeExp
+            let args = args |> List.map optimizeExpr
             match args with
             | [ILExpr.String(xval); ILExpr.String(yval)] when mi.DeclaringType = typeof<string> && mi.Name = "Concat" -> //i.e. "asdf" + "asdf" (can refactor this better?)
                 ILExpr.String(xval + yval)
             | _ ->
                 ILExpr.StaticCall(mi, args)
         | ILExpr.InstanceCall(instance, mi, args) ->
-            let instance = optimizeExp instance
-            let args = args |> List.map optimizeExp
+            let instance = optimizeExpr instance
+            let args = args |> List.map optimizeExpr
             ILExpr.InstanceCall(instance, mi, args)
         | ILExpr.ComparisonBinop(op, x, y) -> //comparison constants folding
-            let x, y = optimizeExp x, optimizeExp y
+            let x, y = optimizeExpr x, optimizeExpr y
             match x, y with
             | ILExpr.Int32(xval), ILExpr.Int32(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
@@ -54,51 +55,51 @@ let optimize (tl:ILTopLevel) =
                 ILExpr.Bool(op.Call(xval, yval))
             | _ -> ILExpr.ComparisonBinop(op, x, y)
         | ILExpr.Coerce(x, ty) -> //mostly for implicit coersions to improve constants folding
-            let x = optimizeExp x
+            let x = optimizeExpr x
             match x with
             | Int32(x) when ty = typeof<double> -> Double(double x)
             | Double(x) when ty = typeof<int32> -> Int32(int32 x)
             | _ -> ILExpr.Coerce(x, ty)
         | ILExpr.LogicalNot(x) ->
-            let x = optimizeExp x
+            let x = optimizeExpr x
             match x with
             | ILExpr.Bool(true) -> ILExpr.Bool(false)
             | ILExpr.Bool(false) -> ILExpr.Bool(true)
             | _ -> ILExpr.LogicalNot(x)
         | ILExpr.Sequential(x,y,ty) ->
-            let x,y = optimizeExp x, optimizeExp y
+            let x,y = optimizeExpr x, optimizeExpr y
             match x, y with
             | ILExpr.Nop, ILExpr.Nop -> ILExpr.Nop //();() -> ()
             | ILExpr.Nop, _ -> y // (); exp -> exp
             | _,_ -> ILExpr.Sequential(x,y,ty)
         | ILExpr.UMinus(x, ty) ->
-            let x = optimizeExp x
+            let x = optimizeExpr x
             match x with
             | ILExpr.Int32(xval) -> ILExpr.Int32(-xval)
             | ILExpr.Double(xval) -> ILExpr.Double(-xval)
             | _ -> ILExpr.UMinus(x, ty)
         | ILExpr.WhileLoop(cond, body) ->
-            let cond = optimizeExp cond
+            let cond = optimizeExpr cond
             match cond with
             | ILExpr.Bool(false) ->
                 ILExpr.Nop
             | _ ->
-                let body = optimizeExp body
+                let body = optimizeExpr body
                 ILExpr.WhileLoop(cond, body)
         | ILExpr.Cast(x, ty) ->
-            ILExpr.Cast(optimizeExp x, ty)
+            ILExpr.Cast(optimizeExpr x, ty)
         | ILExpr.Ctor(ci, args, ty) ->
-            ILExpr.Ctor(ci, List.map optimizeExp args, ty)
+            ILExpr.Ctor(ci, List.map optimizeExpr args, ty)
         | ILExpr.Let(name, assign, body, ty) ->
-            ILExpr.Let(name, optimizeExp assign, optimizeExp body, ty)
+            ILExpr.Let(name, optimizeExpr assign, optimizeExpr body, ty)
         | ILExpr.VarSet(name, assign) ->
-            ILExpr.VarSet(name, optimizeExp assign)
+            ILExpr.VarSet(name, optimizeExpr assign)
         | ILExpr.StaticFieldSet(fi, assign) ->
-            ILExpr.StaticFieldSet(fi, optimizeExp assign)
+            ILExpr.StaticFieldSet(fi, optimizeExpr assign)
         | ILExpr.InstanceFieldGet(x, fi) ->
-            ILExpr.InstanceFieldGet(optimizeExp x, fi)
+            ILExpr.InstanceFieldGet(optimizeExpr x, fi)
         | ILExpr.InstanceFieldSet(x,fi,y) ->
-            ILExpr.InstanceFieldSet(optimizeExp x, fi, optimizeExp y)
+            ILExpr.InstanceFieldSet(optimizeExpr x, fi, optimizeExpr y)
         | Default(ty) ->
             if ty = typeof<int32> then
                 ILExpr.Int32(Unchecked.defaultof<int32>)
@@ -126,15 +127,15 @@ let optimize (tl:ILTopLevel) =
             failwith "Should not be optimizing an expression with errors"
 
     match tl with
-    | ILTopLevel.Expr(x) -> optimizeExp x |> ILTopLevel.Expr
+    | ILTopLevel.Expr(x) -> optimizeExpr x |> ILTopLevel.Expr
     | ILTopLevel.StmtList(xl) ->
         xl 
         |> List.map (fun x ->
             match x with
-            | ILStmt.Do(x) -> optimizeExp x |> ILStmt.Do
+            | ILStmt.Do(x) -> optimizeExpr x |> ILStmt.Do
             | ILStmt.Let(name, x) -> 
-                let x = optimizeExp x
+                let x = optimizeExpr x
                 ILStmt.Let(name, x))
         |> ILTopLevel.StmtList
     | ILTopLevel.Error _ ->
-        failwith "Should not be optimizing an NL fragment with errors"
+        failwith "Should not be optimizing a top-level NL fragment with errors"
