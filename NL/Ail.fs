@@ -159,11 +159,19 @@ type ILStmt =
 ///represents a semantically checked top level language element
 type ILTopLevel =
     | Expr               of ILExpr
-    | StmtList          of ILStmt list
+    | StmtList           of ILStmt list
     | Error
 
+    ///Try to "normalize" the top level NL fragment to a list of statements
     member this.NormalizedStmts = 
         match this with
-        | ILTopLevel.StmtList(stmts) -> stmts
-        | ILTopLevel.Expr(x) -> [ILStmt.Do(x)]
-        | ILTopLevel.Error -> []
+        | ILTopLevel.StmtList(stmts) -> Some(stmts)
+        | ILTopLevel.Expr(x) -> Some([ILStmt.Do(x)])
+        | ILTopLevel.Error -> None
+
+    ///Try to "normalize" the top level NL fragment to a single expression
+    member this.NormalizedExpr =
+        match this with
+        | ILTopLevel.Expr(x) -> Some(x)
+        | ILTopLevel.StmtList([ILStmt.Do(x)]) -> Some(x)
+        | _ -> None

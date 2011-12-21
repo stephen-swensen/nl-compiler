@@ -29,19 +29,18 @@ let evalWith<'a> options code : 'a =
         dm
 
     let ilTopLevel = lexParseAndSemantWith options.SemanticEnvironment code 
-    match EL.ActiveLogger.ErrorCount with
-    | 0 ->
-        let ilTopLevel = if options.Optimize then Optimization.optimize ilTopLevel else ilTopLevel
-        let ilExpr =
-            match ilTopLevel with
-            | ILTopLevel.Expr(x) -> x
-            | ILTopLevel.StmtList([ILStmt.Do(x)]) -> x
-            | _ -> 
-                raise (EvaluationException("not a valid eval expression", [||]))
+    if EL.ActiveLogger.HasErrors then
+        raise <| EvaluationException(EL.ActiveLogger.GetErrors())
 
-        let dm = mkDm ilExpr
-        dm.Invoke(null,null) |> unbox
-    | _ ->
-        raise (EvaluationException("Compiler errors", EL.ActiveLogger.Errors |> Seq.toArray))
+    let ilTopLevel = if options.Optimize then Optimization.optimize ilTopLevel else ilTopLevel
+    
+    let ilExpr =
+        match ilTopLevel.NormalizedExpr with
+        | Some(x) -> x
+        | None -> raise <| EvaluationException(sprintf "NL fragment could not be normalized for evaluation: %A" ilTopLevel)
+
+    let dm = mkDm ilExpr
+    dm.Invoke(null,null) |> unbox
+
 
 let eval<'a> = evalWith<'a> CompilerOptions.Default

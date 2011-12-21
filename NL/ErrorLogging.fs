@@ -71,14 +71,15 @@ type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:Err
             (if String.IsNullOrWhiteSpace this.Filename then "" else " in " + this.Filename)
             (if String.IsNullOrWhiteSpace msg then "" else ": " + msg)
 
-///The base, in-memory error logger
+///The base, in-memory error logger. Not thread-safe.
 [<AllowNullLiteral>]
 type ErrorLogger() =
     let errors = System.Collections.Generic.List<CompilerError>()
     let mutable errorCount = 0
     let mutable warningCount = 0
-    ///A readonly view of all the loggged errors
-    member __.Errors = seq { yield! errors }
+    
+    ///Get a snapshot of all the logged errors
+    member __.GetErrors() = errors.ToArray()
 
     abstract Log : CompilerError -> unit
     ///Log the compiler error
@@ -242,8 +243,18 @@ exception CompilerInterruptException
 
 type EvaluationException(msg:string, errors:CompilerError[]) =
     inherit Exception(msg)
+    new(errors:CompilerError[]) = new EvaluationException("NL compiler errors detected", errors)
+    new(msg) = new EvaluationException(msg, [||])
     member this.Errors = errors
     override this.ToString() =
         sprintf "EvaluationException: %s %A" msg errors
+
+type NliException(msg:string, errors:CompilerError[]) =
+    inherit Exception(msg)
+    new(errors:CompilerError[]) = new NliException("NL compiler errors detected", errors)
+    new(msg) = new NliException(msg, [||])
+    member this.Errors = errors
+    override this.ToString() =
+        sprintf "NliException: %s %A" msg errors
 
 //exception CompilerInternalErrorException

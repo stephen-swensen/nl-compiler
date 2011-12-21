@@ -5,6 +5,7 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 
+///Emit opcodes for the given ILExpr on the given ILGenerator. An exception will be raised if the expression tree contains any errors.
 let emit (il:ILGenerator) ilExpr =
     let isDefaultOfValueType = function
         | Default(ty) when ty.IsValueType ->
@@ -219,4 +220,4 @@ let emit (il:ILGenerator) ilExpr =
             false
     //and emitValueInitForSetIfApplicable loopLabel
 
-    emitWith None Map.empty ilExpr |> ignore
+    emitWith None Map.empty ilExpr
