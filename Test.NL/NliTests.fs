@@ -7,7 +7,11 @@ open System.Collections.Generic
 
 [<Theory;NliData>]
 let ``single expression is equivalent to single statement`` options =
-    test <@ Nli(options).Submit("3") = Nli(options).Submit("3") @>
+    test <@ Nli(options).Submit("3") = Nli(options).Submit("3;;") @>
+
+[<Theory;NliData>]
+let ``issue 45: double semilcolon should not reduced to single semicolon in let bindings`` options =
+    test <@ Nli(options).Submit("x = 3 in x;;") = [|("it_0", 3 :> obj)|] @>
 
 [<Theory;NliData>]
 let ``single Do statement is bound to 0th it`` options =

@@ -26,7 +26,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token <string> IDENT
 %token IN EQ
 %token LPAREN RPAREN
-%token COMMA DOT SEMICOLON
+%token COMMA DOT SEMICOLON DOUBLE_SEMICOLON
 %token OPEN
 %token LBRACKET RBRACKET LBRACE RBRACE
 %token IF THEN ELSE
@@ -243,15 +243,15 @@ stmtList:
 
 stmt:
     //open namespace
-    | OPEN tySig SEMICOLON SEMICOLON
+    | OPEN tySig DOUBLE_SEMICOLON
         { SynStmt.OpenNamespaceOrType($2) }
     
     //open assembly reference (by assembly name or file name)
-    | OPEN STRING SEMICOLON SEMICOLON
+    | OPEN STRING DOUBLE_SEMICOLON
         { SynStmt.OpenAssembly($2, range parseState 2 2) }
         
     //let statement (these can not be paths, since they are compiled as fields -- unless we want to compile them with '$' seperators)
-    | path EQ expr SEMICOLON SEMICOLON
+    | path EQ expr DOUBLE_SEMICOLON
         { 
             if $1.Length > 1 then
                 EM.Invalid_pathifier (range parseState 1 1) ($1.Text) "."
@@ -259,7 +259,7 @@ stmt:
             SynStmt.Let($1.Text, ($3, range parseState 3 3))
         }
 
-    | expr SEMICOLON SEMICOLON
+    | expr DOUBLE_SEMICOLON
         { SynStmt.Do($1) }
 
 topLevel:
