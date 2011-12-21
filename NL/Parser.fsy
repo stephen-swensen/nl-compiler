@@ -163,6 +163,7 @@ expr:
     //bind variable
     | path EQ expr IN expr                
        { SynExpr.Let($1.Text, ($3, range parseState 3 3), $5) }
+
     //var expression
     | path                                     
         { SynExpr.PathGet($1)}
