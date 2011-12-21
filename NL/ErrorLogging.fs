@@ -89,6 +89,9 @@ type ErrorLogger() =
 
         errors.Add(ce)
 
+    ///Indicates whether there are any errors ("Error" severity level) that have been logged
+    member __.HasErrors = errorCount > 0
+
     ///The count of the number of compiler errors which have "Error" severity level
     member __.ErrorCount = errorCount
     ///The count of the number of compiler errors which have "Warning" severity level

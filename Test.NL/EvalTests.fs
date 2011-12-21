@@ -10,7 +10,7 @@ open Evaluation
 let ``single statement is equivalent to single statement`` options =
     test <@ evalWith options "3" = evalWith options "3;;" @>
 
-[<Theory(Skip="asdf");EvalData>]
+[<Theory(Skip="not sure if we even want to allow this");EvalData>]
 let ``returns last value of several statements`` options =
     test <@ evalWith options "1;;2;;3;;4;;" = 4 @>
 
