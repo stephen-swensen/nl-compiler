@@ -36,45 +36,49 @@ type Nli(?options: CompilerOptions) =
         
         let tyInitBuilder = tyBuilder.DefineTypeInitializer()
 
-        let stmts =
+        let ilTopLevel = parseAndSemantWith env code
+
+        if EL.ActiveLogger.ErrorCount > 0 then
+            [||]
+        else
             let ilTopLevel =
-                let ilTopLevel = parseAndSemantWith env code
                 if options.Optimize then ilTopLevel |> Optimization.optimize else ilTopLevel
 
-            match ilTopLevel with
-            | ILTopLevel.StmtList(stmts) -> stmts
-            | ILTopLevel.Expr(x) -> [ILStmt.Do(x)]
-            | _ -> failwithf "not a valid NLI expression: %A" ilTopLevel //todo: remove
+            let stmts =
+                match ilTopLevel with
+                | ILTopLevel.StmtList(stmts) -> stmts
+                | ILTopLevel.Expr(x) -> [ILStmt.Do(x)]
+                | _ -> failwithf "not a valid NLI expression: %A" ilTopLevel //todo: remove
         
-        let emit () =
-            let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
-            let il = tyInitBuilder.GetILGenerator()
-            //need final it
-            for stmt in stmts do
-                match stmt with
-                | ILStmt.Do(x) ->
-                    if x.Type <> typeof<Void> then
-                        let fi = tyBuilder.DefineField("it_" + itCounter.ToString(), x.Type, fieldAttrs)
-                        itCounter <- itCounter + 1I
+            let emit () =
+                let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
+                let il = tyInitBuilder.GetILGenerator()
+                //need final it
+                for stmt in stmts do
+                    match stmt with
+                    | ILStmt.Do(x) ->
+                        if x.Type <> typeof<Void> then
+                            let fi = tyBuilder.DefineField("it_" + itCounter.ToString(), x.Type, fieldAttrs)
+                            itCounter <- itCounter + 1I
+                            Emission.emit il (ILExpr.StaticFieldSet(fi,x))
+                        else
+                            Emission.emit il x
+                    | ILStmt.Let(name,x) -> 
+                        let fi = tyBuilder.DefineField(name, x.Type, fieldAttrs)
                         Emission.emit il (ILExpr.StaticFieldSet(fi,x))
-                    else
-                        Emission.emit il x
-                | ILStmt.Let(name,x) -> 
-                    let fi = tyBuilder.DefineField(name, x.Type, fieldAttrs)
-                    Emission.emit il (ILExpr.StaticFieldSet(fi,x))
 
-            il.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
+                il.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
 
 
-        emit ()
+            emit ()
 
-        let ty = tyBuilder.CreateType()
-        env <- env.ConsType(ty)
+            let ty = tyBuilder.CreateType()
+            env <- env.ConsType(ty)
 
-        //force the ty static constructor to execute (i.e. when we have no fields to init, just code to run)
-        //http://stackoverflow.com/a/4181676/236255
-        System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
+            //force the ty static constructor to execute (i.e. when we have no fields to init, just code to run)
+            //http://stackoverflow.com/a/4181676/236255
+            System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
         
-        ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
-        |> Seq.map (fun fi -> fi.Name, fi.GetValue(null))
-        |> Seq.toArray
+            ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
+            |> Seq.map (fun fi -> fi.Name, fi.GetValue(null))
+            |> Seq.toArray
