@@ -238,6 +238,9 @@ module ErrorMessage =
     let Property_has_no_getter pos =
         mk ErrorLevel.Error ErrorType.Semantic 33 pos "The property '%s' has no getter"
 
+    let Could_not_escape_string_literal pos =
+        mk ErrorLevel.Error ErrorType.Semantic 34 pos "Error %s"
+
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
 
