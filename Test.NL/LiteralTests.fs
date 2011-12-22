@@ -28,8 +28,24 @@ let ``literal Double out of range`` options =
         (expectedErrors [|27|])
 
 [<Theory;EvalData>]
-let ``literal String exp`` options =
+let ``literal String`` options =
     test <@ evalWith options "\"hello world\"" = "hello world" @>
+
+[<Theory;EvalData>]
+let ``literal String with escapes`` options =
+    test <@ evalWith options @"""\t\n\r\\rhello world""" = "\t\n\r\\rhello world" @>
+
+[<Theory(Skip="todo");EvalData>]
+let ``literal String with quote escape`` options =
+    test <@ evalWith options @"""hello \"" world""" = "hello \" world" @>
+
+[<Theory;EvalData>]
+let ``literal String verbatim`` options =
+    test <@ evalWith options @"@""\t\n\r\\rhello world""" = @"\t\n\r\\rhello world" @>
+
+[<Theory(Skip="todo");EvalData>]
+let ``literal String verbatim double quote as quote`` options =
+    test <@ evalWith options @"@""hello "" world""" = "hello \" world" @>
 
 [<Theory;EvalData>]
 let ``char literal`` options =
