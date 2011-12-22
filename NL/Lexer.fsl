@@ -76,7 +76,7 @@ rule tokenize = parse
 | "<-" { SET }
 
 //verbatim string literal
-| "@\"" [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(2, s.Length - 3)) }
+| "@\"" ("\"\""|[^ '"'])* '"' { STRING (let s = lexeme lexbuf in s.Substring(2, s.Length - 3).Replace("\"\"", "\"")) }
 
 //string literal with escape sequences
 
