@@ -36,7 +36,7 @@ module StringLiteralTests =
     let ``literal String with escapes`` options =
         test <@ evalWith options @"""\t\n\r\\rhello world""" = "\t\n\r\\rhello world" @>
 
-    [<Theory(Skip="todo");EvalData>]
+    [<Theory;EvalData>]
     let ``literal String with quote escape`` options =
         test <@ evalWith options @"""hello \"" world""" = "hello \" world" @>
 
