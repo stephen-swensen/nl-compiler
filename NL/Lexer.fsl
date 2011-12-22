@@ -75,8 +75,19 @@ rule tokenize = parse
 | "="  { EQ }
 | "<-" { SET }
 
-//string literal
-| '"' [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(1, s.Length - 2)) }
+//verbatim string literal
+| "@\"" [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(2, s.Length - 3)) }
+
+//string literal with escape sequences
+| '"' [^ '"']* '"' 
+    { 
+        let s = lexeme lexbuf 
+        try
+            STRING(System.Text.RegularExpressions.Regex.Unescape(s.Substring(1, s.Length - 2)))
+        with e ->
+            EM.Could_not_escape_string_literal (range lexbuf) e.Message
+            STRING("") //error recovery
+    } 
 
 //char literal
 | ''' _ ''' { CHAR (let s = lexeme lexbuf in s.[1]) }
