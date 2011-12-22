@@ -9,12 +9,13 @@ let rec loop(nli:Nli) =
     | "exit" -> ()
     | code ->
         try
-            let results = nli.Submit(code)
-            for fName,fValue in results do
-                printfn "%s = %A" fName fValue
+            match nli.TrySubmit(code) with
+            | Some(results) ->
+                for fName,fValue in results do
+                    printfn "%s = %A" fName fValue
+            | None ->
+                ()
         with
-        | :? EvaluationException as e ->
-            printfn "%A" e.Errors
         | e -> printfn "%A" e
 
         loop(nli)
