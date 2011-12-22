@@ -79,7 +79,8 @@ rule tokenize = parse
 | "@\"" [^ '"']* '"' { STRING (let s = lexeme lexbuf in s.Substring(2, s.Length - 3)) }
 
 //string literal with escape sequences
-| '"' [^ '"']* '"' 
+
+| '"' ( '\\'_ | [^ '\"' ] )* '"'
     { 
         let s = lexeme lexbuf 
         try
