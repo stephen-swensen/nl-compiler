@@ -17,7 +17,7 @@ open Compilation
 
 ///Evaluate an NL code string using the default environment.
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
-let evalWith<'a> options code : 'a = 
+let tryEvalWith<'a> options code : 'a option = 
     options.InstallErrorLogger()
 
     ///Create a dynamic method from a typed expression using the default environment
@@ -30,17 +30,27 @@ let evalWith<'a> options code : 'a =
 
     let ilTopLevel = lexParseAndSemantWith options.SemanticEnvironment code 
     if EL.ActiveLogger.HasErrors then
-        raise <| EvaluationException(EL.ActiveLogger.GetErrors())
-
-    let ilTopLevel = if options.Optimize then Optimization.optimize ilTopLevel else ilTopLevel
+        None
+    else
+        let ilTopLevel = if options.Optimize then Optimization.optimize ilTopLevel else ilTopLevel
     
-    let ilExpr =
         match ilTopLevel.NormalizedExpr with
-        | Some(x) -> x
-        | None -> raise <| EvaluationException(sprintf "NL fragment could not be normalized for evaluation: %A" ilTopLevel)
+        | None -> 
+            ErrorMessage.Could_not_normalize_nli_fragment (sprintf "%A" ilTopLevel)
+            None
+        | Some(ilExpr) ->
+            let dm = mkDm ilExpr
+            dm.Invoke(null,null) |> unbox |> Some
 
-    let dm = mkDm ilExpr
-    dm.Invoke(null,null) |> unbox
 
+let tryEval<'a> = tryEvalWith<'a> CompilerOptions.Default
 
-let eval<'a> = evalWith<'a> CompilerOptions.Default
+let evalWith<'a> options code : 'a =
+    match tryEvalWith options code with
+    | Some(x) -> x
+    | None -> raise <| EvaluationException()
+
+let eval<'a> code : 'a =
+    match tryEval code with
+    | Some(x) -> x
+    | None -> raise <| EvaluationException()

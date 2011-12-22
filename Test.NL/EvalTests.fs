@@ -16,4 +16,4 @@ let ``returns last value of several statements`` options =
 
 [<Theory;NliData>]
 let ``eval throws EvaluationException when errors found`` options =
-    raises<EvaluationException> <@ Nli(options).Submit("INVALID") @>
+    raises<NliException> <@ Nli(options).Submit("INVALID") @>

@@ -14,6 +14,7 @@ type ErrorType =
     | Internal
 
 type PositionRange(posStart:Position, posEnd:Position) =
+    static member Empty = PositionRange(Position.Empty, Position.Empty)
     member __.StartLine = posStart.Line
     member __.EndLine = posEnd.Line
     member __.StartColumn = posStart.Column
@@ -241,23 +242,24 @@ module ErrorMessage =
     let Could_not_escape_string_literal pos =
         mk ErrorLevel.Error ErrorType.Semantic 34 pos "Error %s"
 
+    let Could_not_normalize_nli_fragment =
+        mk ErrorLevel.Error ErrorType.Semantic 35 PositionRange.Empty "NL fragment could not be normalized for interactive submission: %s"
+
+    let Could_not_normalize_eval_fragment =
+        mk ErrorLevel.Error ErrorType.Semantic 36 PositionRange.Empty "NL fragment could not be normalized for evaluation: %s"
+
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
 
-type EvaluationException(msg:string, errors:CompilerError[]) =
-    inherit Exception(msg)
-    new(errors:CompilerError[]) = new EvaluationException("NL compiler errors detected", errors)
-    new(msg) = new EvaluationException(msg, [||])
+type CompilerServiceException() =
+    inherit Exception()
+    let errors = ErrorLogger.ActiveLogger.GetErrors()
     member this.Errors = errors
     override this.ToString() =
-        sprintf "EvaluationException: %s %A" msg errors
+        sprintf "%s, errors detected:%s" (this.GetType().Name) (System.Environment.NewLine + (errors |> Seq.map string |> String.concat System.Environment.NewLine))
 
-type NliException(msg:string, errors:CompilerError[]) =
-    inherit Exception(msg)
-    new(errors:CompilerError[]) = new NliException("NL compiler errors detected", errors)
-    new(msg) = new NliException(msg, [||])
-    member this.Errors = errors
-    override this.ToString() =
-        sprintf "NliException: %s %A" msg errors
+type EvaluationException() =
+    inherit CompilerServiceException()
 
-//exception CompilerInternalErrorException
+type NliException() =
+    inherit CompilerServiceException()
