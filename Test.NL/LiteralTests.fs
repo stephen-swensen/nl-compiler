@@ -44,9 +44,13 @@ module StringLiteralTests =
     let ``literal String verbatim`` options =
         test <@ evalWith options @"@""\t\n\r\\rhello world""" = @"\t\n\r\\rhello world" @>
 
-    [<Theory(Skip="todo");EvalData>]
+    [<Theory;EvalData>]
     let ``literal String verbatim double quote as quote`` options =
-        test <@ evalWith options @"@""hello "" world""" = "hello \" world" @>
+        test <@ evalWith options @"@""hello """" world""" = "hello \" world" @>
+
+    [<Theory;EvalData>]
+    let ``literal String verbatim double double quote as double quote`` options =
+        test <@ evalWith options @"@""hello """""""" world""" = "hello \"\" world" @>
 
     [<Theory;EvalData>]
     let ``invalid escape`` options =
