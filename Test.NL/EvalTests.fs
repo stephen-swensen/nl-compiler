@@ -10,10 +10,12 @@ open Evaluation
 let ``single expression is equivalent to single statement`` options =
     test <@ evalWith options "3" = evalWith options "3;;" @>
 
-[<Theory(Skip="not sure if we even want to allow this");EvalData>]
-let ``returns last value of several statements`` options =
-    test <@ evalWith options "1;;2;;3;;4;;" = 4 @>
+[<Theory;EvalData>]
+let ``eval cannot handle several statements`` options =
+    raisesWith 
+        <@ evalWith options "1;;2;;3;;4;;" = 4 @>
+        (expectedErrors [|36|])
 
-[<Theory;NliData>]
+[<Theory;EvalData>]
 let ``eval throws EvaluationException when errors found`` options =
-    raises<NliException> <@ Nli(options).Submit("INVALID") @>
+    raises<EvaluationException> <@ evalWith options "INVALID" @>
