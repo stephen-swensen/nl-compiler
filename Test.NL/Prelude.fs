@@ -13,7 +13,7 @@ let OpenNamespaceOrType = "open Tests in "
 let openPrefix = openAsm + OpenNamespaceOrType
 
 let expectedErrors codes = 
-    fun (e:EvaluationException) ->
+    fun (e:CompilerServiceException) ->
         let errors = e.Errors
         <@ errors |> Array.map (fun err -> err.Code) = codes @>
 
