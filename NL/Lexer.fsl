@@ -79,19 +79,33 @@ rule tokenize = parse
 | "@\"" ("\"\""|[^ '"'])* '"' { STRING (let s = lexeme lexbuf in s.Substring(2, s.Length - 3).Replace("\"\"", "\"")) }
 
 //string literal with escape sequences
-
 | '"' ( '\\'_ | [^ '\"' ] )* '"'
     { 
         let s = lexeme lexbuf 
         try
             STRING(System.Text.RegularExpressions.Regex.Unescape(s.Substring(1, s.Length - 2)))
         with e ->
-            EM.Could_not_escape_string_literal (range lexbuf) e.Message
+            EM.Could_not_unescape_string_literal (range lexbuf) e.Message
             STRING("") //error recovery
     } 
 
-//char literal
-| ''' _ ''' { CHAR (let s = lexeme lexbuf in s.[1]) }
+//single quote char literal
+| ''' "\\'" ''' { CHAR(''') }
+//char literal with escape sequence (accepts zero or more chars with possible escape sequences and does error recovery)
+| ''' [^ ''']* ''' 
+    { 
+        let s = lexeme lexbuf 
+        try //will throw if a) could not escape, or b) was more than one character
+            let unescaped = System.Text.RegularExpressions.Regex.Unescape(s.Substring(1, s.Length - 2))
+            if unescaped.Length <> 1 then
+                EM.Char_literal_must_be_exactly_one_character (range lexbuf) unescaped
+                CHAR(' ')
+            else
+                CHAR(s.[1]) 
+        with e ->
+            EM.Could_not_unescape_char_literal (range lexbuf) e.Message
+            CHAR(' ') //error recovery
+    } 
 
 // Numeric constants
 | digit+							  
