@@ -58,9 +58,48 @@ module StringLiteralTests =
             <@ evalWith options @"""hello \K world""" @>
             (expectedErrors [|34|])
 
-[<Theory;EvalData>]
-let ``char literal`` options =
-    test <@ evalWith options "'c'" = 'c' @>
+module CharLiteralTests =
+    [<Theory;EvalData>]
+    let ``single char literal`` options =
+        test <@ evalWith options "'c'" = 'c' @>
+
+    [<Theory;EvalData>]
+    let ``char literal single quote`` options =
+        raises<CompilerServiceException> <@ evalWith options "'''" @>
+
+    [<Theory;EvalData>]
+    let ``single char literal cannot be single backslash`` options =
+        raises<CompilerServiceException> <@ evalWith options "'\'" @>
+
+    [<Theory;EvalData>]
+    let ``escaped char literal`` options =
+        test <@ evalWith options "'\t'" = '\t' @>
+
+    [<Theory;EvalData>]
+    let ``escaped escape char`` options =
+        test <@ evalWith options @"'\\'" = '\\' @>
+
+    [<Theory;EvalData>]
+    let ``escaped char literal more than one char`` options =
+        test <@ evalWith options "'\t'" = '\t' @>
+
+    [<Theory;EvalData>]
+    let ``not a valid escape sequence`` options =
+        raisesWith 
+            <@ evalWith options "'\Q'" @>
+            (expectedErrors [|37|])
+
+    [<Theory;EvalData>]
+    let ``too many chars`` options =
+        raisesWith 
+            <@ evalWith options "'aaa'" @>
+            (expectedErrors [|38|])
+
+    [<Theory;EvalData>]
+    let ``too few chars`` options =
+        raisesWith 
+            <@ evalWith options "''" @>
+            (expectedErrors [|38|])
 
 [<Theory;EvalData>]
 let ``literal true`` options =

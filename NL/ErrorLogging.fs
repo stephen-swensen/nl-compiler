@@ -239,14 +239,20 @@ module ErrorMessage =
     let Property_has_no_getter pos =
         mk ErrorLevel.Error ErrorType.Semantic 33 pos "The property '%s' has no getter"
 
-    let Could_not_escape_string_literal pos =
-        mk ErrorLevel.Error ErrorType.Semantic 34 pos "Error %s"
+    let Could_not_unescape_string_literal pos =
+        mk ErrorLevel.Error ErrorType.Syntactic 34 pos "Error %s"
 
     let Could_not_normalize_nli_fragment =
-        mk ErrorLevel.Error ErrorType.Semantic 35 PositionRange.Empty "NL fragment could not be normalized for interactive submission: %s"
+        mk ErrorLevel.Error ErrorType.Syntactic 35 PositionRange.Empty "NL fragment could not be normalized for interactive submission: %s"
 
     let Could_not_normalize_eval_fragment =
-        mk ErrorLevel.Error ErrorType.Semantic 36 PositionRange.Empty "NL fragment could not be normalized for evaluation: %s"
+        mk ErrorLevel.Error ErrorType.Syntactic 36 PositionRange.Empty "NL fragment could not be normalized for evaluation: %s"
+
+    let Could_not_unescape_char_literal pos =
+        mk ErrorLevel.Error ErrorType.Syntactic 37 pos "Error %s"
+
+    let Char_literal_must_be_exactly_one_character pos =
+        mk ErrorLevel.Error ErrorType.Semantic 38 pos "Char literal must be exactly one character but was '%s'"
 
 ///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
 exception CompilerInterruptException
