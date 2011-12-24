@@ -12,7 +12,7 @@ open Evaluation
 let ``white space and newlines are insignificant`` options =
     test <@ evalWith options "x        = \n 3   \r\n     in x" = evalWith options "x = 3 in x" @>
 
-[<Theory(Skip="not implemented");EvalData>]
+[<Theory;EvalData>]
 let ``error recovery in the presence of unrecognized charactors`` options =
-    raisesWith <@ evalWith options "x = 3 in x + y" @>
+    raisesWith <@ evalWith options "x =Ð3 inßx + y" @>
         (expectedErrors [|39;39;5|])
