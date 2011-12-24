@@ -2,7 +2,7 @@
 
 open Xunit;; open Xunit.Extensions
 
-open Swensen.Unquote
+open Swensen.Unquote.Assertions
 open Swensen.NL
 open System.Collections.Generic
 open Evaluation

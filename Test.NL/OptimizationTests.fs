@@ -3,7 +3,7 @@ module Tests.OptimizationTests
 open Swensen.NL.Ail
 
 open Xunit
-open Swensen.Unquote
+open Swensen.Unquote.Assertions
 open Swensen.NL
 open System.Collections.Generic
 

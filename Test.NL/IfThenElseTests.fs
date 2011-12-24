@@ -1,7 +1,7 @@
 ﻿module Tests.IfThenElseTests
 
 open Xunit;; open Xunit.Extensions
-open Swensen.Unquote
+open Swensen.Unquote.Assertions
 open Swensen.NL
 open Evaluation
 
