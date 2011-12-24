@@ -83,6 +83,7 @@
     <None Include="Test.AssemblyResolveTarget.dll" />
     <Compile Include="EvalTests.fs" />
     <Compile Include="NliTests.fs" />
+    <Compile Include="LexTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
