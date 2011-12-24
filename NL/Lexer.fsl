@@ -4,7 +4,7 @@ open System
 open Parser
 open Microsoft.FSharp.Text.Lexing
 
-module EM = ErrorMessage
+module EM = ErrorMessages
 
 let lexeme lexbuf =
     LexBuffer<char>.LexemeString lexbuf

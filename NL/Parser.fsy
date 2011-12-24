@@ -3,7 +3,7 @@
 open Microsoft.FSharp.Text.Parsing
 open Swensen.NL
 open Swensen.NL.Ast
-module EM = ErrorMessage
+module EM = ErrorMessages
 //let parse_error msg =
 //    failwithf "%A" msg
 

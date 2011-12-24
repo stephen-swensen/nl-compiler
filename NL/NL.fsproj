@@ -48,7 +48,12 @@
   <ItemGroup>
     <None Include="packages.config" />
     <Compile Include="Utils.fs" />
-    <Compile Include="ErrorLogging.fs" />
+    <Compile Include="PositionRange.fs" />
+    <Compile Include="CompilerError.fs" />
+    <Compile Include="ErrorLoggers.fs" />
+    <Compile Include="ErrorMessages.fs" />
+    <Compile Include="CompilerInterruptException.fs" />
+    <Compile Include="CompilerServiceExceptions.fs" />
     <Compile Include="Ast.fs" />
     <Compile Include="$(IntermediateOutputPath)\Parser.fs">
       <Visible>false</Visible>

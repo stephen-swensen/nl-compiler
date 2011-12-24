@@ -1,142 +1,13 @@
 ﻿namespace Swensen.NL
 
 open System
-open Microsoft.FSharp.Text.Lexing
 open System.Diagnostics
-
-type ErrorLevel =
-    | Error
-    | Warning
-
-type ErrorType =
-    | Syntactic
-    | Semantic
-    | Internal
-
-type PositionRange(posStart:Position, posEnd:Position) =
-    static member Empty = PositionRange(Position.Empty, Position.Empty)
-    member __.StartLine = posStart.Line
-    member __.EndLine = posEnd.Line
-    member __.StartColumn = posStart.Column
-    member __.EndColumn = posEnd.Column-1
-    //assume error cannot span more than one file
-    member __.FileName = posStart.FileName
-    member __.Start = posStart
-    member __.End = posEnd
-    new(posRangeStart:PositionRange, posRangeEnd:PositionRange) = 
-        new PositionRange(posRangeStart.Start, posRangeEnd.End)    
-
-    override this.Equals(other:obj) =
-        match other with
-        | :? PositionRange as other -> this.Start = other.Start && this.End = other.End
-        | _ -> false
-
-    override this.GetHashCode() =
-        this.Start.GetHashCode() ^^^ this.End.GetHashCode()
-
-type CompilerError(errorRange:PositionRange, errorType:ErrorType, errorLevel:ErrorLevel, errorCode:int, msg:string, stackTrace:StackTrace) =
-    member __.Type = errorType
-    member __.Range = errorRange
-    member __.Level = errorLevel
-    member __.Message = msg
-    ///The filename corresponding to Range.Start
-    member __.Filename = errorRange.FileName
-    member __.Code = errorCode
-    member __.CodeName =
-        match errorCode with
-        | -1 -> "-1"
-        | _ ->
-            let errorCodeString = errorCode.ToString()
-            let leadingZeros = //following F#'s lead here, but kinda thinking no need for leading zeros or even leading "FS" (perhaps makes searching on google easier?)
-                match errorCodeString.Length with
-                | 1 -> "000"
-                | 2 -> "00"
-                | 3 -> "0"
-                | 4 -> ""
-                | _ -> failwith "error code out of range: %i" errorCode
-            sprintf "NL%s%i" leadingZeros errorCode
-    member __.StackTrace = stackTrace
-    override this.ToString() =
-        let posMsg = 
-            if errorRange.StartLine = errorRange.EndLine && errorRange.StartColumn = errorRange.EndColumn then
-                sprintf "at Line %i, Column %i" errorRange.StartLine errorRange.StartColumn
-            else
-                sprintf "from Line %i, Column %i to Line %i, Column %i"  errorRange.StartLine errorRange.StartColumn  errorRange.EndLine errorRange.EndColumn
-
-
-        sprintf "%A %s (%s) %s%s%s"
-            errorType
-            ((sprintf "%A" errorLevel).ToLower())
-            this.CodeName
-            posMsg
-            (if String.IsNullOrWhiteSpace this.Filename then "" else " in " + this.Filename)
-            (if String.IsNullOrWhiteSpace msg then "" else ": " + msg)
-
-///The base, in-memory error logger. Not thread-safe.
-[<AllowNullLiteral>]
-type ErrorLogger() =
-    let errors = System.Collections.Generic.List<CompilerError>()
-    let mutable errorCount = 0
-    let mutable warningCount = 0
-    
-    ///Get a snapshot of all the logged errors
-    member __.GetErrors() = errors.ToArray()
-
-    abstract Log : CompilerError -> unit
-    ///Log the compiler error
-    default __.Log(ce:CompilerError) =
-        match ce.Level with
-        | ErrorLevel.Error -> errorCount <- errorCount + 1
-        | ErrorLevel.Warning -> warningCount <- warningCount + 1
-
-        errors.Add(ce)
-
-    ///Indicates whether there are any errors ("Error" severity level) that have been logged
-    member __.HasErrors = errorCount > 0
-
-    ///The count of the number of compiler errors which have "Error" severity level
-    member __.ErrorCount = errorCount
-    ///The count of the number of compiler errors which have "Warning" severity level
-    member __.WarningCount = warningCount
-    
-    //based on https://github.com/fsharp/fsharp/blob/master/src/fsharp/ErrorLogger.fs
-    [<System.ThreadStatic; DefaultValue>]
-    static val mutable private activeLogger : ErrorLogger
-
-    ///The thread static active error logger; if not set, the default error logger is installed
-    static member ActiveLogger
-        with get() = 
-            if ErrorLogger.activeLogger = null then
-               ErrorLogger.activeLogger <- ErrorLogger()
-            ErrorLogger.activeLogger
-        and set(v) = 
-            ErrorLogger.activeLogger <- v
-
-    static member InstallInMemoryLogger = fun () ->
-        ErrorLogger.activeLogger <- new ErrorLogger()
-
-    static member InstallConsoleLogger = fun () ->
-        ErrorLogger.activeLogger <- new ConsoleErrorLogger()
-    
-///Maybe make ErrorLogger event driven instead of inheritence driven (i.e.
-///have a "ErrorLogged" event which can have a "ConsoleListener" event attached
-///if desired).
-and ConsoleErrorLogger() = 
-    inherit ErrorLogger()
-    override  __.Log(ce:CompilerError) =
-        base.Log(ce)
-        let writer =
-            match ce.Level with
-            | ErrorLevel.Error -> stderr
-            | ErrorLevel.Warning -> stdout
-        
-        writer.WriteLine(sprintf "|%s|" (ce.ToString()))
 
 //error messages may be inspired and or copied entirely from C# and F#
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ErrorMessage = 
-    ///this function allows us to build a function which produces a ErrorMessage from the format string parameters
+module ErrorMessages = 
+    ///this function allows us to build a function which produces a ErrorMessages from the format string parameters
     let private mk errorLevel errorType code  (pos:PositionRange) (f:Printf.StringFormat<_,unit>) =
         Printf.ksprintf (fun s -> ErrorLogger.ActiveLogger.Log (CompilerError(pos, errorType, errorLevel, code, s, StackTrace()))) f
     
@@ -254,18 +125,5 @@ module ErrorMessage =
     let Char_literal_must_be_exactly_one_character pos =
         mk ErrorLevel.Error ErrorType.Semantic 38 pos "Char literal must be exactly one character but was '%s'"
 
-///Use this exception to interrupt local compiler work due to unrecoverable errors (don't actually consider this an error though)
-exception CompilerInterruptException
-
-type CompilerServiceException() =
-    inherit Exception()
-    let errors = ErrorLogger.ActiveLogger.GetErrors()
-    member this.Errors = errors
-    override this.ToString() =
-        sprintf "%s, errors detected:%s" (this.GetType().Name) (System.Environment.NewLine + (errors |> Seq.map string |> String.concat System.Environment.NewLine))
-
-type EvaluationException() =
-    inherit CompilerServiceException()
-
-type NliException() =
-    inherit CompilerServiceException()
+    let Unrecognized_input pos =
+        mk ErrorLevel.Error ErrorType.Syntactic 39 pos "Unrecognized input"

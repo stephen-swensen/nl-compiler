@@ -22,7 +22,7 @@ module NumericTower =
             Some(if xheight > yheight then xTy else yTy)
         | _ -> None
 
-module EM = ErrorMessage
+module EM = ErrorMessages
 let abort() = raise CompilerInterruptException
 
 let sprintSeqForDisplay xs f =

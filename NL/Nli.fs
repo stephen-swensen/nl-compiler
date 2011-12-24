@@ -50,7 +50,7 @@ type Nli(?options: CompilerOptions) =
 
             match ilTopLevel.NormalizedStmts with
             | None ->
-                ErrorMessage.Could_not_normalize_nli_fragment (sprintf "%A" ilTopLevel)
+                ErrorMessages.Could_not_normalize_nli_fragment (sprintf "%A" ilTopLevel)
                 None
             | Some(stmts) ->
                 ///Define the fields to bind to the tyBuilder and define the tyBuilder static constructor which initializes the fields.
