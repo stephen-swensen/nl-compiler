@@ -36,7 +36,7 @@ let tryEvalWith<'a> options code : 'a option =
     
         match ilTopLevel.NormalizedExpr with
         | None -> 
-            ErrorMessage.Could_not_normalize_eval_fragment (sprintf "%A" ilTopLevel)
+            ErrorMessages.Could_not_normalize_eval_fragment (sprintf "%A" ilTopLevel)
             None
         | Some(ilExpr) ->
             let dm = mkDm ilExpr
