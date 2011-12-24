@@ -138,3 +138,11 @@ rule tokenize = parse
 
 // EOF
 | eof { EOF }
+
+//unrecognized input error recovery
+| _ 
+    { 
+        let input = lexeme lexbuf
+        EM.Unrecognized_input (range lexbuf) input
+        tokenize lexbuf 
+    }

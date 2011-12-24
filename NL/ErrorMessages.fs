@@ -126,4 +126,4 @@ module ErrorMessages =
         mk ErrorLevel.Error ErrorType.Semantic 38 pos "Char literal must be exactly one character but was '%s'"
 
     let Unrecognized_input pos =
-        mk ErrorLevel.Error ErrorType.Syntactic 39 pos "Unrecognized input"
+        mk ErrorLevel.Error ErrorType.Syntactic 39 pos "Unrecognized source code character '%s'"

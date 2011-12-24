@@ -29,7 +29,7 @@ let lexParseAndSemantWith env code =
     | CompilerInterruptException ->
         ILTopLevel.Error
     //fslex/yacc do not use specific exception types
-    | e when e.Message = "parse error" || e.Message = "unrecognized input" ->
+    | e when e.Message = "parse error" -> //we handle lex errors explicitly now (this error message should not be possible): || e.Message = "unrecognized input" ->
         EL.ActiveLogger.Log
             (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Syntactic, ErrorLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
         ILTopLevel.Error
