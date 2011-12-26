@@ -93,13 +93,20 @@ let ``implicit instance field assignment type down cast`` options =
                      x.instance_field_object <- 3; 
                      x.instance_field_object[int32]") = 3 @>
 
-[<Fact(Skip="currently not supported")>] //should have a version for instance too
+[<Theory(Skip="not supported yet");EvalData>] //should have a version for instance too
 let ``implicit static field assignment type coersion`` options =
     test <@ evalWith options (Prelude.openAsm + 
                     "Tests.NonGenericClass1.static_field_double <- 3; 
                      temp = Tests.NonGenericClass1.static_field_double in 
                      Tests.NonGenericClass1.static_field_double <- 0.0; 
-                     temp") @>
+                     temp") = 3.0 @>
+
+[<Theory(Skip="not supported yet");EvalData>]
+let ``implicit instance field assignment type coersion`` options =
+    test <@ evalWith options (Prelude.openAsm + 
+                    "x = Tests.NonGenericClass1() in
+                     x.instance_field_double <- 3;
+                     x.instance_field_double") = 3.0 @>
 
 [<Theory;EvalData>]
 let ``set instance field of an expression is valid`` options = //but do we really want it to be?
