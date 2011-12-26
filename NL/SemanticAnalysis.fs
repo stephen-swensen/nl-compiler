@@ -5,23 +5,6 @@ open System.Reflection
 open Swensen.NL.Ast
 open Swensen.NL.Ail
 
-//module Primitive =
-//    let primitives = [
-//            
-//        ]
-//    let isPrimitive<'a>
-
-///Functions for calculating primitive type widening
-module NumericTower =
-        //todo: refactor this tower stuff!
-    let private tower = [(typeof<int>, 1); (typeof<float>, 2)]
-    let heightInTower inputTy = tower |> List.tryPick (fun (towerTy, height) -> if inputTy = towerTy then Some(height) else None)
-    let tallestTy xTy yTy = 
-        match heightInTower xTy, heightInTower yTy with
-        | Some(xheight), Some(yheight) ->
-            Some(if xheight > yheight then xTy else yTy)
-        | _ -> None
-
 module EM = ErrorMessages
 let abort() = raise CompilerInterruptException
 
@@ -42,16 +25,19 @@ let sprintAssemblies (tarr:Assembly seq) =
 let instanceFlags = BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
 let staticFlags = BindingFlags.Static ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
 
-let coerceIfNeeded expectedTy (targetExp:ILExpr) =
-    if targetExp.Type <> expectedTy then Coerce(targetExp,expectedTy) else targetExp
+let coerceIfNeeded targetTy (sourceExp:ILExpr) =
+    if sourceExp.Type <> targetTy then Coerce(sourceExp,targetTy) else sourceExp
 
-let castIfNeeded expectedTy (targetExp:ILExpr) =
-    if targetExp.Type <> expectedTy then Cast(targetExp,expectedTy) else targetExp
+let coerceAllIfNeeded targetTy (sourceExps:ILExpr list) =
+    sourceExps |> List.map (coerceIfNeeded targetTy)
+
+let castIfNeeded targetTy (sourceExp:ILExpr) =
+    if sourceExp.Type <> targetTy then Cast(sourceExp,targetTy) else sourceExp
 
 ///SHOULD MAKE A "CAST OR COERCE IF NEEDED" METHOD!! BUG 31 
-let castArgsIfNeeded (expectedParameters:ParameterInfo[]) targetExps =
-    List.zip (expectedParameters |> Seq.map (fun p -> p.ParameterType) |> Seq.toList)  targetExps
-    |> List.map (fun (targetTy, targetExp) -> castIfNeeded targetTy targetExp)
+let castArgsIfNeeded (targetParameterInfo:ParameterInfo[]) sourceArgExps =
+    List.zip (targetParameterInfo |> Seq.map (fun p -> p.ParameterType) |> Seq.toList)  sourceArgExps
+    |> List.map (fun (targetTy, sourceExp) -> castIfNeeded targetTy sourceExp)
 
 //todo: infer generic type arguments from type parameters (reflection not friendly for this)
 //todo: file bug: name should not need a type constraint
@@ -428,7 +414,7 @@ let rec semantWith env synTopLevel =
             let x = semantExpr x
             if x.Type = typeof<Int64> ||
                x.Type = typeof<Int32> ||
-               x.Type = typeof<Int16> ||
+               x.Type = typeof<Int16> || //Int8?
                x.Type = typeof<Double> ||
                x.Type = typeof<Single> 
             then
@@ -448,22 +434,17 @@ let rec semantWith env synTopLevel =
                 EM.Internal_error pos "Failed to resolve 'System.Math.Pow(float,float)' for synthetic operator '**'"
                 ILExpr.Error(typeof<float>)
             | Some(meth) ->
-                let canCoerceToFloat (arg:ILExpr) = //TODO: UNIT TEST THESE CASES
-                    let floatHeight = (NumericTower.heightInTower typeof<float>).Value //assert?
-                    match NumericTower.heightInTower arg.Type with
-                    | Some(argheight) when argheight <= floatHeight -> true
-                    | _ -> false
-
-                if canCoerceToFloat x && canCoerceToFloat y then
-                    ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<float>))
+                if Primitive.sourceIsEqualOrHasImplicitConvToTarget x.Type typeof<Double> 
+                    && Primitive.sourceIsEqualOrHasImplicitConvToTarget y.Type typeof<Double> then
+                    ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<Double>))
                 else
                     EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<float>)
         | SynExpr.NumericBinop(op,x,y,pos) ->
             let x, y = semantExpr x, semantExpr y
-            match NumericTower.tallestTy x.Type y.Type with
-            | Some(tallestTy) -> //primitive
-                ILExpr.mkNumericBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y, tallestTy)
+            match Primitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
+            | Some(targetTy) -> //primitive
+                ILExpr.mkNumericBinop(op, coerceIfNeeded targetTy x, coerceIfNeeded targetTy y, targetTy)
             | None when op = SynNumericBinop.Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string
                 let meth = tryResolveMethod typeof<System.String> "Concat" staticFlags [||] [|x.Type; y.Type|]
                 match meth with
@@ -488,9 +469,9 @@ let rec semantWith env synTopLevel =
             let x, y = semantExpr x, semantExpr y
                         
             //first numeric tower value type cases
-            match NumericTower.tallestTy x.Type y.Type with
-            | Some(tallestTy) ->
-                ILExpr.mkComparisonBinop(op, coerceIfNeeded tallestTy x, coerceIfNeeded tallestTy y)
+            match Primitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
+            | Some(targetTy) ->
+                ILExpr.mkComparisonBinop(op, coerceIfNeeded targetTy x, coerceIfNeeded targetTy y)
             | None ->
                 //next operator overloads
                 let meth = seq {
@@ -668,7 +649,7 @@ let rec semantWith env synTopLevel =
                 x
             elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
                 ILExpr.Cast(x,ty)
-            elif (x.Type = typeof<int> && ty = typeof<float>) || (x.Type = typeof<float> && ty = typeof<int>) then
+            elif Primitive.sourceHasImplicitOrExplicitConvTo x.Type ty then
                 ILExpr.Coerce(x,ty) 
             else
                 let meth = seq {
