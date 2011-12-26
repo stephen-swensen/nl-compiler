@@ -12,6 +12,9 @@ module Seq =
     let cons x xs =
         seq { yield x ; yield! xs}
 
+module List =
+    let contains x = List.exists ((=) x)
+
 //    let combine s1 s2 =
 //        seq {
 //            for x in s1 do

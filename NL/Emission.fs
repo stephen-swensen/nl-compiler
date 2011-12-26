@@ -78,13 +78,14 @@ let emit (il:ILGenerator) ilExpr =
                     typeof<uint16>, OpCodes.Conv_U2
                     typeof<uint32>, OpCodes.Conv_U4
                     typeof<uint64>, OpCodes.Conv_U8
+                    typeof<char>, OpCodes.Conv_I4
                 ] |> dict //can't use Map because Type does not support "comparison" constraints
 
             match convLookup.TryGetValue ty with
             | true, oc ->
                 il.Emit(oc)
             | _ ->
-                failwithf "unsupported coersion: %A" ty //shouldn't be possible since already ty checked
+                failwithf "unsupported coersion from '%s' to '%s'" x.Type.Name ty.Name //shouldn't be possible since already ty checked
         | Cast(x,ty) -> //precondition: x.Type <> ty
             emit x
             if x.Type.IsValueType then
