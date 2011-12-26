@@ -87,3 +87,6 @@ let ``could not resolve cast type`` options =
         <@ evalWith options "3[invalid]" @>
         (expectedErrors [|1|])
 
+[<Theory;EvalData>]
+let ``cast char to int32, an implicit coersion`` options =
+    test <@ evalWith options "'A'[int32]" = 65 @>
