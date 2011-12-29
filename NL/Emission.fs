@@ -36,10 +36,10 @@ let emit (il:ILGenerator) ilExpr =
         | Char x   -> il.Emit(OpCodes.Ldc_I4_S, byte x)
         | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
         | Null ty  -> il.Emit(OpCodes.Ldnull)
-        | UMinus(x,_) -> 
+        | UMinus(cked, x, _) -> 
             emit x
             il.Emit(OpCodes.Neg)
-        | NumericBinop(op,x,y,_) -> 
+        | NumericBinop(cked, op,x,y,_) -> 
             emitAll [x;y]
             match op with
             | ILNumericBinop.Plus  -> il.Emit(OpCodes.Add)
@@ -62,12 +62,17 @@ let emit (il:ILGenerator) ilExpr =
         | VarSet(name, assign) ->
             let local = lenv |> Map.find name
             setLocalVar local assign
-        | Coerce(x,ty) ->
+        | Coerce(cked, x,ty) ->
             emit x
             let convLookup = 
                 [
                     //typeof<>, OpCodes.Conv_I
-                    typeof<int8>, OpCodes.Conv_I1
+                    typeof<int8>, 
+//                        if cked then
+//                            if x.Type.isun 
+//                            OpCodes.Conv_R_Un
+//                        else
+                            OpCodes.Conv_I1
                     typeof<int16>, OpCodes.Conv_I2
                     typeof<int32>, OpCodes.Conv_I4
                     typeof<int64>, OpCodes.Conv_I8

@@ -25,11 +25,8 @@ let sprintAssemblies (tarr:Assembly seq) =
 let instanceFlags = BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
 let staticFlags = BindingFlags.Static ||| BindingFlags.Public ||| BindingFlags.IgnoreCase
 
-let coerceIfNeeded targetTy (sourceExp:ILExpr) =
-    if sourceExp.Type <> targetTy then Coerce(sourceExp,targetTy) else sourceExp
-
-let coerceAllIfNeeded targetTy (sourceExps:ILExpr list) =
-    sourceExps |> List.map (coerceIfNeeded targetTy)
+let coerceIfNeeded cked targetTy (sourceExp:ILExpr) =
+    if sourceExp.Type <> targetTy then Coerce(cked, sourceExp,targetTy) else sourceExp
 
 let castIfNeeded targetTy (sourceExp:ILExpr) =
     if sourceExp.Type <> targetTy then Cast(sourceExp,targetTy) else sourceExp
@@ -418,7 +415,7 @@ let rec semantWith env synTopLevel =
                x.Type = typeof<Double> ||
                x.Type = typeof<Single> 
             then
-               ILExpr.UMinus(x, x.Type)
+               ILExpr.UMinus(env.Checked, x, x.Type)
             else           
                 match x.Type.GetMethod("op_UnaryNegation") with
                 | null ->
@@ -436,7 +433,7 @@ let rec semantWith env synTopLevel =
             | Some(meth) ->
                 if Primitive.sourceIsEqualOrHasImplicitConvToTarget x.Type typeof<Double> 
                     && Primitive.sourceIsEqualOrHasImplicitConvToTarget y.Type typeof<Double> then
-                    ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded typeof<Double>))
+                    ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded env.Checked typeof<Double>))
                 else
                     EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<float>)
@@ -444,7 +441,7 @@ let rec semantWith env synTopLevel =
             let x, y = semantExpr x, semantExpr y
             match Primitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
             | Some(targetTy) -> //primitive
-                ILExpr.mkNumericBinop(op, coerceIfNeeded targetTy x, coerceIfNeeded targetTy y, targetTy)
+                ILExpr.mkNumericBinop(env.Checked, op, coerceIfNeeded env.Checked targetTy x, coerceIfNeeded env.Checked targetTy y, targetTy)
             | None when op = SynNumericBinop.Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string
                 let meth = tryResolveMethod typeof<System.String> "Concat" staticFlags [||] [|x.Type; y.Type|]
                 match meth with
@@ -471,7 +468,7 @@ let rec semantWith env synTopLevel =
             //first numeric tower value type cases
             match Primitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
             | Some(targetTy) ->
-                ILExpr.mkComparisonBinop(op, coerceIfNeeded targetTy x, coerceIfNeeded targetTy y)
+                ILExpr.mkComparisonBinop(op, coerceIfNeeded env.Checked targetTy x, coerceIfNeeded env.Checked targetTy y)
             | None ->
                 //next operator overloads
                 let meth = seq {
@@ -650,7 +647,7 @@ let rec semantWith env synTopLevel =
             elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
                 ILExpr.Cast(x,ty)
             elif Primitive.sourceHasImplicitOrExplicitConvTo x.Type ty then
-                ILExpr.Coerce(x,ty) 
+                ILExpr.Coerce(env.Checked,x,ty) 
             else
                 let meth = seq {
                     //giver implicit conversion op from either type over explicit ops; next prefer conversion op defined on lhs type over rhs type
@@ -730,6 +727,10 @@ let rec semantWith env synTopLevel =
                 ILExpr.Error(typeof<Void>)
             else
                 ILExpr.Continue
+        | SynExpr.Checked(x) ->
+            semantExprWith {env with Checked=true} x
+        | SynExpr.Unchecked(x) ->
+            semantExprWith {env with Checked=false} x
 
     match synTopLevel with
     | SynTopLevel.StmtList(xl) ->

@@ -27,6 +27,8 @@ let keywords =
         "break", BREAK
         "continue", CONTINUE
         "default", DEFAULT
+        "checked", CHECKED
+        "unchecked", UNCHECKED
     ] |> Map.ofList
 }
 
