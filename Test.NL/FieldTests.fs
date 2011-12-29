@@ -111,3 +111,39 @@ let ``implicit instance field assignment type coersion`` options =
 [<Theory;EvalData>]
 let ``set instance field of an expression is valid`` options = //but do we really want it to be?
     test <@ evalWith options (Prelude.openAsm + "Tests.NonGenericClass1().instance_field_int <- 0") = null @>
+
+///issue 44: Literal fields like Int32.MaxValue need to have their values emitted directly as constants
+//http://weblogs.asp.net/whaggard/archive/2003/02/20/2708.aspx
+
+module ConstFieldTests =
+    [<Theory;EvalData>]
+    let ``issue 44: clr const field`` options = 
+        test <@ evalWith options "int32.maxvalue" = Int32.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: int32 const field`` options = 
+        test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_int") = 0 @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: string const field`` options =
+        test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_string") = "hello world" @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: object const field`` options =
+        test <@ evalWith<obj> options (Prelude.openPrefix + "NonGenericClass1.const_field_object") = null @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: int64 const field`` options =
+        test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_int64") = 0L @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: int32 enum const field`` options =
+        test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_int32enum") = Tests.Int32Enum.A @>
+
+[<Theory;EvalData>]
+let ``CSharp static readonly field`` options = 
+    test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.static_readonly_field_int") = 3 @>
+
+[<Theory;EvalData>]
+let ``CSharp instance readonly field`` options =
+    test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1().instance_readonly_field_int") = 3 @>
