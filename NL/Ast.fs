@@ -179,8 +179,8 @@ type SynExpr =
     | SByte             of SByte //y
     | Byte              of Byte //uy
 
-    | Int16             of Int32 //s
-    | UInt16            of UInt32 //us
+    | Int16             of Int16 //s
+    | UInt16            of UInt16 //us
     
     | Int32             of Int32 //no suffix
     | UInt32            of UInt32 //u
