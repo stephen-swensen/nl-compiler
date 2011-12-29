@@ -3,6 +3,7 @@
 open Microsoft.FSharp.Text.Parsing
 open Swensen.NL
 open Swensen.NL.Ast
+open System
 module EM = ErrorMessages
 //let parse_error msg =
 //    failwithf "%A" msg
@@ -14,12 +15,26 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 
 %}
 
-%token <int> INT32
-%token <float> DOUBLE
-%token <string> STRING
-%token <char> CHAR
-%token <bool> BOOL
+%token <Byte> BYTE
+%token <SByte> SBYTE
+
+%token <Int16> INT16
+%token <Int32> INT32
+%token <Int64> INT64
+
+%token <UInt16> UINT16
+%token <UInt32> UINT32
+%token <UInt64> UINT64
+
+%token <Single> SINGLE
+%token <Double> DOUBLE
+
+%token <String> STRING
+%token <Char> CHAR
+%token <Boolean> BOOL
+
 %token NULL TYPE DEFAULT
+
 %token ANDAND OROR //XOR
 %token EQEQ NOTEQ LT GT GTEQ LTEQ
 %token PLUS MINUS TIMES DIV POW BANG NOT
@@ -138,18 +153,40 @@ expr:
 
     //-- literal values --
 
+    | BYTE
+        { SynExpr.Byte($1) }
+    | SBYTE                                      
+        { SynExpr.SByte($1) }
+
+    | INT16                                      
+        { SynExpr.Int16($1) }
     | INT32                                      
         { SynExpr.Int32($1) }
+    | INT64                                      
+        { SynExpr.Int64($1) }
+
+    | UINT16                                      
+        { SynExpr.UInt16($1) }
+    | UINT32                                      
+        { SynExpr.UInt32($1) }
+    | UINT64                                      
+        { SynExpr.UInt64($1) }
+
+    | SINGLE                                 
+        { SynExpr.Single($1) }
     | DOUBLE                                 
         { SynExpr.Double($1) }
+
     | STRING                                 
         { SynExpr.String($1) }
     | CHAR                                   
         { SynExpr.Char($1) }
     | BOOL                                  
         { SynExpr.Bool($1) }
+    
     | NULL LBRACKET tySig RBRACKET              
         { SynExpr.Null($3) }
+    
     | TYPE LBRACKET tySig RBRACKET            
         { SynExpr.Typeof($3) }
     | DEFAULT LBRACKET tySig RBRACKET            
