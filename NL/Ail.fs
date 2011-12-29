@@ -32,8 +32,21 @@ type ILComparisonBinop = Eq | Lt | Gt
 
 ///Typed expression
 type ILExpr =
-    | Double        of float
-    | Int32         of int
+    | SByte             of SByte //y
+    | Byte              of Byte //uy
+
+    | Int16             of Int32 //s
+    | UInt16            of UInt32 //us
+    
+    | Int32             of Int32 //no suffix
+    | UInt32            of UInt32 //u
+    
+    | Int64             of Int64 //L
+    | UInt64            of UInt64 //UL
+    
+    | Single            of Single //f
+    | Double            of Double //no suffix
+        
     | String        of string
     | Char          of char
     | Bool          of bool
@@ -74,12 +87,27 @@ type ILExpr =
         member this.Type =
             match this with
             //Other implicit
-            | LogicalNot _          -> typeof<bool>
-            | Double _              -> typeof<float>
-            | Int32 _               -> typeof<int>
+            | SByte _               -> typeof<SByte> //y
+            | Byte  _               -> typeof<Byte> //uy
+
+            | Int16 _               -> typeof<Int32> //s
+            | UInt16 _              -> typeof<UInt32> //us
+    
+            | Int32 _               -> typeof<Int32> //no suffix
+            | UInt32 _              -> typeof<UInt32> //u
+    
+            | Int64 _               -> typeof<Int64> //L
+            | UInt64 _              -> typeof<UInt64> //UL
+    
+            | Single _              -> typeof<Single> //f
+            | Double _              -> typeof<Double> //no suffix
+
             | String _              -> typeof<string>
             | Char _                -> typeof<char>
             | Bool _                -> typeof<bool>
+
+            | LogicalNot _          -> typeof<bool>
+
             | Typeof _              -> typeof<Type>
             | ComparisonBinop _     -> typeof<bool>
             | StaticFieldGet fi     -> fi.FieldType

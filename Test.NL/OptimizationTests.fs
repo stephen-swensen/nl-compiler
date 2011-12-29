@@ -3,12 +3,14 @@ module Tests.OptimizationTests
 open Swensen.NL.Ail
 
 open Xunit
+open Xunit.Extensions
 open Swensen.Unquote.Assertions
 open Swensen.NL
 open System.Collections.Generic
 
 module O = Optimization
 module C = Compilation
+open System
 
 //so that we see error details in console output while doing parse operations which don't install their own error loggers
 Swensen.NL.ErrorLogger.InstallConsoleLogger()
@@ -72,13 +74,26 @@ let ``static call sub expressions optimized`` () =
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
     test <@ C.lexParseAndSemant "if (true || true).getType() == type[boolean] { true } else { false }" |> O.optimize = C.lexParseAndSemant "if true.getType() == type[boolean] { true } else { false }" @>
 
-[<Fact>]
-let ``Int32 constants folding`` () =
-    test <@ C.lexParseAndSemant "((2 * 3) + 45) - (24 / 2)" |> O.optimize = C.lexParseAndSemant "39" @>
+let numericConstantFoldingSuffixes =
+    [
+        "y"
+        "uy"
+        "s"
+        "us"
+        ""
+        "u"
+        "L"
+        "UL"
+        ".0f"
+        ".0"
+    ] |> Seq.map (fun suffix -> [|suffix :> obj|])
+    
 
-[<Fact>]
-let ``Double constants folding`` () =
-    test <@ C.lexParseAndSemant "((2.0 * 3.0) + 45.0) - (24.0 / 2.0)" |> O.optimize = C.lexParseAndSemant "39.0" @>
+[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+let ``Int32 constants folding`` (suffix:string) =
+    let input = System.String.Format("((2{0} * 3{0}) + 45{0}) - (24{0} / 2{0})", suffix)
+    let outcome = sprintf "39%s" suffix
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant outcome @>
 
 [<Fact>]
 let ``coersion of literal int to double is optimized away`` () =
