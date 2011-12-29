@@ -175,28 +175,42 @@ type TySig with
 //     then it is the last element in the tupled case, 2) if position range applies to a pariticular
 //     sub-expression or token, then it is tupled with the subexpression or token
 ///Raw (untyped) parsed expression
-type SynExpr =
-    | Double           of float
-    | Int32            of int
-    | String           of string
-    | Char             of char
-    | Bool             of bool
-    | Null             of TySig
-    | Typeof           of TySig
-    | Default          of TySig
-    | NumericBinop     of SynNumericBinop * SynExpr * SynExpr * PositionRange
-    | Pow              of SynExpr * SynExpr * PositionRange
+type SynExpr =    
+    | SByte             of SByte //y
+    | Byte              of Byte //uy
+
+    | Int16             of Int32 //s
+    | UInt16            of UInt32 //us
+    
+    | Int32             of Int32 //no suffix
+    | UInt32            of UInt32 //u
+    
+    | Int64             of Int64 //L
+    | UInt64            of UInt64 //UL
+    
+    | Single            of Single //f
+    | Double            of Double //no suffix
+    
+    | String            of String
+    | Char              of Char
+    | Bool              of Boolean
+                        
+    | Null              of TySig
+    | Typeof            of TySig
+    | Default           of TySig
+    | NumericBinop      of SynNumericBinop * SynExpr * SynExpr * PositionRange
+    | Pow               of SynExpr * SynExpr * PositionRange
     //TODO: implement semantic analysis
-    | UMinus           of SynExpr * PositionRange
+    | UMinus            of SynExpr * PositionRange
     //| Fact             of SynExpr * PositionRange
     ///bind a variable
-    | Let              of string * (SynExpr * PositionRange) * SynExpr
+    | Let               of string * (SynExpr * PositionRange) * SynExpr
     ///get the value of a path (var, field, property, ...)
-    | PathGet          of Path
+    | PathGet           of Path
     ///set the value of a path (var, field, property, ...)
-    | PathSet          of Path * (SynExpr * PositionRange)
+    | PathSet           of Path * (SynExpr * PositionRange)
     ///call instance method on a variable or call a static method or call a constructor
-    | PathCall         of Path * TySig list * SynExpr list * PositionRange
+    | PathCall          of Path * TySig list * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
     | GenericTypeStaticCall of string * TySig list * string * TySig list * SynExpr list * PositionRange
     ///call instance method on an expression
@@ -207,11 +221,11 @@ type SynExpr =
     //| ExprPathGet           of SynExpr * Path * TySig list * SynExpr list * PositionRange
     //| ExprDataMember    of SynExpr * (Path * PositionRange)
     ///discard left hand side, return right hand side
-    | Sequential       of SynExpr * (SynExpr * PositionRange)
+    | Sequential            of SynExpr * (SynExpr * PositionRange)
     ///open a namespace or type
-    | OpenNamespaceOrType of TySig * SynExpr 
+    | OpenNamespaceOrType   of TySig * SynExpr 
     ///reference an assembly by name or dll path
-    | OpenAssembly     of (string * PositionRange) * SynExpr
+    | OpenAssembly          of (string * PositionRange) * SynExpr
     | LogicalNot       of SynExpr * PositionRange
     | Cast             of SynExpr * TySig * PositionRange
     | IfThenElse       of (SynExpr * PositionRange) * SynExpr * SynExpr option * PositionRange //should be pos for each!
