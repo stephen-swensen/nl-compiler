@@ -90,3 +90,7 @@ let ``could not resolve cast type`` options =
 [<Theory;EvalData>]
 let ``cast char to int32, an implicit coersion`` options =
     test <@ evalWith options "'A'[int32]" = 65 @>
+
+[<Theory;EvalData>]
+let ``cast uint32 maxvalue to int64: should be no loss of precision`` options =
+    test <@ evalWith options "uint32.parse(\"4294967295\")[int64]" = 4294967295L @>
