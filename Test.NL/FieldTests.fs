@@ -132,7 +132,7 @@ module ConstFieldTests =
     let ``issue 44: object const field`` options =
         test <@ evalWith<obj> options (Prelude.openPrefix + "NonGenericClass1.const_field_object") = null @>
 
-    [<Theory;EvalData>]
+    [<Theory(Skip="todo");EvalData>]
     let ``issue 44: int64 const field`` options =
         test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_int64") = 0L @>
 

@@ -119,4 +119,8 @@ let ``can't compare value type to boxed object`` options =
         <@ evalWith options "3 == 3[object]" = true @>
         (expectedErrors [|3|])
 
+[<Theory(Skip="todo");EvalData>]
+let ``issue 51: > comparison of two unsigned int32s`` options =
+    test <@ evalWith options "uint32.parse(\"4294967295\") > uint32.parse(\"0\")" = true @>
+
 //still got a bunch more cases to go
