@@ -10,6 +10,7 @@ type NVT =
 ///Environmental context passed to each recursive expression process during semantic analysis
 type SemanticEnvironment = 
     {
+        Checked: bool
         ///Indicates that the current expression is inside a loop body
         IsLoopBody: bool
         ///All "open" loaded assemblies
@@ -23,7 +24,7 @@ type SemanticEnvironment =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
 module SemanticEnvironment =
     ///The "empty" semantic environment
-    let Empty = { IsLoopBody=false; Assemblies=[]; NVTs=[] }
+    let Empty = { Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
     ///The "default" / initial semantic environment
     let Default =
         { Empty with 

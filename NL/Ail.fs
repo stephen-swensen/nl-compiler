@@ -46,12 +46,14 @@ type ILExpr =
     | Break         
     | Continue
     | Error         of Type
-
-    | NumericBinop  of ILNumericBinop * ILExpr * ILExpr * Type
-    | UMinus        of ILExpr * Type
+    //bool indicates whether checked
+    | NumericBinop  of bool * ILNumericBinop * ILExpr * ILExpr * Type
+    //bool indicates whether checked
+    | UMinus        of bool * ILExpr * Type
     | Let           of string * ILExpr * ILExpr * Type
     //primitive coersion
-    | Coerce        of ILExpr * Type
+    //bool indicates whether checked
+    | Coerce        of bool * ILExpr * Type
     ///box / box value type or down / up cast ref type
     | Cast          of ILExpr * Type
     | StaticCall    of System.Reflection.MethodInfo * ILExpr list
@@ -96,11 +98,11 @@ type ILExpr =
             | WhileLoop _           -> typeof<Void>
 
             //Explicitly constructed with types
-            | NumericBinop(_,_,_,ty)
-            | UMinus(_,ty)
+            | NumericBinop(_,_,_,_,ty)
+            | UMinus(_,_,ty)
             | Let(_,_,_,ty)
             | VarGet(_,ty) 
-            | Coerce(_,ty)
+            | Coerce(_,_,ty)
             | Cast(_,ty)
             | Sequential(_,_,ty)
             | Ctor(_,_,ty)
@@ -124,7 +126,7 @@ type ILExpr =
                 ILExpr.LogicalNot(ILExpr.ComparisonBinop(ILComparisonBinop.Lt,x,y))
 
         ///make a comparison binop case using an Ast.SynNumericBinop
-        static member mkNumericBinop(op:Ast.SynNumericBinop, x:ILExpr, y:ILExpr, ty:Type) = 
+        static member mkNumericBinop(cked:bool, op:Ast.SynNumericBinop, x:ILExpr, y:ILExpr, ty:Type) = 
             let op =
                 match op with
                 | Ast.SynNumericBinop.Div -> ILNumericBinop.Div
@@ -132,7 +134,7 @@ type ILExpr =
                 | Ast.SynNumericBinop.Times -> ILNumericBinop.Times
                 | Ast.SynNumericBinop.Minus -> ILNumericBinop.Minus
 
-            ILExpr.NumericBinop(op, x, y, ty)
+            ILExpr.NumericBinop(cked, op, x, y, ty)
 
         static member InstancePropertySet(instance:ILExpr, pi:PropertyInfo, assign:ILExpr) =
             ILExpr.InstanceCall(instance, pi.GetSetMethod(), [assign])

@@ -33,6 +33,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token SET
 %token WHILE BREAK CONTINUE
 %token EOF
+%token CHECKED UNCHECKED
 
 %right SEMICOLON
 %nonassoc SET
@@ -236,6 +237,10 @@ expr:
         { SynExpr.Break(range parseState 1 1) }
     | CONTINUE LPAREN RPAREN
         { SynExpr.Continue(range parseState 1 1) }
+    | CHECKED LBRACE expr RBRACE
+        { SynExpr.Checked($3) }
+    | UNCHECKED LBRACE expr RBRACE
+        { SynExpr.Unchecked($3) }
 
 stmtList:
     | stmt { [$1] }

@@ -236,11 +236,11 @@ let ``optimize body of var binding`` () =
 
 [<Fact>]
 let ``constant fold uminus of int`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int32(-1)) @>
+    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int32(-1)) @>
 
 [<Fact>]
 let ``constant fold uminus of double`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(ILExpr.Double(1.), typeof<double>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Double(-1.)) @>
+    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Double(1.), typeof<double>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Double(-1.)) @>
 
 [<Fact>]
 let ``uminus no constant fold but sub optimization`` () =

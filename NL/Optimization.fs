@@ -1,6 +1,8 @@
 ﻿module Swensen.NL.Optimization
 open Swensen.NL.Ail
 
+//we do not optimize checked operations since that might result in a compile time overflow (in the 
+//future we may have all constant expressions checked at compile time, like c#)
 ///Optimize the ILTopLevel tree. An exception will be raised if the tree contains any "errors".
 let optimize (tl:ILTopLevel) =
     let rec optimizeExpr exp = 
@@ -25,14 +27,14 @@ let optimize (tl:ILTopLevel) =
                 | ILExpr.Nop -> condition
                 | _ ->
                     ILExpr.IfThen(condition, thenBranch)
-        | ILExpr.NumericBinop(op, x, y, ty) -> //numeric constants folding
+        | ILExpr.NumericBinop(cked, op, x, y, ty) -> //numeric constants folding
             let x, y = optimizeExpr x, optimizeExpr y
-            match x, y with
-            | ILExpr.Int32(xval), ILExpr.Int32(yval) ->
+            match cked, x, y with
+            | false, ILExpr.Int32(xval), ILExpr.Int32(yval) ->
                 ILExpr.Int32(op.Call(xval, yval))
-            | ILExpr.Double(xval), ILExpr.Double(yval) ->
+            | false, ILExpr.Double(xval), ILExpr.Double(yval) ->
                 ILExpr.Double((op.Call(xval, yval)))
-            | _ -> ILExpr.NumericBinop(op, x, y, ty)    
+            | _ -> ILExpr.NumericBinop(cked, op, x, y, ty)    
         | ILExpr.StaticCall(mi, args) ->
             let args = args |> List.map optimizeExpr
             match args with
@@ -54,12 +56,12 @@ let optimize (tl:ILTopLevel) =
             | ILExpr.Bool(xval), ILExpr.Bool(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
             | _ -> ILExpr.ComparisonBinop(op, x, y)
-        | ILExpr.Coerce(x, ty) -> //mostly for implicit coersions to improve constants folding
+        | ILExpr.Coerce(cked, x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExpr x
-            match x with
-            | Int32(x) when ty = typeof<double> -> Double(double x)
-            | Double(x) when ty = typeof<int32> -> Int32(int32 x)
-            | _ -> ILExpr.Coerce(x, ty)
+            match cked, x with
+            | false, Int32(x) when ty = typeof<double> -> Double(double x)
+            | false, Double(x) when ty = typeof<int32> -> Int32(int32 x)
+            | _ -> ILExpr.Coerce(cked, x, ty)
         | ILExpr.LogicalNot(x) ->
             let x = optimizeExpr x
             match x with
@@ -72,12 +74,12 @@ let optimize (tl:ILTopLevel) =
             | ILExpr.Nop, ILExpr.Nop -> ILExpr.Nop //();() -> ()
             | ILExpr.Nop, _ -> y // (); exp -> exp
             | _,_ -> ILExpr.Sequential(x,y,ty)
-        | ILExpr.UMinus(x, ty) ->
+        | ILExpr.UMinus(cked, x, ty) ->
             let x = optimizeExpr x
-            match x with
-            | ILExpr.Int32(xval) -> ILExpr.Int32(-xval)
-            | ILExpr.Double(xval) -> ILExpr.Double(-xval)
-            | _ -> ILExpr.UMinus(x, ty)
+            match cked, x with
+            | false, ILExpr.Int32(xval) -> ILExpr.Int32(-xval)
+            | false, ILExpr.Double(xval) -> ILExpr.Double(-xval)
+            | _ -> ILExpr.UMinus(cked, x, ty)
         | ILExpr.WhileLoop(cond, body) ->
             let cond = optimizeExpr cond
             match cond with
