@@ -380,11 +380,24 @@ let rec semantWith env synTopLevel =
         let semantExpr = semantExprWith env
 
         match synExpr with
-        | SynExpr.Double x -> ILExpr.Double x
+        | SynExpr.Byte x  -> ILExpr.Byte x
+        | SynExpr.SByte x  -> ILExpr.SByte x
+
+        | SynExpr.Int16 x  -> ILExpr.Int16 x
         | SynExpr.Int32 x  -> ILExpr.Int32 x
+        | SynExpr.Int64 x  -> ILExpr.Int64 x
+        
+        | SynExpr.UInt16 x  -> ILExpr.UInt16 x
+        | SynExpr.UInt32 x  -> ILExpr.UInt32 x
+        | SynExpr.UInt64 x  -> ILExpr.UInt64 x
+        
+        | SynExpr.Single x  -> ILExpr.Single x
+        | SynExpr.Double x -> ILExpr.Double x
+        
         | SynExpr.String x -> ILExpr.String x
         | SynExpr.Char x   -> ILExpr.Char x
         | SynExpr.Bool x   -> ILExpr.Bool x
+
         | SynExpr.Null(tySig) -> 
             let ty = resolveTySig env tySig
             if ty.IsValueType then
