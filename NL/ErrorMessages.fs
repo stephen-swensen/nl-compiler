@@ -127,3 +127,27 @@ module ErrorMessages =
 
     let Unrecognized_input pos =
         mk ErrorLevel.Error ErrorType.Syntactic 39 pos "Unrecognized source code character '%s'"
+
+    let SByte_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 40 pos "'System.SByte' literal must be between %i and %i but is %s" SByte.MinValue SByte.MaxValue
+
+    let Byte_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 41 pos "'System.Byte' literal must be between %i and %i but is %s" Byte.MinValue Byte.MaxValue
+
+    let Int16_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 42 pos "'System.Int16' literal must be between %i and %i but is %s" Int16.MinValue Int16.MaxValue
+
+    let UInt16_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 43 pos "'System.UInt16' literal must be between %i and %i but is %s" UInt16.MinValue UInt16.MaxValue
+
+    let UInt32_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 44 pos "'System.UInt32' literal must be between %i and %i but is %s" UInt32.MinValue UInt32.MaxValue
+
+    let Int64_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 45 pos "'System.Int64' literal must be between %i and %i but is %s" Int64.MinValue Int64.MaxValue
+
+    let UInt64_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 46 pos "'System.UInt64' literal must be between %i and %i but is %s" UInt64.MinValue UInt64.MaxValue
+
+    let Single_literal_out_of_range pos = 
+        mk ErrorLevel.Error ErrorType.Semantic 47 pos "'System.Single' literal must be between %f and %f but is %s" Single.MinValue Single.MaxValue

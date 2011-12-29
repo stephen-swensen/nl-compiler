@@ -8,6 +8,54 @@ open System.Collections.Generic
 open Evaluation
 
 [<Theory;EvalData>]
+let ``literal SByte exp`` options =
+    test <@ evalWith options "3y" = 3y @>
+
+[<Theory;EvalData>]
+let ``literal SByte out of range`` options =
+    raisesWith 
+        <@ evalWith options "128y" @>
+        (expectedErrors [|40|])
+
+
+[<Theory;EvalData>]
+let ``literal Byte exp`` options =
+    test <@ evalWith options "3uy" = 3uy @>
+
+[<Theory;EvalData>]
+let ``literal Byte out of range`` options =
+    raisesWith 
+        <@ evalWith options "256uy" @>
+        (expectedErrors [|41|])
+
+
+[<Theory;EvalData>]
+let ``literal Int16 min value`` options =
+    test <@ evalWith options "-32768s" = -32768s @>
+
+[<Theory;EvalData>]
+let ``literal Int16 exp`` options =
+    test <@ evalWith options "3s" = 3s @>
+
+[<Theory;EvalData>]
+let ``literal Int16 out of range`` options =
+    raisesWith 
+        <@ evalWith options "32768s" @>
+        (expectedErrors [|42|])
+
+
+[<Theory;EvalData>]
+let ``literal UInt16 exp`` options =
+    test <@ evalWith options "3us" = 3us @>
+
+[<Theory;EvalData>]
+let ``literal UInt16 out of range`` options =
+    raisesWith 
+        <@ evalWith options "65536us" @>
+        (expectedErrors [|43|])
+
+
+[<Theory;EvalData>]
 let ``literal Int32 exp`` options =
     test <@ evalWith options "3" = 3 @>
 
@@ -16,6 +64,51 @@ let ``literal Int32 out of range`` options =
     raisesWith 
         <@ evalWith options "99999999999999999999999" @>
         (expectedErrors [|26|])
+
+
+[<Theory;EvalData>]
+let ``literal UInt32 exp`` options =
+    test <@ evalWith options "3u" = 3u @>
+
+[<Theory;EvalData>]
+let ``literal UInt32 out of range`` options =
+    raisesWith 
+        <@ evalWith options "4294967296u" @>
+        (expectedErrors [|44|])
+
+
+[<Theory;EvalData>]
+let ``literal Int64 exp`` options =
+    test <@ evalWith options "3L" = 3L @>
+
+[<Theory;EvalData>]
+let ``literal Int64 out of range`` options =
+    raisesWith 
+        <@ evalWith options "9223372036854775808L" @>
+        (expectedErrors [|45|])
+
+
+[<Theory;EvalData>]
+let ``literal UInt64 exp`` options =
+    test <@ evalWith options "3UL" = 3UL @>
+
+[<Theory;EvalData>]
+let ``literal UInt64 out of range`` options =
+    raisesWith 
+        <@ evalWith options "18446744073709551616UL" @>
+        (expectedErrors [|46|])
+
+
+[<Theory;EvalData>]
+let ``literal Single exp`` options =
+    test <@ evalWith options "3.0f" = 3.0f @>
+
+[<Theory;EvalData>]
+let ``literal Single out of range`` options =
+    raisesWith 
+        <@ evalWith options "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999.0f" @>
+        (expectedErrors [|47|])
+
 
 [<Theory;EvalData>]
 let ``literal Double exp`` options =
