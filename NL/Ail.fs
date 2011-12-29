@@ -111,6 +111,8 @@ type ILExpr =
             | IfThenElse(_,_,_,ty)
             | Error(ty) //ty is the recovery typeof the expression. (maybe add optional first parameter with the specific branch which was type checked but in error?)
                 -> ty
+
+        ///maybe the following abstractions don't belong here...
         
         ///make a comparison binop case using an Ast.SynComparisonBinop
         static member mkComparisonBinop(op:Ast.SynComparisonBinop, x:ILExpr, y:ILExpr) = 
@@ -147,6 +149,26 @@ type ILExpr =
 
         static member StaticPropertyGet(pi:PropertyInfo) =
             ILExpr.StaticCall(pi.GetGetMethod(), [])
+
+        static member mkStaticFieldGet(fi:FieldInfo) =
+            if fi.IsLiteral && not fi.IsInitOnly then
+                let fiTy = fi.FieldType
+                let fiVal = fi.GetValue(null);
+
+                if not fiTy.IsValueType && fiTy <> typeof<string> then
+                    Null(fiTy) //should be 
+                elif fiTy = typeof<String> then
+                    String(fiVal :?> String)
+                elif fiTy = typeof<Int32> then
+                    Int32(fiVal :?> Int32)
+                elif fiTy = typeof<Boolean> then
+                    Bool(fiVal :?> Boolean)
+                elif fiTy = typeof<Double> then
+                    Double(fiVal :?> Double)
+                else
+                    failwith "const field of type '%s' with value '%s' not currently supported" fiTy.Name fiVal
+            else
+                StaticFieldGet(fi)
 
         override this.ToString() =
             sprintf "%A" this

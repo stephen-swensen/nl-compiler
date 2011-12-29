@@ -5,9 +5,22 @@ using System.Text;
 
 namespace Tests
 {
+    public enum Int32Enum { A=0, B=1, C=2 }
+
     public class NonGenericClass1
     {
-        public NonGenericClass1() { }
+        public static readonly int static_readonly_field_int;
+
+        static NonGenericClass1()
+        {
+            static_readonly_field_int = 3;
+        }
+
+        public readonly int instance_readonly_field_int;
+
+        public NonGenericClass1() {
+            instance_readonly_field_int = 3;
+        }
         public T InstanceGenericMethod<T>() { return default(T); }
         public T InstanceGenericMethod<T>(T x) { return x; }
 
@@ -53,6 +66,12 @@ namespace Tests
         public static int same_name_different_value = 1;
 
         public static int same_name_different_kind = 0;
+
+        public const int const_field_int = 0;
+        public const object const_field_object = null;
+        public const string const_field_string = "hello world";
+        public const long const_field_int64 = 0L;
+        public const Int32Enum const_field_int32enum = Int32Enum.A;
     }
 
     public class NonGenericClass2
