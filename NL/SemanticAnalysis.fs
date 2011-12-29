@@ -234,7 +234,7 @@ module PathResolution =
 
     let tryResolveILExprStaticFieldOrPropertyGet ty name rest =
         match tryResolveField ty name staticFlags with
-        | Some(fi) -> Some(ILExpr.StaticFieldGet(fi), rest)
+        | Some(fi) -> Some(ILExpr.mkStaticFieldGet(fi), rest)
         | None ->
             match tryResolveMethod ty ("get_" + name) staticFlags [||] [||] with
             | Some(mi) -> Some(ILExpr.StaticCall(mi,[]),rest)

@@ -152,11 +152,17 @@ type ILExpr =
 
         static member mkStaticFieldGet(fi:FieldInfo) =
             if fi.IsLiteral && not fi.IsInitOnly then
-                let fiTy = fi.FieldType
-                let fiVal = fi.GetValue(null);
+                let fiTy = 
+                    let fiTy = fi.FieldType
+                    if fiTy.IsEnum then
+                        fiTy.GetEnumUnderlyingType()
+                    else
+                        fiTy
+
+                let fiVal = fi.GetValue(null)
 
                 if not fiTy.IsValueType && fiTy <> typeof<string> then
-                    Null(fiTy) //should be 
+                    Null(fiTy)
                 elif fiTy = typeof<String> then
                     String(fiVal :?> String)
                 elif fiTy = typeof<Int32> then
@@ -166,7 +172,7 @@ type ILExpr =
                 elif fiTy = typeof<Double> then
                     Double(fiVal :?> Double)
                 else
-                    failwith "const field of type '%s' with value '%s' not currently supported" fiTy.Name fiVal
+                    failwithf "const field of type '%s' with value '%s' not currently supported" fiTy.Name (fiVal |> string)
             else
                 StaticFieldGet(fi)
 
