@@ -233,8 +233,24 @@ let ``optimize body of var binding`` () =
 
 ///todo: constants folding for other uminus numeric literals
 [<Fact>]
-let ``constant fold uminus of int`` () =
+let ``constant fold uminus of sbyte`` () =
+    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.SByte(1y), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.SByte(-1y)) @>
+
+[<Fact>]
+let ``constant fold uminus of int16`` () =
+    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int16(1s), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int16(-1s)) @>
+
+[<Fact>]
+let ``constant fold uminus of int32`` () =
     test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int32(-1)) @>
+
+[<Fact>]
+let ``constant fold uminus of int64`` () =
+    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int64(1L), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int64(-1L)) @>
+
+[<Fact>]
+let ``constant fold uminus of single`` () =
+    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Single(1.f), typeof<single>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Single(-1.f)) @>
 
 [<Fact>]
 let ``constant fold uminus of double`` () =
