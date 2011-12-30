@@ -256,6 +256,10 @@ let ``constant fold uminus of single`` () =
 let ``constant fold uminus of double`` () =
     test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Double(1.), typeof<double>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Double(-1.)) @>
 
+//[<Fact>]
+//let ``constant fold uminus of char`` () =
+//    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Char('a'), typeof<char>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Char(-('a'|>int)|>char)) @>
+
 [<Fact>]
 let ``uminus no constant fold but sub optimization`` () =
     //need to parenthisize 2 + 3 since addition is left associative and will not fold otheriwise
