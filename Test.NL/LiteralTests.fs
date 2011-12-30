@@ -8,13 +8,27 @@ open System.Collections.Generic
 open Evaluation
 
 [<Theory;EvalData>]
+let ``literal SByte min value`` options =
+    test <@ evalWith options "-128y" = -128y @>
+
+[<Theory;EvalData>]
+let ``literal SByte neg min value`` options =
+    test <@ evalWith options "--128y" = -128y @>
+
+[<Theory;EvalData>]
 let ``literal SByte exp`` options =
     test <@ evalWith options "3y" = 3y @>
 
 [<Theory;EvalData>]
-let ``literal SByte out of range`` options =
+let ``literal SByte out too big`` options =
     raisesWith 
         <@ evalWith options "128y" @>
+        (expectedErrors [|40|])
+
+[<Theory;EvalData>]
+let ``literal SByte too small`` options =
+    raisesWith 
+        <@ evalWith options "-129y" @>
         (expectedErrors [|40|])
 
 
@@ -23,24 +37,39 @@ let ``literal Byte exp`` options =
     test <@ evalWith options "3uy" = 3uy @>
 
 [<Theory;EvalData>]
-let ``literal Byte out of range`` options =
+let ``literal Byte too big`` options =
     raisesWith 
         <@ evalWith options "256uy" @>
         (expectedErrors [|41|])
 
+[<Theory;EvalData>]
+let ``literal Byte too small`` options =
+    raisesWith 
+        <@ evalWith options "-1uy" @>
+        (expectedErrors [|41|])
 
 [<Theory;EvalData>]
 let ``literal Int16 min value`` options =
     test <@ evalWith options "-32768s" = -32768s @>
 
 [<Theory;EvalData>]
+let ``literal Int16 neg min value`` options =
+    test <@ evalWith options "--32768s" = -32768s @>
+
+[<Theory;EvalData>]
 let ``literal Int16 exp`` options =
     test <@ evalWith options "3s" = 3s @>
 
 [<Theory;EvalData>]
-let ``literal Int16 out of range`` options =
+let ``literal Int16 too big`` options =
     raisesWith 
         <@ evalWith options "32768s" @>
+        (expectedErrors [|42|])
+
+[<Theory;EvalData>]
+let ``literal Int16 too small`` options =
+    raisesWith 
+        <@ evalWith options "-32770s" @>
         (expectedErrors [|42|])
 
 
@@ -49,20 +78,40 @@ let ``literal UInt16 exp`` options =
     test <@ evalWith options "3us" = 3us @>
 
 [<Theory;EvalData>]
-let ``literal UInt16 out of range`` options =
+let ``literal UInt16 too big`` options =
     raisesWith 
         <@ evalWith options "65536us" @>
         (expectedErrors [|43|])
 
+[<Theory;EvalData>]
+let ``literal UInt16 too small`` options =
+    raisesWith 
+        <@ evalWith options "-1us" @>
+        (expectedErrors [|43|])
+
+
+[<Theory;EvalData>]
+let ``literal Int32 min value`` options =
+    test <@ evalWith options "-2147483648" = -2147483648 @>
+
+[<Theory;EvalData>]
+let ``literal Int32 neg min value`` options =
+    test <@ evalWith options "--2147483648" = -2147483648@>
 
 [<Theory;EvalData>]
 let ``literal Int32 exp`` options =
     test <@ evalWith options "3" = 3 @>
 
 [<Theory;EvalData>]
-let ``literal Int32 out of range`` options =
+let ``literal Int32 too big`` options =
     raisesWith 
-        <@ evalWith options "99999999999999999999999" @>
+        <@ evalWith options "2147483648" @>
+        (expectedErrors [|26|])
+
+[<Theory;EvalData>]
+let ``literal Int32 too small`` options =
+    raisesWith 
+        <@ evalWith options "-2147483649" @>
         (expectedErrors [|26|])
 
 
@@ -71,11 +120,25 @@ let ``literal UInt32 exp`` options =
     test <@ evalWith options "3u" = 3u @>
 
 [<Theory;EvalData>]
-let ``literal UInt32 out of range`` options =
+let ``literal UInt32 too big`` options =
     raisesWith 
         <@ evalWith options "4294967296u" @>
         (expectedErrors [|44|])
 
+[<Theory;EvalData>]
+let ``literal UInt32 too small`` options =
+    raisesWith 
+        <@ evalWith options "-1u" @>
+        (expectedErrors [|44|])
+
+
+[<Theory;EvalData>]
+let ``literal Int64 min value`` options =
+    test <@ evalWith options "-9223372036854775808L" = -9223372036854775808L @>
+
+[<Theory;EvalData>]
+let ``literal Int64 neg min value`` options =
+    test <@ evalWith options "--9223372036854775808L" = -9223372036854775808L @>
 
 [<Theory;EvalData>]
 let ``literal Int64 exp`` options =
@@ -93,9 +156,15 @@ let ``literal UInt64 exp`` options =
     test <@ evalWith options "3UL" = 3UL @>
 
 [<Theory;EvalData>]
-let ``literal UInt64 out of range`` options =
+let ``literal UInt64 too big`` options =
     raisesWith 
         <@ evalWith options "18446744073709551616UL" @>
+        (expectedErrors [|46|])
+
+[<Theory;EvalData>]
+let ``literal UInt64 too small`` options =
+    raisesWith 
+        <@ evalWith options "-1UL" @>
         (expectedErrors [|46|])
 
 

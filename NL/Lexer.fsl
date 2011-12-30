@@ -110,7 +110,7 @@ rule tokenize = parse
     } 
 
 // Numeric constants
-| digit+'y'
+| ('-')?digit+'y'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
@@ -121,7 +121,7 @@ rule tokenize = parse
             SBYTE(0y) //error recovery
     }
 
-| digit+"uy"
+| ('-')?digit+"uy"
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-2)
@@ -132,7 +132,7 @@ rule tokenize = parse
             BYTE(0uy) //error recovery
     }
 
-| digit+'s'
+| ('-')?digit+'s'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
@@ -143,7 +143,7 @@ rule tokenize = parse
             INT16(0s) //error recovery
     }
 
-| digit+"us"
+| ('-')?digit+"us"
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-2)
@@ -154,7 +154,7 @@ rule tokenize = parse
             UINT16(0us) //error recovery
     }
 
-| digit+'u'
+| ('-')?digit+'u'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
@@ -165,7 +165,7 @@ rule tokenize = parse
             UINT32(0u) //error recovery
     }
 
-| digit+'L'
+| ('-')?digit+'L'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
@@ -176,7 +176,7 @@ rule tokenize = parse
             INT64(0L) //error recovery
     }
 
-| digit+"UL"
+| ('-')?digit+"UL"
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-2)
@@ -187,7 +187,7 @@ rule tokenize = parse
             UINT64(0UL) //error recovery
     }
 
-| digit+							  
+| ('-')?digit+							  
     {
         let input = lexeme lexbuf
         match System.Int32.TryParse(input) with
@@ -197,7 +197,7 @@ rule tokenize = parse
             INT32(0) //error recovery
     }
 
-| digit+'.'digit+(['e''E']digit+)?'f'
+| ('-')?digit+'.'digit+(['e''E']digit+)?'f'
     { 
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
@@ -208,7 +208,7 @@ rule tokenize = parse
             SINGLE(0.0f) //error recovery
     }
 
-| digit+'.'digit+(['e''E']digit+)? 
+| ('-')?digit+'.'digit+(['e''E']digit+)? 
     { 
         let input = lexeme lexbuf
         match System.Double.TryParse(input) with

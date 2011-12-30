@@ -422,12 +422,7 @@ let rec semantWith env synTopLevel =
                 ILExpr.Default(ty)
         | SynExpr.UMinus(x,pos) ->
             let x = semantExpr x
-            if x.Type = typeof<Int64> ||
-               x.Type = typeof<Int32> ||
-               x.Type = typeof<Int16> || //Int8?
-               x.Type = typeof<Double> ||
-               x.Type = typeof<Single> 
-            then
+            if Primitive.isPrimitive x.Type then
                ILExpr.UMinus(env.Checked, x, x.Type)
             else           
                 match x.Type.GetMethod("op_UnaryNegation") with
