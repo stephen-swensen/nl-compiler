@@ -18,5 +18,5 @@ let ``error recovery in the presence of unrecognized charactors`` options =
         (expectedErrors [|39;39;5|])
 
 [<Theory(Skip="this is failing because we are parsing - in the lexer for numeric consts");EvalData>]
-let ``should be able to subtract two ints with no spaces without parse error`` options =
+let ``issue 55: should be able to subtract two ints with no spaces without parse error`` options =
     test <@ evalWith options "3-3" = 0 @>
