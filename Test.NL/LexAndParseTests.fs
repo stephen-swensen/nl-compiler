@@ -16,3 +16,7 @@ let ``white space and newlines are insignificant`` options =
 let ``error recovery in the presence of unrecognized charactors`` options =
     raisesWith <@ evalWith options "x =Ð3 inßx + y" @>
         (expectedErrors [|39;39;5|])
+
+[<Theory(Skip="this is failing because we are parsing - in the lexer for numeric consts");EvalData>]
+let ``should be able to subtract two ints with no spaces without parse error`` options =
+    test <@ evalWith options "3-3" = 0 @>

@@ -13,6 +13,7 @@ type Primitive =
 //explicits like C# except decimals: http://msdn.microsoft.com/en-us/library/yht2cx7b.aspx
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
+//should rename to "NumericPrimitive"
 module Primitive =
     let private primitives =
         [
@@ -110,3 +111,6 @@ module Primitive =
         if sourceIsEqualOrHasImplicitConvToTarget ty1 ty2 then Some(ty2)
         elif sourceIsEqualOrHasImplicitConvToTarget ty2 ty1 then Some(ty1)
         else None
+
+    let isPrimitive ty =
+        primitives |> List.exists (function {Type=pty} when pty = ty -> true | _ -> false)

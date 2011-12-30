@@ -122,9 +122,13 @@ let ``uminus non primitive biginteger`` options =
     test <@ evalWith options "-biginteger.parse(\"1\") == biginteger.parse(\"-1\")" @>
 
 [<Theory;EvalData>]
+let ``uminus primitive char`` options =
+    test <@ evalWith options "-'c'[int32]" = -99 @>
+
+[<Theory;EvalData>]
 let ``uminus error`` options =
     raisesWith
-        <@ evalWith options "-'c'" @>
+        <@ evalWith options "-\"c\"" @>
         (expectedErrors [|25|])
 
 [<Theory;EvalData>]
