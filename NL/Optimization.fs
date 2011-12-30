@@ -1,5 +1,6 @@
 ﻿module Swensen.NL.Optimization
 open Swensen.NL.Ail
+open System
 
 //we do not optimize checked operations since that might result in a compile time overflow (in the 
 //future we may have all constant expressions checked at compile time, like c#)
@@ -101,8 +102,8 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.Coerce(cked, x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExpr x
             match cked, x with
-            | false, Int32(x) when ty = typeof<double> -> Double(double x)
-            | false, Double(x) when ty = typeof<int32> -> Int32(int32 x)
+            | false, Int32(x) when ty = typeof<double> -> ILExpr.Double(double x)
+            | false, Double(x) when ty = typeof<int32> -> ILExpr.Int32(int32 x)
             | _ -> ILExpr.Coerce(cked, x, ty)
         | ILExpr.LogicalNot(x) ->
             let x = optimizeExpr x
@@ -150,10 +151,30 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.InstanceFieldSet(x,fi,y) ->
             ILExpr.InstanceFieldSet(optimizeExpr x, fi, optimizeExpr y)
         | Default(ty) ->
-            if ty = typeof<int32> then
-                ILExpr.Int32(Unchecked.defaultof<int32>)
+            if ty = typeof<Byte> then
+                ILExpr.Byte(Unchecked.defaultof<Byte>)
+            elif ty = typeof<SByte> then
+                ILExpr.SByte(Unchecked.defaultof<SByte>)
+
+            elif ty = typeof<Int16> then
+                ILExpr.Int16(Unchecked.defaultof<Int16>)
+            elif ty = typeof<Int32> then
+                ILExpr.Int32(Unchecked.defaultof<Int32>)
+            elif ty = typeof<Int64> then
+                ILExpr.Int64(Unchecked.defaultof<Int64>)
+
+            elif ty = typeof<UInt16> then
+                ILExpr.UInt16(Unchecked.defaultof<UInt16>)
+            elif ty = typeof<UInt32> then
+                ILExpr.UInt32(Unchecked.defaultof<UInt32>)
+            elif ty = typeof<UInt64> then
+                ILExpr.UInt64(Unchecked.defaultof<UInt64>)
+
+            elif ty = typeof<single> then
+                ILExpr.Single(Unchecked.defaultof<Single>)
             elif ty = typeof<double> then
-                ILExpr.Double(Unchecked.defaultof<double>)
+                ILExpr.Double(Unchecked.defaultof<Double>)
+            
             elif ty = typeof<bool> then
                 ILExpr.Bool(Unchecked.defaultof<bool>)
             elif ty = typeof<char> then

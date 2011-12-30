@@ -35,6 +35,22 @@ let numericConstantFoldingSuffixes =
         ".0"
     ] |> Seq.map (fun suffix -> [|suffix :> obj|])
 
+let numericDefaultTypeNamesAndSuffixes =
+    [
+        "sbyte", "y"
+        "byte", "uy"
+        "int16", "s"
+        "uint16", "us"
+        "int32", ""
+        "uint32", "u"
+        "int64", "L"
+        "uint64", "UL"
+        "single", ".0f"
+        "double", ".0"
+    ] |> Seq.map (fun (tyName, suffix) -> [|tyName :> obj; suffix :> obj|])
+
+
+
 [<Fact>]
 let ``if/then/else unreachable else branch`` () =
     test <@ C.lexParseAndSemant "if true { 1 } else { 0 }" |> O.optimize = C.lexParseAndSemant "1" @>
@@ -285,13 +301,11 @@ let ``varset assign is optimized`` () =
 let ``can't optimize Error case`` () =
     raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> ILTopLevel.Expr |> O.optimize @>
 
-[<Fact>]
-let ``default int32 is optimized to its constant`` () =
-    test <@ C.lexParseAndSemant "default[int32]" |> O.optimize = C.lexParseAndSemant "0" @>
-
-[<Fact>]
-let ``default double is optimized to its constant`` () =
-    test <@ C.lexParseAndSemant "default[double]" |> O.optimize = C.lexParseAndSemant "0.0" @>
+[<Theory;PropertyData("numericDefaultTypeNamesAndSuffixes")>]
+let ``default numeric primitive is optimized to its constant`` (tyName:string) (suffix:string) =
+    let input = sprintf "default[%s]" tyName
+    let expected = sprintf "0%s" suffix
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant expected @>
 
 [<Fact>]
 let ``default char is optimized to its constant`` () =
