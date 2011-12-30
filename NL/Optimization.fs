@@ -120,7 +120,11 @@ let optimize (tl:ILTopLevel) =
             let x = optimizeExpr x
             match cked, x with
             //TODO: other numeric literals
+            | false, ILExpr.SByte(xval) -> ILExpr.SByte(-xval)
+            | false, ILExpr.Int16(xval) -> ILExpr.Int16(-xval)
             | false, ILExpr.Int32(xval) -> ILExpr.Int32(-xval)
+            | false, ILExpr.Int64(xval) -> ILExpr.Int64(-xval)
+            | false, ILExpr.Single(xval) -> ILExpr.Single(-xval)
             | false, ILExpr.Double(xval) -> ILExpr.Double(-xval)
             | _ -> ILExpr.UMinus(cked, x, ty)
         | ILExpr.WhileLoop(cond, body) ->
