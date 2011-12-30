@@ -62,7 +62,7 @@ type Nli(?options: CompilerOptions) =
                         match stmt with
                         | ILStmt.Do(x) ->
                             if x.Type <> typeof<Void> then
-                                let fi = tyBuilder.DefineField("it_" + itCounter.ToString(), x.Type, fieldAttrs)
+                                let fi = tyBuilder.DefineField("it" + itCounter.ToString(), x.Type, fieldAttrs)
                                 itCounter <- itCounter + 1I
                                 Emission.emit il (ILExpr.StaticFieldSet(fi,x))
                             else
@@ -84,7 +84,7 @@ type Nli(?options: CompilerOptions) =
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
         
                 ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
-                |> Seq.map (fun fi -> fi.Name, fi.GetValue(null))
+                |> Seq.map (fun fi -> fi.Name, fi.GetValue(null), fi.FieldType)
                 |> Seq.toArray
                 |> Some
 
