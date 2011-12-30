@@ -22,6 +22,10 @@ let rec loop(nli:Nli) =
 
 [<EntryPoint>]
 let main(args:string[]) =
+    //Console.OutputEncoding <- System.Text.Encoding.Unicode
+    //Unicode (UTF16) doesn't work, so will use UTF8, which means we will loose combining chars
+    Console.OutputEncoding <- System.Text.Encoding.UTF8 
+
     printfn "NL Interactive"
     let nli = new Nli({ CompilerOptions.Default with InstallErrorLogger=ErrorLogger.InstallConsoleLogger })
     loop(nli)
