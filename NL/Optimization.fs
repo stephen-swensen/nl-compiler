@@ -30,10 +30,31 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.NumericBinop(cked, op, x, y, ty) -> //numeric constants folding
             let x, y = optimizeExpr x, optimizeExpr y
             match cked, x, y with
+            
+            | false, ILExpr.SByte(xval), ILExpr.SByte(yval) ->
+                ILExpr.SByte(op.Call(xval, yval))
+            | false, ILExpr.Byte(xval), ILExpr.Byte(yval) ->
+                ILExpr.Byte(op.Call(xval, yval))
+            
+            | false, ILExpr.UInt16(xval), ILExpr.UInt16(yval) ->
+                ILExpr.UInt16(op.Call(xval, yval))
+            | false, ILExpr.UInt32(xval), ILExpr.UInt32(yval) ->
+                ILExpr.UInt32(op.Call(xval, yval))
+            | false, ILExpr.UInt64(xval), ILExpr.UInt64(yval) ->
+                ILExpr.UInt64(op.Call(xval, yval))
+
+            | false, ILExpr.Int16(xval), ILExpr.Int16(yval) ->
+                ILExpr.Int16(op.Call(xval, yval))
             | false, ILExpr.Int32(xval), ILExpr.Int32(yval) ->
                 ILExpr.Int32(op.Call(xval, yval))
+            | false, ILExpr.Int64(xval), ILExpr.Int64(yval) ->
+                ILExpr.Int64(op.Call(xval, yval))
+
+            | false, ILExpr.Single(xval), ILExpr.Single(yval) ->
+                ILExpr.Single((op.Call(xval, yval)))            
             | false, ILExpr.Double(xval), ILExpr.Double(yval) ->
                 ILExpr.Double((op.Call(xval, yval)))
+
             | _ -> ILExpr.NumericBinop(cked, op, x, y, ty)    
         | ILExpr.StaticCall(mi, args) ->
             let args = args |> List.map optimizeExpr
@@ -49,12 +70,33 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.ComparisonBinop(op, x, y) -> //comparison constants folding
             let x, y = optimizeExpr x, optimizeExpr y
             match x, y with
+            | ILExpr.Byte(xval), ILExpr.Byte(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+            | ILExpr.SByte(xval), ILExpr.SByte(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+
+            | ILExpr.Int16(xval), ILExpr.Int16(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
             | ILExpr.Int32(xval), ILExpr.Int32(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
+            | ILExpr.Int64(xval), ILExpr.Int64(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+
+            | ILExpr.UInt16(xval), ILExpr.UInt16(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+            | ILExpr.UInt32(xval), ILExpr.UInt32(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+            | ILExpr.UInt64(xval), ILExpr.UInt64(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))
+
+            | ILExpr.Single(xval), ILExpr.Single(yval) ->
+                ILExpr.Bool(op.Call(xval, yval))            
             | ILExpr.Double(xval), ILExpr.Double(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
+            
             | ILExpr.Bool(xval), ILExpr.Bool(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
+
             | _ -> ILExpr.ComparisonBinop(op, x, y)
         | ILExpr.Coerce(cked, x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExpr x
@@ -77,6 +119,7 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.UMinus(cked, x, ty) ->
             let x = optimizeExpr x
             match cked, x with
+            //TODO: other numeric literals
             | false, ILExpr.Int32(xval) -> ILExpr.Int32(-xval)
             | false, ILExpr.Double(xval) -> ILExpr.Double(-xval)
             | _ -> ILExpr.UMinus(cked, x, ty)
