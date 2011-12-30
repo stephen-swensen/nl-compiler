@@ -11,8 +11,8 @@ let rec loop(nli:Nli) =
         try
             match nli.TrySubmit(code) with
             | Some(results) ->
-                for fName,fValue in results do
-                    printfn "%s = %A" fName fValue
+                for fName,fValue,fTy in results do
+                    printfn "[%s] %s = %A" fTy.Name fName fValue
             | None ->
                 ()
         with
