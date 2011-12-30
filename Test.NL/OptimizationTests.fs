@@ -20,6 +20,21 @@ Swensen.NL.ErrorLogger.InstallConsoleLogger()
 //all these ASTs would be tedious to say the least. we can use code coverage analysis tools like NCover to give us 
 //more confidence that we are indeed following all paths).
 
+///used with xunit Theory and PropertyData for some exhaustive repitive tests on constants folding under operators.
+let numericConstantFoldingSuffixes =
+    [
+        "y"
+        "uy"
+        "s"
+        "us"
+        ""
+        "u"
+        "L"
+        "UL"
+        ".0f"
+        ".0"
+    ] |> Seq.map (fun suffix -> [|suffix :> obj|])
+
 [<Fact>]
 let ``if/then/else unreachable else branch`` () =
     test <@ C.lexParseAndSemant "if true { 1 } else { 0 }" |> O.optimize = C.lexParseAndSemant "1" @>
@@ -73,21 +88,6 @@ let ``static call sub expressions optimized`` () =
 [<Fact>]
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
     test <@ C.lexParseAndSemant "if (true || true).getType() == type[boolean] { true } else { false }" |> O.optimize = C.lexParseAndSemant "if true.getType() == type[boolean] { true } else { false }" @>
-
-let numericConstantFoldingSuffixes =
-    [
-        "y"
-        "uy"
-        "s"
-        "us"
-        ""
-        "u"
-        "L"
-        "UL"
-        ".0f"
-        ".0"
-    ] |> Seq.map (fun suffix -> [|suffix :> obj|])
-    
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal constants folding`` (suffix:string) =

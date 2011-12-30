@@ -30,11 +30,25 @@ let emit (il:ILGenerator) ilExpr =
                 il.Emit(OpCodes.Stloc, local)
 
         match ilExpr with
+        | Byte x  -> il.Emit(OpCodes.Ldc_I4_S, x)
+        | SByte x  -> il.Emit(OpCodes.Ldc_I4_S, x)
+
+        | Int16 x  -> il.Emit(OpCodes.Ldc_I4, x)
         | Int32 x  -> il.Emit(OpCodes.Ldc_I4, x)
+        | Int64 x  -> il.Emit(OpCodes.Ldc_I8, x)
+
+        | UInt16 x  -> il.Emit(OpCodes.Ldc_I4, int32 x)
+        | UInt32 x  -> il.Emit(OpCodes.Ldc_I4, int32 x)
+        | UInt64 x  -> il.Emit(OpCodes.Ldc_I8, int64 x)
+        
+        | Single x -> il.Emit(OpCodes.Ldc_R4, x)
         | Double x -> il.Emit(OpCodes.Ldc_R8, x)
+
         | String x -> il.Emit(OpCodes.Ldstr, x)
-        | Char x   -> il.Emit(OpCodes.Ldc_I4_S, byte x)
+        | Char x   -> il.Emit(OpCodes.Ldc_I4_S, int8 x) //should be ushort (uint16) not byte (uint8)?
+        
         | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
+
         | Null ty  -> il.Emit(OpCodes.Ldnull)
         | UMinus(cked, x, _) -> 
             emit x
