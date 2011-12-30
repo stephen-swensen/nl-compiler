@@ -33,11 +33,11 @@ let emit (il:ILGenerator) ilExpr =
         | Byte x  -> il.Emit(OpCodes.Ldc_I4_S, x)
         | SByte x  -> il.Emit(OpCodes.Ldc_I4_S, x)
 
-        | Int16 x  -> il.Emit(OpCodes.Ldc_I4, x)
+        | Int16 x  -> il.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
         | Int32 x  -> il.Emit(OpCodes.Ldc_I4, x)
         | Int64 x  -> il.Emit(OpCodes.Ldc_I8, x)
 
-        | UInt16 x  -> il.Emit(OpCodes.Ldc_I4, int32 x)
+        | UInt16 x  -> il.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
         | UInt32 x  -> il.Emit(OpCodes.Ldc_I4, int32 x)
         | UInt64 x  -> il.Emit(OpCodes.Ldc_I8, int64 x)
         

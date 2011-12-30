@@ -90,8 +90,8 @@ type ILExpr =
             | SByte _               -> typeof<SByte> //y
             | Byte  _               -> typeof<Byte> //uy
 
-            | Int16 _               -> typeof<Int32> //s
-            | UInt16 _              -> typeof<UInt32> //us
+            | Int16 _               -> typeof<Int16> //s
+            | UInt16 _              -> typeof<UInt16> //us
     
             | Int32 _               -> typeof<Int32> //no suffix
             | UInt32 _              -> typeof<UInt32> //u
@@ -193,10 +193,31 @@ type ILExpr =
                     Null(fiTy)
                 elif fiTy = typeof<String> then
                     String(fiVal :?> String)
+
+                elif fiTy = typeof<Byte> then
+                    Byte(fiVal :?> Byte)                
+                elif fiTy = typeof<SByte> then
+                    SByte(fiVal :?> SByte)
+
+                elif fiTy = typeof<UInt16> then
+                    UInt16(fiVal :?> UInt16)                
+                elif fiTy = typeof<UInt32> then
+                    UInt32(fiVal :?> UInt32)
+                elif fiTy = typeof<UInt64> then
+                    UInt64(fiVal :?> UInt64)
+
+                elif fiTy = typeof<Int16> then
+                    Int16(fiVal :?> Int16)                
                 elif fiTy = typeof<Int32> then
                     Int32(fiVal :?> Int32)
+                elif fiTy = typeof<Int64> then
+                    Int64(fiVal :?> Int64)
+                
                 elif fiTy = typeof<Boolean> then
                     Bool(fiVal :?> Boolean)
+
+                elif fiTy = typeof<Single> then
+                    Single(fiVal :?> Single)                
                 elif fiTy = typeof<Double> then
                     Double(fiVal :?> Double)
                 else
