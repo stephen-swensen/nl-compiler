@@ -90,7 +90,7 @@ let numericConstantFoldingSuffixes =
     
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
-let ``Int32 constants folding`` (suffix:string) =
+let ``numeric literal constants folding`` (suffix:string) =
     let input = System.String.Format("((2{0} * 3{0}) + 45{0}) - (24{0} / 2{0})", suffix)
     let outcome = sprintf "39%s" suffix
     test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant outcome @>
@@ -115,31 +115,37 @@ let ``coersion subexpression doesn't fold but is optimized`` () =
 let ``constants folding with optimized implicit int to double coersion`` () =
     test <@ C.lexParseAndSemant "2 + 3.0" |> O.optimize = C.lexParseAndSemant "5.0" @>
 
-[<Fact>]
-let ``Int32 equals comparison constants folding true`` () =
-    test <@ C.lexParseAndSemant "2 == 2" |> O.optimize = C.lexParseAndSemant "true" @>
+[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+let ``numeric literal equals comparison constants folding true`` (suffix:string) =
+    let input = String.Format("2{0} == 2{0}", suffix)
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "true" @>
 
-[<Fact>]
-let ``Int32 equals comparison constants folding false`` () =
-    test <@ C.lexParseAndSemant "2 == 3" |> O.optimize = C.lexParseAndSemant "false" @>
+[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+let ``numeric literal equals comparison constants folding false`` (suffix:string) =
+    let input = String.Format("2{0} == 3{0}", suffix)
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "false" @>
 
 //don't need to do != this cases since they are logical not (!) optimization
 
-[<Fact>]
-let ``Int32 less than comparison constants folding true`` () =
-    test <@ C.lexParseAndSemant "2 < 3" |> O.optimize = C.lexParseAndSemant "true" @>
+[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+let ``numeric literal less than comparison constants folding true`` (suffix:string) =
+    let input = String.Format("2{0} < 3{0}", suffix)
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "true" @>
 
-[<Fact>]
-let ``Int32 less than comparison constants folding false`` () =
-    test <@ C.lexParseAndSemant "3 < 2" |> O.optimize = C.lexParseAndSemant "false" @>
+[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+let ``numeric literal less than comparison constants folding false`` (suffix:string) =
+    let input = String.Format("3{0} < 2{0}", suffix)
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "false" @>
 
-[<Fact>]
-let ``Int32 greater than comparison constants folding true`` () =
-    test <@ C.lexParseAndSemant "2 > 1" |> O.optimize = C.lexParseAndSemant "true" @>
+[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+let ``numeric literal greater than comparison constants folding true`` (suffix:string) =
+    let input = String.Format("2{0} > 1{0}", suffix)
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "true" @>
 
-[<Fact>]
-let ``Int32 greater than comparison constants folding false`` () =
-    test <@ C.lexParseAndSemant "1 > 2" |> O.optimize = C.lexParseAndSemant "false" @>
+[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+let ``numeric literal greater than comparison constants folding false`` (suffix:string) =
+    let input = String.Format("1{0} > 2{0}", suffix)
+    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "false" @>
 
 [<Fact>]
 let ``logical not of false`` () =
@@ -164,30 +170,6 @@ let ``comparison op sub expression reduction`` () =
 [<Fact>]
 let ``numeric binop does not fold but one subexpression does`` () =
     test <@ C.lexParseAndSemant "(2 + 1) + (\"asdf\".get_Length())" |> O.optimize = C.lexParseAndSemant "3 + (\"asdf\".get_Length())" @>
-
-[<Fact>]
-let ``Double equals comparison constants folding true`` () =
-    test <@ C.lexParseAndSemant "2.0 == 2.0" |> O.optimize = C.lexParseAndSemant "true" @>
-
-[<Fact>]
-let ``Double equals comparison constants folding false`` () =
-    test <@ C.lexParseAndSemant "2.0 == 3.0" |> O.optimize = C.lexParseAndSemant "false" @>
-
-[<Fact>]
-let ``Double less than comparison constants folding true`` () =
-    test <@ C.lexParseAndSemant "2.0 < 3.0" |> O.optimize = C.lexParseAndSemant "true" @>
-
-[<Fact>]
-let ``Double less than comparison constants folding false`` () =
-    test <@ C.lexParseAndSemant "3.0 < 2.0" |> O.optimize = C.lexParseAndSemant "false" @>
-
-[<Fact>]
-let ``Double greater than comparison constants folding true`` () =
-    test <@ C.lexParseAndSemant "2.0 > 1.0" |> O.optimize = C.lexParseAndSemant "true" @>
-
-[<Fact>]
-let ``Double greater than comparison constants folding false`` () =
-    test <@ C.lexParseAndSemant "1.0 > 2.0" |> O.optimize = C.lexParseAndSemant "false" @>
 
 [<Fact>]
 let ``Boolean equals comparison constants folding true`` () =
@@ -249,6 +231,7 @@ let ``optimize assignment of var binding`` () =
 let ``optimize body of var binding`` () =
     test <@ C.lexParseAndSemant "x = 1 in 1 + 2" |> O.optimize = C.lexParseAndSemant "x = 1 in 3" @>
 
+///todo: constants folding for other uminus numeric literals
 [<Fact>]
 let ``constant fold uminus of int`` () =
     test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int32(-1)) @>
