@@ -72,6 +72,8 @@ namespace Tests
         public const string const_field_string = "hello world";
         public const long const_field_int64 = 0L;
         public const Int32Enum const_field_int32enum = Int32Enum.A;
+        public const Single const_field_single = 0;
+        public const Double const_field_double = 0;
     }
 
     public class NonGenericClass2
