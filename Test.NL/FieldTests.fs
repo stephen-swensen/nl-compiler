@@ -117,8 +117,36 @@ let ``set instance field of an expression is valid`` options = //but do we reall
 
 module ConstFieldTests =
     [<Theory;EvalData>]
-    let ``issue 44: clr const field`` options = 
-        test <@ evalWith options "int32.maxvalue" = Int32.MaxValue @>
+    let ``issue 44: clr Byte maxvalue const field`` options = 
+        test <@ evalWith options "Byte.maxvalue" = Byte.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: clr SByte maxvalue const field`` options = 
+        test <@ evalWith options "SByte.maxvalue" = SByte.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: clr Int16 maxvalue const field`` options = 
+        test <@ evalWith options "Int16.maxvalue" = Int16.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: clr Int32 maxvalue const field`` options = 
+        test <@ evalWith options "Int32.maxvalue" = Int32.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: clr Int64 maxvalue const field`` options = 
+        test <@ evalWith options "Int64.maxvalue" = Int64.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: clr UInt16 maxvalue const field`` options = 
+        test <@ evalWith options "UInt16.maxvalue" = UInt16.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: clr UInt32 maxvalue const field`` options = 
+        test <@ evalWith options "UInt32.maxvalue" = UInt32.MaxValue @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: clr UInt64 maxvalue const field`` options = 
+        test <@ evalWith options "UInt64.maxvalue" = UInt64.MaxValue @>
 
     [<Theory;EvalData>]
     let ``issue 44: int32 const field`` options = 
@@ -132,13 +160,21 @@ module ConstFieldTests =
     let ``issue 44: object const field`` options =
         test <@ evalWith<obj> options (Prelude.openPrefix + "NonGenericClass1.const_field_object") = null @>
 
-    [<Theory(Skip="todo");EvalData>]
+    [<Theory;EvalData>]
     let ``issue 44: int64 const field`` options =
         test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_int64") = 0L @>
 
     [<Theory;EvalData>]
     let ``issue 44: int32 enum const field`` options =
         test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_int32enum") = Tests.Int32Enum.A @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: single const field`` options =
+        test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_single") = 0.0f @>
+
+    [<Theory;EvalData>]
+    let ``issue 44: double const field`` options =
+        test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1.const_field_double") = 0.0 @>
 
 [<Theory;EvalData>]
 let ``CSharp static readonly field`` options = 
