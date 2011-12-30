@@ -96,7 +96,7 @@ rule tokenize = parse
 //char literal with escape sequence (accepts zero or more chars with possible escape sequences and does error recovery)
 | ''' [^ ''']* ''' 
     { 
-        let s = lexeme lexbuf 
+        let s = lexeme lexbuf
         try //will throw if a) could not escape, or b) was more than one character
             let unescaped = System.Text.RegularExpressions.Regex.Unescape(s.Substring(1, s.Length - 2))
             if unescaped.Length <> 1 then
@@ -113,6 +113,7 @@ rule tokenize = parse
 | digit+'y'
     {
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-1)
         match System.SByte.TryParse(input) with
         | true, value -> SBYTE(value)
         | _ ->
@@ -123,6 +124,7 @@ rule tokenize = parse
 | digit+"uy"
     {
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-2)
         match System.Byte.TryParse(input) with
         | true, value -> BYTE(value)
         | _ ->
@@ -133,6 +135,7 @@ rule tokenize = parse
 | digit+'s'
     {
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-1)
         match System.Int16.TryParse(input) with
         | true, value -> INT16(value)
         | _ ->
@@ -143,6 +146,7 @@ rule tokenize = parse
 | digit+"us"
     {
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-2)
         match System.UInt16.TryParse(input) with
         | true, value -> UINT16(value)
         | _ ->
@@ -153,6 +157,7 @@ rule tokenize = parse
 | digit+'u'
     {
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-1)
         match System.UInt32.TryParse(input) with
         | true, value -> UINT32(value)
         | _ ->
@@ -163,6 +168,7 @@ rule tokenize = parse
 | digit+'L'
     {
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-1)
         match System.Int64.TryParse(input) with
         | true, value -> INT64(value)
         | _ ->
@@ -173,6 +179,7 @@ rule tokenize = parse
 | digit+"UL"
     {
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-2)
         match System.UInt64.TryParse(input) with
         | true, value -> UINT64(value)
         | _ ->
@@ -193,6 +200,7 @@ rule tokenize = parse
 | digit+'.'digit+(['e''E']digit+)?'f'
     { 
         let input = lexeme lexbuf
+        let input = input.Substring(0, input.Length-1)
         match System.Single.TryParse(input) with
         | true, value -> SINGLE(value)
         | _ ->
