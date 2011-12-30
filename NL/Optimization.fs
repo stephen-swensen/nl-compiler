@@ -112,15 +112,28 @@ let optimize (tl:ILTopLevel) =
             elif ty = typeof<char> then
                 ILExpr.Char(Unchecked.defaultof<char>)
             else
-                exp
-        | ILExpr.StaticFieldGet _
+                exp        
+        | Byte _  
+        | SByte _ 
+
+        | Int16 _ 
+        | Int32 _ 
+        | Int64 _ 
+        
+        | UInt16 _
+        | UInt32 _
+        | UInt64 _
+        
+        | Single _
         | Double _
-        | Int32 _
+
         | String _
         | Char _
         | Bool _
         | Null _
+
         | Typeof _
+        | StaticFieldGet _
         | VarGet _
         | Nop
         | Break         
