@@ -508,7 +508,7 @@ let rec semantWith env synTopLevel =
                 ILExpr.Default(ty)
         | SynExpr.UMinus(x,pos) ->
             let x = semantExpr x
-            if Primitive.isPrimitive x.Type then
+            if NumericPrimitive.isPrimitive x.Type then
                ILExpr.UMinus(env.Checked, x, x.Type)
             else           
                 match x.Type.GetMethod("op_UnaryNegation") with
@@ -525,15 +525,15 @@ let rec semantWith env synTopLevel =
                 EM.Internal_error pos "Failed to resolve 'System.Math.Pow(float,float)' for synthetic operator '**'"
                 ILExpr.Error(typeof<float>)
             | Some(meth) ->
-                if Primitive.sourceIsEqualOrHasImplicitConvToTarget x.Type typeof<Double> 
-                    && Primitive.sourceIsEqualOrHasImplicitConvToTarget y.Type typeof<Double> then
+                if NumericPrimitive.sourceIsEqualOrHasImplicitConvToTarget x.Type typeof<Double> 
+                    && NumericPrimitive.sourceIsEqualOrHasImplicitConvToTarget y.Type typeof<Double> then
                     ILExpr.StaticCall(meth, [x;y] |> List.map (coerceIfNeeded env.Checked typeof<Double>))
                 else
                     EM.No_overload_found_for_binary_operator pos "**" x.Type.Name y.Type.Name
                     ILExpr.Error(typeof<float>)
         | SynExpr.NumericBinop(op,x,y,pos) ->
             let x, y = semantExpr x, semantExpr y
-            match Primitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
+            match NumericPrimitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
             | Some(targetTy) -> //primitive
                 ILExpr.mkNumericBinop(env.Checked, op, coerceIfNeeded env.Checked targetTy x, coerceIfNeeded env.Checked targetTy y, targetTy)
             | None when op = SynNumericBinop.Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string
@@ -560,7 +560,7 @@ let rec semantWith env synTopLevel =
             let x, y = semantExpr x, semantExpr y
                         
             //first numeric tower value type cases
-            match Primitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
+            match NumericPrimitive.tryGetEqualOrImplicitConvTarget x.Type y.Type with
             | Some(targetTy) ->
                 ILExpr.mkComparisonBinop(op, coerceIfNeeded env.Checked targetTy x, coerceIfNeeded env.Checked targetTy y)
             | None ->
@@ -740,7 +740,7 @@ let rec semantWith env synTopLevel =
                 x
             elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
                 ILExpr.Cast(x,ty)
-            elif Primitive.sourceHasImplicitOrExplicitConvTo x.Type ty then
+            elif NumericPrimitive.sourceHasImplicitOrExplicitConvTo x.Type ty then
                 ILExpr.Coerce(env.Checked,x,ty) 
             else
                 let meth = seq {
