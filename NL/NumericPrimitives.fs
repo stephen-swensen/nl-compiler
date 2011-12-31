@@ -2,7 +2,7 @@ namespace Swensen.NL
 
 open System
 
-type Primitive =
+type NumericPrimitive =
     {
         Type:Type
         Implicits: Type list
@@ -14,7 +14,7 @@ type Primitive =
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
 //should rename to "NumericPrimitive"
-module Primitive =
+module NumericPrimitive =
     let private primitives =
         [
             { 

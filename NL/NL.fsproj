@@ -70,7 +70,7 @@
       <OtherFlags>--module Swensen.NL.Parser</OtherFlags>
     </FsYacc>
     <Compile Include="Ail.fs" />
-    <Compile Include="Primitives.fs" />
+    <Compile Include="NumericPrimitives.fs" />
     <Compile Include="SemanticEnvironment.fs" />
     <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="Optimization.fs" />
