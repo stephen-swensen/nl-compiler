@@ -508,7 +508,7 @@ let rec semantWith env synTopLevel =
                 ILExpr.Default(ty)
         | SynExpr.UMinus(x,pos) ->
             let x = semantExpr x
-            if NumericPrimitive.isPrimitive x.Type then
+            if NumericPrimitive.isNumericPrimitive x.Type then
                ILExpr.UMinus(env.Checked, x, x.Type)
             else           
                 match x.Type.GetMethod("op_UnaryNegation") with
@@ -572,7 +572,7 @@ let rec semantWith env synTopLevel =
                 match meth, op with
                 | Some(meth), _ ->
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y])    
-                //reference equals
+                //reference equals or non-numeric primitive comparison between bools or chars
                 | None, (SynComparisonBinop.Eq | SynComparisonBinop.Neq) when (x.Type.IsAssignableFrom(y.Type) || y.Type.IsAssignableFrom(x.Type)) && (not (x.Type.IsValueType <> y.Type.IsValueType)) -> 
                     ILExpr.mkComparisonBinop(op, x, y)    
                 | None, _ ->
@@ -740,7 +740,8 @@ let rec semantWith env synTopLevel =
                 x
             elif ty.IsAssignableFrom(x.Type) || x.Type.IsAssignableFrom(ty) then
                 ILExpr.Cast(x,ty)
-            elif NumericPrimitive.sourceHasImplicitOrExplicitConvTo x.Type ty then
+            //implicit or explicit coersion of numeric primitive to numeric primitive or char to numeric primitive (under-the-hood chars are ints)
+            elif NumericPrimitive.sourceHasImplicitOrExplicitConvTo x.Type ty || (x.Type = typeof<char> && NumericPrimitive.isNumericPrimitive ty) then
                 ILExpr.Coerce(env.Checked,x,ty) 
             else
                 let meth = seq {

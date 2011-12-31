@@ -122,8 +122,10 @@ let ``uminus non primitive biginteger`` options =
     test <@ evalWith options "-biginteger.parse(\"1\") == biginteger.parse(\"-1\")" @>
 
 [<Theory;EvalData>]
-let ``uminus primitive char`` options =
-    test <@ evalWith options "-'c'[int32]" = -99 @>
+let ``uminus cannot be applied to char`` options =
+    raisesWith 
+        <@ evalWith options "-'c'" @>
+        (expectedErrors [|25|])
 
 [<Theory;EvalData>]
 let ``uminus error`` options =
@@ -135,4 +137,28 @@ let ``uminus error`` options =
 let ``could not resolve binary operator overload`` options =
     raisesWith
         <@ evalWith options "biginteger.parse(\"1\") + 1" @>
+        (expectedErrors [|3|])
+
+[<Theory;EvalData>]
+let ``addition cannot be applied to chars`` options =
+    raisesWith 
+        <@ evalWith options "'a' + 'b'" @>
+        (expectedErrors [|3|])
+
+[<Theory;EvalData>]
+let ``sub cannot be applied to chars`` options =
+    raisesWith 
+        <@ evalWith options "'a' - 'b'" @>
+        (expectedErrors [|3|])
+
+[<Theory;EvalData>]
+let ``div cannot be applied to chars`` options =
+    raisesWith 
+        <@ evalWith options "'a' / 'b'" @>
+        (expectedErrors [|3|])
+
+[<Theory;EvalData>]
+let ``mult cannot be applied to chars`` options =
+    raisesWith 
+        <@ evalWith options "'a' * 'b'" @>
         (expectedErrors [|3|])
