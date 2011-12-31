@@ -123,4 +123,24 @@ let ``can't compare value type to boxed object`` options =
 let ``issue 51: > comparison of two unsigned int32s`` options =
     test <@ evalWith options "uint32.parse(\"4294967295\") > uint32.parse(\"0\")" = true @>
 
+[<Theory;EvalData>]
+let ``gt cannot be applied to chars`` options =
+    raisesWith 
+        <@ evalWith options "'a' > 'b'" @>
+        (expectedErrors [|3|])
+
+[<Theory;EvalData>]
+let ``lt cannot be applied to chars`` options =
+    raisesWith 
+        <@ evalWith options "'a' < 'b'" @>
+        (expectedErrors [|3|])
+
+[<Theory;EvalData>]
+let ``eq chars true`` options =
+    test <@ evalWith options "'a' == 'a'" = true @>
+
+[<Theory;EvalData>]
+let ``eq chars false`` options =
+    test <@ evalWith options "'a' == 'b'" = false @>
+
 //still got a bunch more cases to go

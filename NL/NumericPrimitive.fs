@@ -57,11 +57,18 @@ module NumericPrimitive =
                 Implicits = [typeof<single>; typeof<double>;]
                 Explicits = [typeof<int8>; typeof<uint8>; typeof<int16>; typeof<uint16>; typeof<int32>; typeof<uint32>; typeof<int64>; typeof<char>;]
             }
-            { 
-                Type = typeof<char>
-                Implicits = [typeof<uint16>; typeof<int32>; typeof<uint32>; typeof<int64>; typeof<uint64>; typeof<single>; typeof<double>;]
-                Explicits = [typeof<int8>; typeof<uint8>; typeof<int16>;]
-            }
+//            { 
+//                Type = typeof<char>
+////                Implicits = [typeof<uint16>; typeof<int32>; typeof<uint32>; typeof<int64>; typeof<uint64>; typeof<single>; typeof<double>;]
+////                Explicits = [typeof<int8>; typeof<uint8>; typeof<int16>;]
+//                
+//                Implicits = []
+//                Explicits = 
+//                    [
+//                        typeof<int8>; typeof<uint8>; typeof<int16>; //actual implicits
+//                        typeof<uint16>; typeof<int32>; typeof<uint32>; typeof<int64>; typeof<uint64>; typeof<single>; typeof<double>; //actual explicits
+//                    ]
+//            }
             { 
                 Type = typeof<single>
                 Implicits = [typeof<double>;]
@@ -101,8 +108,6 @@ module NumericPrimitive =
                 sourceTy = targetTy || implicits |> List.contains targetTy
             | _ -> false)
 
-
-
     ///If ty1 and ty2 are both primitive types then
     ///(if they are equal return Some(their type) else if one can be coerced to the other
     ///return Some(the one that can serve as the coersion target))
@@ -112,5 +117,5 @@ module NumericPrimitive =
         elif sourceIsEqualOrHasImplicitConvToTarget ty2 ty1 then Some(ty1)
         else None
 
-    let isPrimitive ty =
+    let isNumericPrimitive ty =
         primitives |> List.exists (function {Type=pty} when pty = ty -> true | _ -> false)
