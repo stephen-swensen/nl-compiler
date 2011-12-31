@@ -101,7 +101,7 @@ let optimize (tl:ILTopLevel) =
             | _ -> ILExpr.ComparisonBinop(op, x, y)
         | ILExpr.Coerce(cked, x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExpr x
-            match cked, x with
+            match cked, x with //todo: these need to be expanded.
             | false, Int32(x) when ty = typeof<double> -> ILExpr.Double(double x)
             | false, Double(x) when ty = typeof<int32> -> ILExpr.Int32(int32 x)
             | _ -> ILExpr.Coerce(cked, x, ty)
