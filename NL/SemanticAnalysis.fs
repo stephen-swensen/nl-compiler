@@ -374,29 +374,115 @@ module PathResolution =
 
 module PR = PathResolution
 
+//we need to do numeric parsing here instead of in the lexer so that the grammer handles uminus vs. minus correctly
+module NumericParsing =
+    let parseSByte input pos =
+        match System.SByte.TryParse(input) with
+        | true, value -> ILExpr.SByte(value)
+        | _ ->
+            EM.SByte_literal_out_of_range pos input
+            ILExpr.SByte(0y) //error recovery
+
+    let parseByte input pos =        
+        match System.Byte.TryParse(input) with
+        | true, value -> ILExpr.Byte(value)
+        | _ ->
+            EM.Byte_literal_out_of_range pos input
+            ILExpr.Byte(0uy) //error recovery
+
+    let parseInt16 input pos =        
+        match System.Int16.TryParse(input) with
+        | true, value -> ILExpr.Int16(value)
+        | _ ->
+            EM.Int16_literal_out_of_range pos input
+            ILExpr.Int16(0s) //error recovery
+
+    let parseInt32 input pos =        
+        match System.Int32.TryParse(input) with
+        | true, value -> ILExpr.Int32(value)
+        | _ ->
+            EM.Int32_literal_out_of_range pos input
+            ILExpr.Int32(0) //error recovery
+
+    let parseInt64 input pos =        
+        match System.Int64.TryParse(input) with
+        | true, value -> ILExpr.Int64(value)
+        | _ ->
+            EM.Int64_literal_out_of_range pos input
+            ILExpr.Int64(0L) //error recovery
+
+    let parseUInt16 input pos =        
+        match System.UInt16.TryParse(input) with
+        | true, value -> ILExpr.UInt16(value)
+        | _ ->
+            EM.UInt16_literal_out_of_range pos input
+            ILExpr.UInt16(0us) //error recovery
+
+    let parseUInt32 input pos =        
+        match System.UInt32.TryParse(input) with
+        | true, value -> ILExpr.UInt32(value)
+        | _ ->
+            EM.UInt32_literal_out_of_range pos input
+            ILExpr.UInt32(0u) //error recovery
+
+    let parseUInt64 input pos =        
+        match System.UInt64.TryParse(input) with
+        | true, value -> ILExpr.UInt64(value)
+        | _ ->
+            EM.UInt64_literal_out_of_range pos input
+            ILExpr.UInt64(0UL) //error recovery
+
+    let parseSingle input pos =        
+        match System.Single.TryParse(input) with
+        | true, value -> ILExpr.Single(value)
+        | _ ->
+            EM.Single_literal_out_of_range pos input
+            ILExpr.Single(0.0f) //error recovery
+
+    let parseDouble input pos =        
+        match System.Double.TryParse(input) with
+        | true, value -> ILExpr.Double(value)
+        | _ ->
+            EM.Double_literal_out_of_range pos input
+            ILExpr.Double(0.0) //error recovery
+
 ///Symantic analysis (type checking)
 let rec semantWith env synTopLevel =
     let rec semantExprWith env synExpr=
         let semantExpr = semantExprWith env
 
         match synExpr with
-        | SynExpr.Byte x  -> ILExpr.Byte x
-        | SynExpr.SByte x  -> ILExpr.SByte x
+        | SynExpr.Byte(x,pos)   -> NumericParsing.parseByte x pos
+        | SynExpr.SByte(x,pos)  -> NumericParsing.parseSByte x pos
 
-        | SynExpr.Int16 x  -> ILExpr.Int16 x
-        | SynExpr.Int32 x  -> ILExpr.Int32 x
-        | SynExpr.Int64 x  -> ILExpr.Int64 x
+        | SynExpr.Int16(x,pos)  -> NumericParsing.parseInt16 x pos
+        | SynExpr.Int32(x,pos)  -> NumericParsing.parseInt32 x pos
+        | SynExpr.Int64(x,pos)  -> NumericParsing.parseInt64 x pos
         
-        | SynExpr.UInt16 x  -> ILExpr.UInt16 x
-        | SynExpr.UInt32 x  -> ILExpr.UInt32 x
-        | SynExpr.UInt64 x  -> ILExpr.UInt64 x
+        | SynExpr.UInt16(x,pos) -> NumericParsing.parseUInt16 x pos
+        | SynExpr.UInt32(x,pos) -> NumericParsing.parseUInt32 x pos
+        | SynExpr.UInt64(x,pos) -> NumericParsing.parseUInt64 x pos
         
-        | SynExpr.Single x  -> ILExpr.Single x
-        | SynExpr.Double x -> ILExpr.Double x
+        | SynExpr.Single(x,pos) -> NumericParsing.parseSingle x pos
+        | SynExpr.Double(x,pos) -> NumericParsing.parseDouble x pos
+
+        | SynExpr.UMinus(SynExpr.Byte(x,xpos),upos)   -> NumericParsing.parseByte ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.SByte(x,xpos),upos)  -> NumericParsing.parseSByte ("-"+x) (PositionRange(upos,xpos))
+
+        | SynExpr.UMinus(SynExpr.Int16(x,xpos),upos)  -> NumericParsing.parseInt16 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int32(x,xpos),upos)  -> NumericParsing.parseInt32 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int64(x,xpos),upos)  -> NumericParsing.parseInt64 ("-"+x) (PositionRange(upos,xpos))
         
-        | SynExpr.String x -> ILExpr.String x
-        | SynExpr.Char x   -> ILExpr.Char x
-        | SynExpr.Bool x   -> ILExpr.Bool x
+        | SynExpr.UMinus(SynExpr.UInt16(x,xpos),upos) -> NumericParsing.parseUInt16 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.UInt32(x,xpos),upos) -> NumericParsing.parseUInt32 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.UInt64(x,xpos),upos) -> NumericParsing.parseUInt64 ("-"+x) (PositionRange(upos,xpos))
+        
+        | SynExpr.UMinus(SynExpr.Single(x,xpos),upos) -> NumericParsing.parseSingle ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Double(x,xpos),upos) -> NumericParsing.parseDouble ("-"+x) (PositionRange(upos,xpos))
+        
+        | SynExpr.String(x) -> ILExpr.String(x)
+        | SynExpr.Char(x)   -> ILExpr.Char(x)
+        | SynExpr.Bool(x)   -> ILExpr.Bool(x)
 
         | SynExpr.Null(tySig) -> 
             let ty = resolveTySig env tySig

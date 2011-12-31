@@ -176,20 +176,21 @@ type TySig with
 //     sub-expression or token, then it is tupled with the subexpression or token
 ///Raw (untyped) parsed expression
 type SynExpr =    
-    | SByte             of SByte //y
-    | Byte              of Byte //uy
+    //we do the actual parsing semantic analysis of the numeric const in SemanticAnalysis
+    | SByte             of string * PositionRange //y
+    | Byte              of string * PositionRange //uy
 
-    | Int16             of Int16 //s
-    | UInt16            of UInt16 //us
+    | Int16             of string * PositionRange //s
+    | UInt16            of string * PositionRange //us
     
-    | Int32             of Int32 //no suffix
-    | UInt32            of UInt32 //u
+    | Int32             of string * PositionRange //no suffix
+    | UInt32            of string * PositionRange //u
     
-    | Int64             of Int64 //L
-    | UInt64            of UInt64 //UL
+    | Int64             of string * PositionRange //L
+    | UInt64            of string * PositionRange //UL
     
-    | Single            of Single //f
-    | Double            of Double //no suffix
+    | Single            of string * PositionRange //f
+    | Double            of string * PositionRange //no suffix
     
     | String            of String
     | Char              of Char

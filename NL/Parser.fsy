@@ -15,19 +15,19 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 
 %}
 
-%token <Byte> BYTE
-%token <SByte> SBYTE
+%token <string> BYTE
+%token <string> SBYTE
 
-%token <Int16> INT16
-%token <Int32> INT32
-%token <Int64> INT64
+%token <string> INT16
+%token <string> INT32
+%token <string> INT64
 
-%token <UInt16> UINT16
-%token <UInt32> UINT32
-%token <UInt64> UINT64
+%token <string> UINT16
+%token <string> UINT32
+%token <string> UINT64
 
-%token <Single> SINGLE
-%token <Double> DOUBLE
+%token <string> SINGLE
+%token <string> DOUBLE
 
 %token <String> STRING
 %token <Char> CHAR
@@ -154,28 +154,28 @@ expr:
     //-- literal values --
 
     | BYTE
-        { SynExpr.Byte($1) }
+        { SynExpr.Byte($1, range parseState 1 1) }
     | SBYTE                                      
-        { SynExpr.SByte($1) }
+        { SynExpr.SByte($1, range parseState 1 1) }
 
     | INT16                                      
-        { SynExpr.Int16($1) }
+        { SynExpr.Int16($1, range parseState 1 1) }
     | INT32                                      
-        { SynExpr.Int32($1) }
+        { SynExpr.Int32($1, range parseState 1 1) }
     | INT64                                      
-        { SynExpr.Int64($1) }
+        { SynExpr.Int64($1, range parseState 1 1) }
 
     | UINT16                                      
-        { SynExpr.UInt16($1) }
+        { SynExpr.UInt16($1, range parseState 1 1) }
     | UINT32                                      
-        { SynExpr.UInt32($1) }
+        { SynExpr.UInt32($1, range parseState 1 1) }
     | UINT64                                      
-        { SynExpr.UInt64($1) }
+        { SynExpr.UInt64($1, range parseState 1 1) }
 
     | SINGLE                                 
-        { SynExpr.Single($1) }
+        { SynExpr.Single($1, range parseState 1 1) }
     | DOUBLE                                 
-        { SynExpr.Double($1) }
+        { SynExpr.Double($1, range parseState 1 1) }
 
     | STRING                                 
         { SynExpr.String($1) }

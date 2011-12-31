@@ -110,112 +110,72 @@ rule tokenize = parse
     } 
 
 // Numeric constants
-| ('-')?digit+'y'
+| digit+'y'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
-        match System.SByte.TryParse(input) with
-        | true, value -> SBYTE(value)
-        | _ ->
-            EM.SByte_literal_out_of_range (range lexbuf) input
-            SBYTE(0y) //error recovery
+        SBYTE(input)
     }
 
-| ('-')?digit+"uy"
+| digit+"uy"
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-2)
-        match System.Byte.TryParse(input) with
-        | true, value -> BYTE(value)
-        | _ ->
-            EM.Byte_literal_out_of_range (range lexbuf) input
-            BYTE(0uy) //error recovery
+        BYTE(input)
     }
 
-| ('-')?digit+'s'
+| digit+'s'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
-        match System.Int16.TryParse(input) with
-        | true, value -> INT16(value)
-        | _ ->
-            EM.Int16_literal_out_of_range (range lexbuf) input
-            INT16(0s) //error recovery
+        INT16(input)
     }
 
-| ('-')?digit+"us"
+| digit+"us"
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-2)
-        match System.UInt16.TryParse(input) with
-        | true, value -> UINT16(value)
-        | _ ->
-            EM.UInt16_literal_out_of_range (range lexbuf) input
-            UINT16(0us) //error recovery
+        UINT16(input)
     }
 
-| ('-')?digit+'u'
+| digit+'u'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
-        match System.UInt32.TryParse(input) with
-        | true, value -> UINT32(value)
-        | _ ->
-            EM.UInt32_literal_out_of_range (range lexbuf) input
-            UINT32(0u) //error recovery
+        UINT32(input)
     }
 
-| ('-')?digit+'L'
+| digit+'L'
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
-        match System.Int64.TryParse(input) with
-        | true, value -> INT64(value)
-        | _ ->
-            EM.Int64_literal_out_of_range (range lexbuf) input
-            INT64(0L) //error recovery
+        INT64(input)
     }
 
-| ('-')?digit+"UL"
+| digit+"UL"
     {
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-2)
-        match System.UInt64.TryParse(input) with
-        | true, value -> UINT64(value)
-        | _ ->
-            EM.UInt64_literal_out_of_range (range lexbuf) input
-            UINT64(0UL) //error recovery
+        UINT64(input)
     }
 
-| ('-')?digit+							  
+| digit+							  
     {
         let input = lexeme lexbuf
-        match System.Int32.TryParse(input) with
-        | true, value -> INT32(value)
-        | _ ->
-            EM.Int32_literal_out_of_range (range lexbuf) input
-            INT32(0) //error recovery
+        INT32(input)
     }
 
-| ('-')?digit+'.'digit+(['e''E']digit+)?'f'
+| digit+'.'digit+(['e''E']digit+)?'f'
     { 
         let input = lexeme lexbuf
         let input = input.Substring(0, input.Length-1)
-        match System.Single.TryParse(input) with
-        | true, value -> SINGLE(value)
-        | _ ->
-            EM.Single_literal_out_of_range (range lexbuf) input
-            SINGLE(0.0f) //error recovery
+        SINGLE(input)
     }
 
-| ('-')?digit+'.'digit+(['e''E']digit+)? 
+| digit+'.'digit+(['e''E']digit+)? 
     { 
         let input = lexeme lexbuf
-        match System.Double.TryParse(input) with
-        | true, value -> DOUBLE (value)
-        | _ ->
-            EM.Double_literal_out_of_range (range lexbuf) input
-            DOUBLE(0.0) //error recovery
+        DOUBLE(input)
     }
 
 // Names
