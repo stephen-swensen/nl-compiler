@@ -16,32 +16,17 @@ module Win32 =
     [<DllImport(@"User32", CharSet = CharSet.Ansi, SetLastError = false, ExactSpelling = true)>]
     extern void LockWindowUpdate(int hWnd)
 
-[<AllowNullLiteral>]
-type CodeEditor() =
-    inherit RichTextBox(AcceptsTab=true)
-
-    override this.OnKeyDown(e:KeyEventArgs) =
-        base.OnKeyDown(e)
-
-    override this.OnTextChanged(e:System.EventArgs) =
-        base.OnTextChanged(e)
-        this.Colorize()
-
-    ///originally based on http://fssnip.net/5L
-    member this.Colorize() =
-        let curSelectionStart = this.SelectionStart
-        Win32.LockWindowUpdate(this.Handle.ToInt32())
-        
-        do
-            let lexbuff = LexBuffer<_>.FromString(this.Text)
+module CodeEditorService =
+    let textColorRanges text =
+        seq {
+            let lexbuff = LexBuffer<_>.FromString(text)
             
-            let colorCurToken color =
-                this.SelectionStart    <- lexbuff.StartPos.AbsoluteOffset
-                this.SelectionLength   <- lexbuff.EndPos.AbsoluteOffset - lexbuff.StartPos.AbsoluteOffset
-                this.SelectionColor    <- color
+            let curRange () =
+                lexbuff.StartPos.AbsoluteOffset, lexbuff.EndPos.AbsoluteOffset
 
             while not lexbuff.IsPastEndOfStream do
                 match lexbuff |> Lexer.tokenize with
+                //keywords
                 | Parser.token.BREAK _
                 | Parser.token.CHECKED _
                 | Parser.token.CONTINUE _
@@ -54,22 +39,48 @@ type CodeEditor() =
                 | Parser.token.TYPE _
                 | Parser.token.UNCHECKED
                 | Parser.token.WHILE _
-                    -> colorCurToken Color.Blue
-//                | Parser.token.BOOL _
-//                | Parser.token.BYTE _
+                    -> yield curRange(), Color.Blue
+                //string and char literals
                 | Parser.token.CHAR _
-//                | Parser.token.DOUBLE _
-//                | Parser.token.INT16 _
-//                | Parser.token.INT32 _
-//                | Parser.token.INT64 _
-//                | Parser.token.SBYTE _
-//                | Parser.token.SINGLE _
                 | Parser.token.STRING _
-//                | Parser.token.UINT16 _
-//                | Parser.token.UINT32 _
-//                | Parser.token.UINT64 _
-                    -> colorCurToken Color.DarkRed
+                    -> yield curRange(), Color.DarkRed
+                //numeric literals
+                | Parser.token.BOOL _
+                | Parser.token.BYTE _
+                | Parser.token.DOUBLE _
+                | Parser.token.INT16 _
+                | Parser.token.INT32 _
+                | Parser.token.INT64 _
+                | Parser.token.SBYTE _
+                | Parser.token.SINGLE _
+                | Parser.token.UINT16 _
+                | Parser.token.UINT32 _
+                | Parser.token.UINT64 _
+                    -> yield curRange(), Color.Teal
                 | _ -> ()
+        }
+
+[<AllowNullLiteral>]
+type CodeEditor() =
+    inherit RichTextBox(AcceptsTab=true)
+
+    override this.OnKeyDown(e:KeyEventArgs) =
+        base.OnKeyDown(e)
+
+    override this.OnTextChanged(e:System.EventArgs) =
+        base.OnTextChanged(e)
+        this.Colorize()
+
+    ///strategy based on http://fssnip.net/5L
+    member this.Colorize() =
+        let curSelectionStart = this.SelectionStart
+        Win32.LockWindowUpdate(this.Handle.ToInt32())
+
+        CodeEditorService.textColorRanges this.Text
+        |> Seq.iter(fun ((startPos, endPos), color) ->
+            this.SelectionStart     <- startPos
+            this.SelectionLength    <- endPos - startPos
+            this.SelectionColor     <- color)
                 
         this.SelectionStart    <- curSelectionStart
         this.SelectionLength   <- 0
