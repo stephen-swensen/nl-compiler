@@ -61,24 +61,17 @@ module CodeEditorService =
         }
 
 [<AllowNullLiteral>]
-type CodeEditor() =
+type CodeEditor() as this =
     inherit RichTextBox(AcceptsTab=true)
 
-    override this.OnKeyDown(e:KeyEventArgs) =
-        base.OnKeyDown(e)
-
-    override this.OnTextChanged(e:System.EventArgs) =
-        base.OnTextChanged(e)
-        this.Colorize()
-
     ///strategy based on http://fssnip.net/5L
-    member this.Colorize() =
+    let colorize offset text =
         let curSelectionStart = this.SelectionStart
         Win32.LockWindowUpdate(this.Handle.ToInt32())
 
-        CodeEditorService.textColorRanges this.Text
+        CodeEditorService.textColorRanges text
         |> Seq.iter(fun ((startPos, endPos), color) ->
-            this.SelectionStart     <- startPos
+            this.SelectionStart     <- offset + startPos
             this.SelectionLength    <- endPos - startPos
             this.SelectionColor     <- color)
                 
@@ -87,6 +80,15 @@ type CodeEditor() =
         this.SelectionColor    <- Color.Black
 
         Win32.LockWindowUpdate(0)
+
+    override this.OnKeyDown(e:KeyEventArgs) =
+        base.OnKeyDown(e)
+
+    override this.OnTextChanged(e:System.EventArgs) =
+        base.OnTextChanged(e)
+        let offset = this.GetFirstCharIndexOfCurrentLine()
+        let curLine = this.Lines.[this.GetLineFromCharIndex(offset)]
+        colorize offset curLine
 
 
 type public MainForm() as this =
