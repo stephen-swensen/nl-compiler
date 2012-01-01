@@ -14,7 +14,6 @@ type public MainForm() as this =
             System.Drawing.Size((2 * size.Width) / 3, size.Height / 2)
         )
     )
-
     let nli = Swensen.NL.Nli()
 
     let render f =
@@ -38,7 +37,7 @@ type public MainForm() as this =
 
                 let errorsCount = ref 0
                 let exnCount = ref 0
-                rtb.KeyDown.AddHandler(new KeyEventHandler(fun sender args ->
+                rtb.KeyDown.Add(fun args ->
                     if args.Alt && args.KeyCode = Keys.Enter && not <| String.IsNullOrWhiteSpace(rtb.SelectedText) then
                         try
                             match nli.TrySubmit(rtb.SelectedText) with
@@ -51,6 +50,8 @@ type public MainForm() as this =
                         with e ->
                             watchp.Watch(sprintf "exn%i" !exnCount, e)
                             exnCount := !exnCount + 1
+
+                        args.SuppressKeyPress <- true //so doesn't make "ping" noise
                     else 
                         ()
-                ))
+                )
