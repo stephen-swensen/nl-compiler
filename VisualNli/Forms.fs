@@ -57,7 +57,7 @@ module CodeEditorService =
                 | Parser.token.UINT32 _
                 | Parser.token.UINT64 _
                     -> yield curRange(), Color.Teal
-                | _ -> ()
+                | _ -> yield curRange(), Color.Black
         }
 
 [<AllowNullLiteral>]
