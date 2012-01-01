@@ -18,11 +18,14 @@ module Win32 =
 
 [<AllowNullLiteral>]
 type CodeEditor() =
-    inherit RichTextBox()
+    inherit RichTextBox(AcceptsTab=true)
 
-    override X.OnTextChanged(e : System.EventArgs) =
+    override this.OnKeyDown(e:KeyEventArgs) =
+        base.OnKeyDown(e)
+
+    override this.OnTextChanged(e:System.EventArgs) =
         base.OnTextChanged(e)
-        X.Colorize()
+        this.Colorize()
 
     ///originally based on http://fssnip.net/5L
     member this.Colorize() =
