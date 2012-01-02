@@ -14,7 +14,7 @@ open Microsoft.FSharp.Text.Lexing
 
 module Win32 =
     [<DllImport(@"User32", CharSet = CharSet.Ansi, SetLastError = false, ExactSpelling = true)>]
-    extern void LockWindowUpdate(int hWnd)
+    extern void LockWindowUpdate(nativeint hWnd)
 
 module CodeEditorService =
     let textColorRanges text =
@@ -57,41 +57,101 @@ module CodeEditorService =
                 | Parser.token.UINT32 _
                 | Parser.token.UINT64 _
                     -> yield curRange(), Color.Teal
-                | _ -> yield curRange(), Color.Black
+                | _ ->  ()
         }
 
 [<AllowNullLiteral>]
-type CodeEditor() as this =
+type CodeEditor() as self =
     inherit RichTextBox(AcceptsTab=true)
 
-    ///strategy based on http://fssnip.net/5L
-    let colorize offset text =
-        let curSelectionStart = this.SelectionStart
-        Win32.LockWindowUpdate(this.Handle.ToInt32())
+    let update f = 
+        try
+            Win32.LockWindowUpdate(self.Handle)
+            f()
+        finally
+            Win32.LockWindowUpdate(0n)
+        
+        Win32.LockWindowUpdate(0n)
 
+    ///used to detect whether text changed is a paste event or not, see http://stackoverflow.com/a/6638841/236255
+    let mutable lastCursorPos = 0
+
+    ///offset is corresponds to the position at the start of the text being colorized.
+    ///The curors will be placed at the end of text with respect to the offset
+    let colorize offset (text:String) =
         CodeEditorService.textColorRanges text
         |> Seq.iter(fun ((startPos, endPos), color) ->
-            this.SelectionStart     <- offset + startPos
-            this.SelectionLength    <- endPos - startPos
-            this.SelectionColor     <- color)
-                
-        this.SelectionStart    <- curSelectionStart
-        this.SelectionLength   <- 0
-        this.SelectionColor    <- Color.Black
+            self.SelectionStart     <- offset + startPos
+            self.SelectionLength    <- endPos - startPos
+            self.SelectionFont      <- self.Font
+            self.SelectionColor     <- color)
 
-        Win32.LockWindowUpdate(0)
+    let resetCursor pos =
+        self.SelectionStart     <- pos
+        self.SelectionLength    <- 0
+        self.SelectionBackColor <- self.BackColor
+        self.SelectionColor     <- self.ForeColor
+        self.SelectionFont      <- self.Font
 
-    override this.OnKeyDown(e:KeyEventArgs) =
+    let resetSelection startPos length =
+
+        //select what was just pasted (need to do again after last operation)
+        self.SelectionStart     <- startPos
+        self.SelectionLength    <- length
+
+        //make pasted text plain styles
+        self.SelectionFont      <- self.Font
+        self.SelectionBackColor <- self.BackColor
+        self.SelectionColor     <- self.ForeColor
+
+    override self.OnKeyDown(e:KeyEventArgs) =
         base.OnKeyDown(e)
+        if not (e.Control && e.KeyCode = Keys.V) then
+            lastCursorPos <- self.SelectionStart
 
-    override this.OnTextChanged(e:System.EventArgs) =
+    override self.OnGotFocus(e:_) =
+        base.OnGotFocus(e)
+        lastCursorPos <- self.SelectionStart
+
+    override self.OnTextChanged(e:System.EventArgs) =
         base.OnTextChanged(e)
-        let offset = this.GetFirstCharIndexOfCurrentLine()
-        let curLine = this.Lines.[this.GetLineFromCharIndex(offset)]
-        colorize offset curLine
+        update <| fun () ->
+            if self.SelectionStart - lastCursorPos > 1 then //hack to detect pasted range of text
+                //calculate pasted text start pos and length
+                let cursorPos = self.SelectionStart
+                let pastedLength = cursorPos - lastCursorPos
+                
+                //select what was just pasted
+                self.SelectionStart     <- lastCursorPos
+                self.SelectionLength    <- pastedLength
+                let text = self.SelectedText
 
+                //make rtf plain text
+                self.SelectedText <- text
 
-type public MainForm() as this =
+                resetSelection lastCursorPos text.Length
+
+                //colorize it
+                colorize lastCursorPos text
+                resetCursor cursorPos
+            else //single char text change (e.g. normal typing), for performance reasons only colorize the current line
+                let cursorPos = self.SelectionStart
+                let offset = max 0 (cursorPos - 500)
+                let length = min (self.Text.Length - offset) (offset + 1000)
+
+                //select text from startOfLastColorizedToken to current position
+                self.SelectionStart     <- offset
+                self.SelectionLength    <- length
+                let text = self.SelectedText
+                
+                resetSelection offset text.Length
+                
+                colorize offset text
+                resetCursor cursorPos
+
+            lastCursorPos <- self.SelectionStart
+
+type public MainForm() as self =
     inherit Form(
         Icon = null,
         Text = "VisualNli", 
@@ -114,10 +174,10 @@ type public MainForm() as this =
     let exnCount = ref 0
 
     let render f =
-        this.SuspendLayout();
+        self.SuspendLayout();
         f()
-        this.ResumeLayout(false)
-        this.PerformLayout()
+        self.ResumeLayout(false)
+        self.PerformLayout()
 
     do
         render <| fun () ->
@@ -132,7 +192,7 @@ type public MainForm() as this =
                         treeView <- new WatchTreeView(Dock=DockStyle.Fill, Font=textFont)
                         treeViewPanel.Controls.Add(treeView)
                     splitc.Panel2.Controls.Add(treeViewPanel)
-                this.Controls.Add(splitc)
+                self.Controls.Add(splitc)
 
             do //setup ALT+ENTER event on rich text box 
                 editor.KeyDown.Add <| fun args ->
