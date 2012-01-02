@@ -19,14 +19,13 @@ module Win32 =
 
     open DllImports
 
-    let update (cntrl:Control) f = 
+    //make as extension method to Control?
+    let LockWindowUpdate (cntrl:Control) f = 
         try
             LockWindowUpdate(cntrl.Handle) //not really supposed to use lockwindowupdate for non drag/drop scenarios...
             f()
         finally
             LockWindowUpdate(0n)
-        
-        LockWindowUpdate(0n)
 
 module CodeEditorService =
     let textColorRanges text =
@@ -77,7 +76,7 @@ type CodeEditor() as self =
     inherit RichTextBox(AcceptsTab=true)
 
     let submitEvent = new Event<_>()
-    let update = Win32.update self
+    let update = Win32.LockWindowUpdate self
 
     ///used to detect whether text changed is a paste event or not, see http://stackoverflow.com/a/6638841/236255
     let mutable lastCursorPos = 0
@@ -149,8 +148,8 @@ type CodeEditor() as self =
                 resetCursor cursorPos
             else //single char text change (e.g. normal typing), for performance reasons only colorize the current line
                 let cursorPos = self.SelectionStart
-                let offset = max 0 (cursorPos - 2000)
-                let length = min (self.Text.Length - offset) (offset + 4000)
+                let offset = max 0 (cursorPos - 500)
+                let length = min (self.Text.Length - offset) (offset + 1000)
 
                 //select text from startOfLastColorizedToken to current position
                 self.SelectionStart     <- offset
