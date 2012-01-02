@@ -289,5 +289,11 @@ type public NliForm() as self =
     //event handlers
     do 
         editor.Submit.Add <| fun code ->
+            treeView.BeginUpdate()
             for name, value, ty in nli.Submit(code) do
                 treeView.Watch(name, value, ty)
+                //add in reverse order (should have this functionality part of the watch tree view itself)
+                let lastAdded = treeView.Nodes.[treeView.Nodes.Count - 1]
+                treeView.Nodes.RemoveAt(treeView.Nodes.Count - 1)
+                treeView.Nodes.Insert(0, lastAdded)
+            treeView.EndUpdate()
