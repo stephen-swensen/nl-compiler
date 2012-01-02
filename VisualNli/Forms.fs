@@ -216,6 +216,76 @@ type public NliForm() as self =
 
     do self.Controls.Add(splitc)
 
+    do
+        self.Menu <- 
+            let mainMenu = new MainMenu()
+            mainMenu.MenuItems.AddRange [|
+                yield (
+                    let fileMi = new MenuItem("File")
+                    fileMi.MenuItems.AddRange [|
+                        yield (
+                            let exitMi = new MenuItem("Open")
+                            exitMi.Click.Add <| fun _ ->
+                                let dialog = new OpenFileDialog()
+                                if dialog.ShowDialog() = DialogResult.OK then
+                                    editor.Text <- System.IO.File.ReadAllText(dialog.FileName)
+                            exitMi
+                        )
+
+                        yield new MenuItem("-")
+                        
+                        yield (
+                            let exitMi = new MenuItem("Exit")
+                            exitMi.Click.Add(fun _ -> Application.Exit())
+                            exitMi
+                        )
+                    |]
+                    fileMi
+                )
+                yield (
+                    let sessionMi = new MenuItem("Session")
+                    sessionMi.MenuItems.AddRange [|
+                        yield (
+                            let resetMi = new MenuItem("Reset")
+                            resetMi.Click.Add <| fun _ ->
+                                nli.Reset()
+                                treeView.ClearAll()
+                            resetMi
+                        )
+                    |]
+                    sessionMi
+                )
+                yield (
+                    let watchesMi = new MenuItem("Watches")
+                    watchesMi.MenuItems.AddRange [|
+                        yield (
+                            let mi = new MenuItem("Archive Watches")
+                            mi.Click.Add(fun _ -> treeView.Archive())
+                            mi
+                        )
+                        yield (
+                            let mi = new MenuItem("Clear Archives")
+                            mi.Click.Add(fun _ -> treeView.ClearArchives())
+                            mi
+                        )
+                        yield (
+                            let mi = new MenuItem("Clear Watches")
+                            mi.Click.Add(fun _ -> treeView.ClearWatches())
+                            mi
+                        )
+                        yield (
+                            let mi = new MenuItem("Clear All")
+                            mi.Click.Add(fun _ -> treeView.ClearAll())
+                            mi
+                        )
+                    |]
+                    watchesMi
+                )
+            |]
+            mainMenu
+            
+
+
     //event handlers
     do 
         editor.Submit.Add <| fun code ->
