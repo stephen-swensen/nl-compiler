@@ -11,4 +11,4 @@ module Main =
     do
         Application.EnableVisualStyles()
         Application.SetCompatibleTextRenderingDefault(false)
-        Application.Run(new MainForm() :> Form) 
+        Application.Run(new NliForm() :> Form) 

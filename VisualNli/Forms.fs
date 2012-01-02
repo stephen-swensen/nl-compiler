@@ -13,8 +13,20 @@ open Swensen.NL
 open Microsoft.FSharp.Text.Lexing
 
 module Win32 =
-    [<DllImport(@"User32", CharSet = CharSet.Ansi, SetLastError = false, ExactSpelling = true)>]
-    extern void LockWindowUpdate(nativeint hWnd)
+    module DllImports =
+        [<DllImport(@"User32", CharSet = CharSet.Ansi, SetLastError = false, ExactSpelling = true)>]
+        extern void LockWindowUpdate(nativeint hWnd)
+
+    open DllImports
+
+    let update (cntrl:Control) f = 
+        try
+            LockWindowUpdate(cntrl.Handle) //not really supposed to use lockwindowupdate for non drag/drop scenarios...
+            f()
+        finally
+            LockWindowUpdate(0n)
+        
+        LockWindowUpdate(0n)
 
 module CodeEditorService =
     let textColorRanges text =
@@ -65,15 +77,7 @@ type CodeEditor() as self =
     inherit RichTextBox(AcceptsTab=true)
 
     let submitEvent = new Event<_>()
-
-    let update f = 
-        try
-            Win32.LockWindowUpdate(self.Handle) //not really supposed to use lockwindowupdate for non drag/drop scenarios...
-            f()
-        finally
-            Win32.LockWindowUpdate(0n)
-        
-        Win32.LockWindowUpdate(0n)
+    let update = Win32.update self
 
     ///used to detect whether text changed is a paste event or not, see http://stackoverflow.com/a/6638841/236255
     let mutable lastCursorPos = 0
@@ -160,13 +164,13 @@ type CodeEditor() as self =
 
             lastCursorPos <- self.SelectionStart
 
-type public MainForm() as self =
+type public NliForm() as self =
     inherit Form(
         Icon = null,
         Text = "VisualNli", 
         Size = (
             let size = SystemInformation.PrimaryMonitorSize
-            System.Drawing.Size((2 * size.Width) / 3, size.Height / 2)
+            System.Drawing.Size((3 * size.Width) / 4, (2 * size.Height) / 3)
         )
     )
 
