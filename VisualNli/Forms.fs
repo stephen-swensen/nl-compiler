@@ -163,6 +163,32 @@ type CodeEditor() as self =
 
             lastCursorPos <- self.SelectionStart
 
+type NliSessionManager() =
+    //data
+    let mutable nli = Swensen.NL.Nli()
+    let mutable errorsCount = 0
+    let mutable exnCount = 0
+
+    member __.Reset() =
+        nli <- Swensen.NL.Nli()
+        errorsCount <- 0
+        exnCount <- 0
+
+    member __.Submit(code:String) = 
+        try
+            match nli.TrySubmit(code) with
+            | Some(results) -> results
+            | None ->
+                let errors = Swensen.NL.ErrorLogger.ActiveLogger.GetErrors()
+                let result = sprintf "errors%i" errorsCount,  errors :> obj, errors.GetType()
+                errorsCount <- errorsCount + 1                           
+                [|result|]
+        with e ->
+            let result = sprintf "exn%i" exnCount, e :> obj, e.GetType()
+            exnCount <- exnCount + 1
+            [|result|]
+
+
 type public NliForm() as self =
     inherit Form(
         Icon = null,
@@ -173,12 +199,10 @@ type public NliForm() as self =
         )
     )
 
+    let nli = NliSessionManager()
     //data
-    let nli = Swensen.NL.Nli()
     let textFont = new Font(FontFamily.GenericMonospace, 12.0f)
-    let errorsCount = ref 0
-    let exnCount = ref 0
-    
+
     //controls
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
     
@@ -195,14 +219,5 @@ type public NliForm() as self =
     //event handlers
     do 
         editor.Submit.Add <| fun code ->
-            try
-                match nli.TrySubmit(code) with
-                | Some(results) ->
-                    for name, value, ty in results do
-                        treeView.Watch(name, value, ty)
-                | None ->
-                    treeView.Watch(sprintf "errors%i" !errorsCount, Swensen.NL.ErrorLogger.ActiveLogger.GetErrors())
-                    errorsCount := !errorsCount + 1                             
-            with e ->
-                treeView.Watch(sprintf "exn%i" !exnCount, e)
-                exnCount := !exnCount + 1
+            for name, value, ty in nli.Submit(code) do
+                treeView.Watch(name, value, ty)
