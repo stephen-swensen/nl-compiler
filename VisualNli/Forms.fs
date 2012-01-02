@@ -136,8 +136,8 @@ type CodeEditor() as self =
                 resetCursor cursorPos
             else //single char text change (e.g. normal typing), for performance reasons only colorize the current line
                 let cursorPos = self.SelectionStart
-                let offset = max 0 (cursorPos - 500)
-                let length = min (self.Text.Length - offset) (offset + 1000)
+                let offset = max 0 (cursorPos - 2000)
+                let length = min (self.Text.Length - offset) (offset + 4000)
 
                 //select text from startOfLastColorizedToken to current position
                 self.SelectionStart     <- offset
@@ -169,7 +169,7 @@ type public MainForm() as self =
     let mutable treeView:WatchTreeView = Unchecked.defaultof<WatchTreeView>
 
     //other declarations
-    let mutable textFont = new Font(FontFamily.GenericMonospace, 13.0f)
+    let mutable textFont = new Font(FontFamily.GenericMonospace, 12.0f)
     let errorsCount = ref 0
     let exnCount = ref 0
 
