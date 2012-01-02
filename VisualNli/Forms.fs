@@ -64,9 +64,11 @@ module CodeEditorService =
 type CodeEditor() as self =
     inherit RichTextBox(AcceptsTab=true)
 
+    let submitEvent = new Event<_>()
+
     let update f = 
         try
-            Win32.LockWindowUpdate(self.Handle)
+            Win32.LockWindowUpdate(self.Handle) //not really supposed to use lockwindowupdate for non drag/drop scenarios...
             f()
         finally
             Win32.LockWindowUpdate(0n)
@@ -104,10 +106,17 @@ type CodeEditor() as self =
         self.SelectionBackColor <- self.BackColor
         self.SelectionColor     <- self.ForeColor
 
+    member self.Submit = submitEvent.Publish
+
     override self.OnKeyDown(e:KeyEventArgs) =
         base.OnKeyDown(e)
         if not (e.Control && e.KeyCode = Keys.V) then
             lastCursorPos <- self.SelectionStart
+        
+        
+        if e.Alt && e.KeyCode = Keys.Enter && not <| String.IsNullOrWhiteSpace(self.SelectedText) then
+            submitEvent.Trigger(self.SelectedText)
+            e.SuppressKeyPress <- true //so doesn't make "ping" noise
 
     override self.OnGotFocus(e:_) =
         base.OnGotFocus(e)
@@ -161,54 +170,36 @@ type public MainForm() as self =
         )
     )
 
-    //control declarations
+    //data
     let nli = Swensen.NL.Nli()
-    let mutable splitc:SplitContainer = null
-    let mutable editor:CodeEditor = null
-    let mutable treeViewPanel = null
-    let mutable treeView:WatchTreeView = Unchecked.defaultof<WatchTreeView>
-
-    //other declarations
-    let mutable textFont = new Font(FontFamily.GenericMonospace, 12.0f)
+    let textFont = new Font(FontFamily.GenericMonospace, 12.0f)
     let errorsCount = ref 0
     let exnCount = ref 0
+    
+    //controls
+    let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
+    
+    let editor = new CodeEditor(Dock=DockStyle.Fill, Font=textFont)
+    do splitc.Panel1.Controls.Add(editor)
 
-    let render f =
-        self.SuspendLayout();
-        f()
-        self.ResumeLayout(false)
-        self.PerformLayout()
+    let treeViewPanel = new Panel(Dock=DockStyle.Fill, BackColor=System.Drawing.SystemColors.Control)
+    let treeView = new WatchTreeView(Dock=DockStyle.Fill, Font=textFont)
+    do treeViewPanel.Controls.Add(treeView)
+    do splitc.Panel2.Controls.Add(treeViewPanel)
 
-    do
-        render <| fun () ->
-            do //build the visual tree
-                splitc <- new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
-                do
-                    editor <- new CodeEditor(Dock=DockStyle.Fill, Font=textFont)
-                    splitc.Panel1.Controls.Add(editor)
-                do
-                    treeViewPanel <- new Panel(Dock=DockStyle.Fill, BackColor=System.Drawing.SystemColors.Control)
-                    do
-                        treeView <- new WatchTreeView(Dock=DockStyle.Fill, Font=textFont)
-                        treeViewPanel.Controls.Add(treeView)
-                    splitc.Panel2.Controls.Add(treeViewPanel)
-                self.Controls.Add(splitc)
+    do self.Controls.Add(splitc)
 
-            do //setup ALT+ENTER event on rich text box 
-                editor.KeyDown.Add <| fun args ->
-                    if args.Alt && args.KeyCode = Keys.Enter && not <| String.IsNullOrWhiteSpace(editor.SelectedText) then
-                        try
-                            match nli.TrySubmit(editor.SelectedText) with
-                            | Some(results) ->
-                                for name, value, ty in results do
-                                    treeView.Watch(name, value, ty)
-                            | None ->
-                                treeView.Watch(sprintf "errors%i" !errorsCount, Swensen.NL.ErrorLogger.ActiveLogger.GetErrors())
-                                errorsCount := !errorsCount + 1                             
-                        with e ->
-                            treeView.Watch(sprintf "exn%i" !exnCount, e)
-                            exnCount := !exnCount + 1
-
-                        args.SuppressKeyPress <- true //so doesn't make "ping" noise
-                    else 
-                        ()
+    //event handlers
+    do 
+        editor.Submit.Add <| fun code ->
+            try
+                match nli.TrySubmit(code) with
+                | Some(results) ->
+                    for name, value, ty in results do
+                        treeView.Watch(name, value, ty)
+                | None ->
+                    treeView.Watch(sprintf "errors%i" !errorsCount, Swensen.NL.ErrorLogger.ActiveLogger.GetErrors())
+                    errorsCount := !errorsCount + 1                             
+            with e ->
+                treeView.Watch(sprintf "exn%i" !exnCount, e)
+                exnCount := !exnCount + 1
