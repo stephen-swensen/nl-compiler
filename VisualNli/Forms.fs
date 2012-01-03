@@ -166,12 +166,12 @@ type CodeEditor() as self =
 type NliSessionManager() =
     //data
     let mutable nli = Swensen.NL.Nli()
-    let mutable errorsCount = 0
+    let mutable errorCount = 0
     let mutable exnCount = 0
 
     member __.Reset() =
         nli <- Swensen.NL.Nli()
-        errorsCount <- 0
+        errorCount <- 0
         exnCount <- 0
 
     member __.Submit(code:String) = 
@@ -179,10 +179,12 @@ type NliSessionManager() =
             match nli.TrySubmit(code) with
             | Some(results) -> results
             | None ->
-                let errors = Swensen.NL.ErrorLogger.ActiveLogger.GetErrors()
-                let result = sprintf "errors%i" errorsCount,  errors :> obj, errors.GetType()
-                errorsCount <- errorsCount + 1                           
-                [|result|]
+                
+                [|  let errors = Swensen.NL.ErrorLogger.ActiveLogger.GetErrors()
+                    for error in errors do
+                        yield (sprintf "error%i" errorCount,  error :> obj, error.GetType())
+                        errorCount <- errorCount + 1  |]
+                
         with e ->
             let result = sprintf "exn%i" exnCount, e :> obj, e.GetType()
             exnCount <- exnCount + 1
