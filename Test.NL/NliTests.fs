@@ -31,6 +31,12 @@ let ``Submit throws NliException when errors found`` options =
     raises<NliException> <@ Nli(options).Submit("INVALID") @>
 
 [<Theory;NliData>]
+let ``issue 56: can reference variable from previous statement in same submit`` options =
+    test <@ 
+            Nli(options).Submit("x = 3;;x + 4;;") = [|("x", 3 :> obj, typeof<int32>);("it0", 7 :> obj, typeof<int32>)|]
+         @>
+
+[<Theory;NliData>]
 let ``can reference variables from previous submits`` options =
     test <@ 
             let nli = Nli(options)
