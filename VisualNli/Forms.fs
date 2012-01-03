@@ -265,6 +265,7 @@ type public NliForm() as self =
                             mi.Click.Add(fun _ -> treeView.Archive())
                             mi
                         )
+                        yield new MenuItem("-")
                         yield (
                             let mi = new MenuItem("Clear Archives")
                             mi.Click.Add(fun _ -> treeView.ClearArchives())
