@@ -831,7 +831,7 @@ let rec semantWith env synTopLevel =
     | SynTopLevel.StmtList(xl) ->
         let rec loop env synStmts ilStmts =
             match synStmts with
-            | [] -> ilStmts
+            | [] -> ilStmts |> List.rev
             | synStmt::synStmts ->
                 match synStmt with
                 | SynStmt.Do x ->
