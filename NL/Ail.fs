@@ -32,20 +32,20 @@ type ILComparisonBinop = Eq | Lt | Gt
 
 ///Typed expression
 type ILExpr =
-    | SByte             of SByte //y
-    | Byte              of Byte //uy
+    | SByte         of SByte //y
+    | Byte          of Byte //uy
 
-    | Int16             of Int16 //s
-    | UInt16            of UInt16 //us
+    | Int16         of Int16 //s
+    | UInt16        of UInt16 //us
     
-    | Int32             of Int32 //no suffix
-    | UInt32            of UInt32 //u
+    | Int32         of Int32 //no suffix
+    | UInt32        of UInt32 //u
     
-    | Int64             of Int64 //L
-    | UInt64            of UInt64 //UL
+    | Int64         of Int64 //L
+    | UInt64        of UInt64 //UL
     
-    | Single            of Single //f
-    | Double            of Double //no suffix
+    | Single        of Single //f
+    | Double        of Double //no suffix
         
     | String        of string
     | Char          of char
@@ -179,6 +179,7 @@ type ILExpr =
             ILExpr.StaticCall(pi.GetGetMethod(), [])
 
         static member mkStaticFieldGet(fi:FieldInfo) =
+            //Issue 44:	Literal fields like Int32.MaxValue need to have their values emitted directly as constants
             if fi.IsLiteral && not fi.IsInitOnly then
                 let fiTy = 
                     let fiTy = fi.FieldType

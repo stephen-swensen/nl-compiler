@@ -10,7 +10,7 @@ open Lexer
 open Parser
 
 type EL = ErrorLogger
-open Compilation
+module C = Compilation
 
 ///The NL interactive
 type Nli(?options: CompilerOptions) = 
@@ -37,7 +37,7 @@ type Nli(?options: CompilerOptions) =
         
         let tyInitBuilder = tyBuilder.DefineTypeInitializer()
 
-        let ilTopLevel = lexParseAndSemantWith env code
+        let ilTopLevel = C.lexParseAndSemantWith env code
 
         if EL.ActiveLogger.HasErrors then
             None

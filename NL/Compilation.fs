@@ -10,6 +10,7 @@ open Lexer
 open Parser
 
 type EL = ErrorLogger
+module SA = SemanticAnalysis
 
 let lexParseAndSemantWith env code =
     let lexbuf = LexBuffer<char>.FromString(code)
@@ -23,7 +24,7 @@ let lexParseAndSemantWith env code =
 
     try 
         Parser.start Lexer.tokenize lexbuf
-        |> SemanticAnalysis.semantWith env
+        |> SA.semantWith env
 
     with
     | CompilerInterruptException ->

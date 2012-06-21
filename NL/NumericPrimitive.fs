@@ -13,7 +13,6 @@ type NumericPrimitive =
 //explicits like C# except decimals: http://msdn.microsoft.com/en-us/library/yht2cx7b.aspx
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
-//should rename to "NumericPrimitive"
 module NumericPrimitive =
     let private primitives =
         [
