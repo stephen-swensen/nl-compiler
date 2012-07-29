@@ -42,6 +42,7 @@ module CodeEditorService =
                 | Parser.token.CHECKED _
                 | Parser.token.CONTINUE _
                 | Parser.token.DEFAULT _
+                | Parser.token.IF _
                 | Parser.token.ELSE _
                 | Parser.token.IN _
                 | Parser.token.NULL _
