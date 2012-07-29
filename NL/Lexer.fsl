@@ -17,7 +17,7 @@ let keywords =
         "open", OPEN
         "in", IN
         "if", IF
-        "then", THEN
+        //"then", THEN
         "else", ELSE
         "null", NULL
         "type", TYPE
