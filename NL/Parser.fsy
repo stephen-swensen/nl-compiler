@@ -83,6 +83,14 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 start:
     | topLevel EOF { $1 }
 
+ifThenElse:
+    //if then else expressions
+    | IF expr LBRACE expr RBRACE
+        { SynExpr.IfThenElse(($2, range parseState 2 2),$4,None, range parseState 1 5) }
+    | IF expr LBRACE expr RBRACE ELSE LBRACE expr RBRACE
+        { SynExpr.IfThenElse(($2, range parseState 2 2), $4, Some($8), range parseState 1 9) }
+	| IF expr LBRACE expr RBRACE ELSE ifThenElse
+        { SynExpr.IfThenElse(($2, range parseState 2 2), $4, Some($7), range parseState 1 7) }
 
 path:
     | IDENT { Path($1, range parseState 1 1) }
@@ -261,11 +269,7 @@ expr:
     | OPEN STRING IN expr                     
         { SynExpr.OpenAssembly(($2, range parseState 2 2), $4) }
 
-    //if then else expressions
-    | IF expr LBRACE expr RBRACE
-        { SynExpr.IfThenElse(($2, range parseState 2 2),$4,None, range parseState 1 5) }
-    | IF expr LBRACE expr RBRACE ELSE LBRACE expr RBRACE
-        { SynExpr.IfThenElse(($2, range parseState 2 2), $4, Some($8), range parseState 1 9) }
+	| ifThenElse { $1 }
 
     //-- loops --
     | WHILE expr LBRACE expr RBRACE
