@@ -41,3 +41,15 @@ let ``ifthen default valuetype`` options =
 let ``ifthen default reftype`` options =
     test <@ evalWith options "if false { \"asdf\" }" = null @>
 
+[<Theory;EvalData>]
+let ``else if syntax`` options =
+    test <@ evalWith options "if false { false } else if true { true }" = true @>
+
+[<Theory;EvalData>]
+let ``else if syntax deeply nested no else`` options =
+    test <@ evalWith options "if false { false } else if false { false } else if false { false }" = false @>
+
+[<Theory;EvalData>]
+let ``else if syntax deeply nested with else`` options =
+    test <@ evalWith options "if false { false } else if false { false } else if false { false } else { true }" = true @>
+
