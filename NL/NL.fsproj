@@ -74,6 +74,7 @@
     <Compile Include="SemanticEnvironment.fs" />
     <Compile Include="SemanticAnalysis.fs" />
     <Compile Include="Optimization.fs" />
+    <Compile Include="SmartILGenerator.fs" />
     <Compile Include="Emission.fs" />
     <Compile Include="CompilerOptions.fs" />
     <Compile Include="Compilation.fs" />

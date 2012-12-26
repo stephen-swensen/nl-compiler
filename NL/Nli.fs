@@ -56,7 +56,7 @@ type Nli(?options: CompilerOptions) =
                 ///Define the fields to bind to the tyBuilder and define the tyBuilder static constructor which initializes the fields.
                 let emit () =
                     let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
-                    let il = tyInitBuilder.GetILGenerator()
+                    let il = tyInitBuilder.GetILGenerator()  |> SmartILGenerator.fromILGenerator
                     //need final it
                     for stmt in stmts do
                         match stmt with
