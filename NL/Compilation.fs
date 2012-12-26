@@ -58,7 +58,7 @@ let compileFromAil ail asmName =
         | _ -> 
             failwithf "not a valid compiler expression: %A" ail //todo: remove
 
-    let il = methBuilder.GetILGenerator()
+    let il = methBuilder.GetILGenerator() |> SmartILGenerator.fromILGenerator
     Emission.emit il ilExpr
     il.Emit(OpCodes.Ret)
 
