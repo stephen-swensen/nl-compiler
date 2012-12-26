@@ -13,8 +13,6 @@ type EL = ErrorLogger
 
 open Compilation
 
-//should have "tryEval" which doesn't throw?
-
 ///Evaluate an NL code string using the default environment.
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let tryEvalWith<'a> options code : 'a option = 
