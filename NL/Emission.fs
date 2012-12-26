@@ -5,6 +5,66 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 
+type ILGenerator with
+    member il.Ldsfld(fi:FieldInfo) =
+        il.Emit(OpCodes.Ldsfld, fi)
+    member il.Ldflda(fi:FieldInfo) =
+        il.Emit(OpCodes.Ldflda, fi)
+    member il.Ldfld(fi:FieldInfo) =
+        il.Emit(OpCodes.Ldfld, fi)
+    member il.Ldsflda(fi:FieldInfo) = 
+        il.Emit(OpCodes.Ldsflda, fi)
+    member il.Ldloca(local: LocalBuilder) =
+        il.Emit(OpCodes.Ldloca, local)
+    member il.Ldloc(local :LocalBuilder) =
+        il.Emit(OpCodes.Ldloc, local)
+    member il.Ldnull() =
+        il.Emit(OpCodes.Ldnull)
+    member il.Stfld(fi:FieldInfo) =
+        il.Emit(OpCodes.Stfld, fi)
+    member il.Stsfld(fi:FieldInfo) =
+        il.Emit(OpCodes.Stsfld, fi)
+    member il.Stloc(local: LocalBuilder) =
+        il.Emit(OpCodes.Stloc, local)
+    member il.Initobj(ty:Type) =
+        il.Emit(OpCodes.Initobj, ty)
+    member il.Neg() =
+        il.Emit(OpCodes.Neg)
+    member il.Add() =
+        il.Emit(OpCodes.Add)
+    member il.Sub() =
+        il.Emit(OpCodes.Sub)
+    member il.Mul() =
+        il.Emit(OpCodes.Mul)
+    member il.Div() =
+        il.Emit(OpCodes.Div)
+    member il.Ceq() =
+        il.Emit(OpCodes.Ceq)
+    member il.Cgt() =
+        il.Emit(OpCodes.Cgt)
+    member il.Clt() =
+        il.Emit(OpCodes.Clt)
+    member il.Pop() =
+        il.Emit(OpCodes.Pop)
+    member il.Castclass(ty:Type) =
+        il.Emit(OpCodes.Castclass, ty)
+    member il.Unbox_Any(ty:Type) =
+        il.Emit(OpCodes.Unbox_Any, ty)
+    member il.Box(ty:Type) =
+        il.Emit(OpCodes.Box, ty)
+    member il.Ldtoken(ty:Type) =
+        il.Emit(OpCodes.Ldtoken, ty)
+    member il.Newobj(ctor:ConstructorInfo) =
+        il.Emit(OpCodes.Newobj, ctor)
+    member il.Call(meth:MethodInfo) =
+        il.Emit(OpCodes.Call, meth)
+    member il.Callvirt(meth:MethodInfo) =
+        il.Emit(OpCodes.Callvirt, meth)
+    member il.Brfalse_S(label:Label) =
+        il.Emit(OpCodes.Brfalse_S, label)
+    member il.Br(label:Label) =
+        il.Emit(OpCodes.Br, label)
+
 ///Emit opcodes for the given ILExpr on the given ILGenerator. An exception will be raised if the expression tree contains any errors.
 let emit (il:ILGenerator) ilExpr =
     let isDefaultOfValueType = function
@@ -21,13 +81,13 @@ let emit (il:ILGenerator) ilExpr =
                 emit arg
 
         ///used by VarSet and Let expressions
-        let setLocalVar (local:LocalBuilder) assign =
+        let setLocalVar (local: LocalBuilder) assign =
             if isDefaultOfValueType assign then
-                il.Emit(OpCodes.Ldloca, local)
-                il.Emit(OpCodes.Initobj, assign.Type)
+                il.Ldloca(local)
+                il.Initobj(assign.Type)
             else
                 emit assign
-                il.Emit(OpCodes.Stloc, local)
+                il.Stloc(local)
 
         match ilExpr with
         | Byte x  -> il.Emit(OpCodes.Ldc_I4_S, x)
@@ -49,30 +109,30 @@ let emit (il:ILGenerator) ilExpr =
         
         | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
 
-        | Null ty  -> il.Emit(OpCodes.Ldnull)
+        | Null ty  -> il.Ldnull()
         | UMinus(cked, x, _) -> 
             emit x
-            il.Emit(OpCodes.Neg)
+            il.Neg()
         | NumericBinop(cked, op,x,y,_) -> 
             emitAll [x;y]
             match op with
-            | ILNumericBinop.Plus  -> il.Emit(OpCodes.Add)
-            | ILNumericBinop.Minus -> il.Emit(OpCodes.Sub)
-            | ILNumericBinop.Times -> il.Emit(OpCodes.Mul)
-            | ILNumericBinop.Div   -> il.Emit(OpCodes.Div)
+            | ILNumericBinop.Plus  -> il.Add()
+            | ILNumericBinop.Minus -> il.Sub()
+            | ILNumericBinop.Times -> il.Mul()
+            | ILNumericBinop.Div   -> il.Div()
         | ComparisonBinop(op,x,y) -> 
             emitAll [x;y]
             match op with
-            | Eq -> il.Emit(OpCodes.Ceq)
-            | Lt -> il.Emit(OpCodes.Clt)
-            | Gt -> il.Emit(OpCodes.Cgt)
+            | Eq -> il.Ceq()
+            | Lt -> il.Clt()
+            | Gt -> il.Cgt()
         | ILExpr.Let(name, assign, body,_) ->
             let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             setLocalVar local assign
             emitWith loopLabel (Map.add name local lenv) body
         | VarGet(name, _) ->
             let local = lenv |> Map.find name
-            il.Emit(OpCodes.Ldloc, local)
+            il.Ldloc(local)
         | VarSet(name, assign) ->
             let local = lenv |> Map.find name
             setLocalVar local assign
@@ -108,40 +168,40 @@ let emit (il:ILGenerator) ilExpr =
         | Cast(x,ty) -> //precondition: x.Type <> ty
             emit x
             if x.Type.IsValueType then
-                il.Emit(OpCodes.Box,x.Type)
+                il.Box(x.Type)
                 if ty <> typeof<obj> then //box value type to an interface
-                    il.Emit(OpCodes.Castclass, ty)
+                    il.Castclass(ty)
             elif ty.IsValueType then
-                il.Emit(OpCodes.Unbox_Any, ty)
+                il.Unbox_Any(ty)
             else
-                il.Emit(OpCodes.Castclass, ty)
+                il.Castclass(ty)
         | StaticCall(meth,args) ->
             args |> List.iter (emit)
-            il.Emit(OpCodes.Call, meth)
+            il.Call(meth)
         | InstanceCall(instance,meth,args) ->
             let isValueAddress = emitValueAddressIfApplicable loopLabel lenv instance
             if not isValueAddress && instance.Type.IsValueType then
                 let loc = il.DeclareLocal(instance.Type)
-                il.Emit(OpCodes.Stloc, loc)
-                il.Emit(OpCodes.Ldloca, loc)
+                il.Stloc(loc)
+                il.Ldloca(loc)
             
             emitAll args
             
             if instance.Type.IsValueType then
-                il.Emit(OpCodes.Call, meth)
+                il.Call(meth)
             else
-                il.Emit(OpCodes.Callvirt, meth)
+                il.Callvirt(meth)
         | Sequential(x,y,_) ->
             emit x
-            if x.Type <> typeof<System.Void> then il.Emit(OpCodes.Pop)
+            if x.Type <> typeof<System.Void> then il.Pop()
             emit y
         | Ctor(ctor, args, _) -> 
             emitAll args
-            il.Emit(OpCodes.Newobj, ctor)
+            il.Newobj(ctor)
         | Typeof(ty) ->
             //learned through C# ildasm
-            il.Emit(OpCodes.Ldtoken, ty)
-            il.Emit(OpCodes.Call, typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|]))
+            il.Ldtoken(ty)
+            il.Call(typeof<Type>.GetMethod("GetTypeFromHandle", [|typeof<RuntimeTypeHandle>|]))
         | Default(ty) ->
             if not ty.IsValueType then
                 //although we could technically use initobj to emit a null reference of a non-value type, it is really only
@@ -150,26 +210,26 @@ let emit (il:ILGenerator) ilExpr =
                 emit <| Null(ty)
             else
                 let loc = il.DeclareLocal(ty)
-                il.Emit(OpCodes.Ldloca, loc)
-                il.Emit(OpCodes.Initobj, ty)
-                il.Emit(OpCodes.Ldloc, loc)
+                il.Ldloca(loc)
+                il.Initobj(ty)
+                il.Ldloc(loc)
         | LogicalNot(x) ->
             emit x
             il.Emit(OpCodes.Ldc_I4_0)
-            il.Emit(OpCodes.Ceq)
+            il.Ceq()
         | IfThen(x,y) ->
             let endIfLabel = il.DefineLabel()
             emit x
-            il.Emit(OpCodes.Brfalse_S, endIfLabel)
+            il.Brfalse_S(endIfLabel)
             emit y
             il.MarkLabel(endIfLabel)
         | IfThenElse(x,y,z,_) ->
             let endIfLabel = il.DefineLabel()
             let beginElseLabel = il.DefineLabel()
             emit x
-            il.Emit(OpCodes.Brfalse_S, beginElseLabel)
+            il.Brfalse_S(beginElseLabel)
             emit y
-            il.Emit(OpCodes.Br, endIfLabel)
+            il.Br(endIfLabel)
             il.MarkLabel(beginElseLabel)
             emit z
             il.MarkLabel(endIfLabel)
@@ -179,44 +239,44 @@ let emit (il:ILGenerator) ilExpr =
             let endBodyLabel = il.DefineLabel()
             il.MarkLabel(beginConditionLabel)
             emit condition
-            il.Emit(OpCodes.Brfalse_S, endBodyLabel)
+            il.Brfalse_S(endBodyLabel)
             emitWith (Some(beginConditionLabel, endBodyLabel)) lenv body
             if body.Type <> typeof<Void> then
-                il.Emit(OpCodes.Pop)
-            il.Emit(OpCodes.Br, beginConditionLabel)
+                il.Pop()
+            il.Br(beginConditionLabel)
             il.MarkLabel(endBodyLabel)
         | Continue ->
             match loopLabel with
             | Some(beginConditionLabel,_) ->
-                il.Emit(OpCodes.Br, beginConditionLabel)
+                il.Br(beginConditionLabel)
             | None ->
                 failwith "invalid continue"
         | Break ->
             match loopLabel with
             | Some(_, endBodyLabel) ->
-                il.Emit(OpCodes.Br, endBodyLabel)
+                il.Br(endBodyLabel)
             | None ->
                 failwith "invalid break"
         | StaticFieldSet(fi, assign) ->            
             if isDefaultOfValueType assign then
-                il.Emit(OpCodes.Ldsflda, fi)
-                il.Emit(OpCodes.Initobj, assign.Type)
+                il.Ldsflda(fi)
+                il.Initobj(assign.Type)
             else
                 emit assign
-                il.Emit(OpCodes.Stsfld, fi)
+                il.Stsfld(fi)
         | StaticFieldGet(fi) ->
-            il.Emit(OpCodes.Ldsfld, fi)
+            il.Ldsfld(fi)
         | InstanceFieldSet(instance, fi, assign) ->
             emitValueAddressIfApplicable loopLabel lenv instance |> ignore
             if isDefaultOfValueType assign then
-                il.Emit(OpCodes.Ldflda, fi)
-                il.Emit(OpCodes.Initobj, assign.Type)
+                il.Ldflda(fi)
+                il.Initobj(assign.Type)
             else
                 emit assign
-                il.Emit(OpCodes.Stfld, fi)
+                il.Stfld(fi)
         | InstanceFieldGet(instance, fi) ->
             emitValueAddressIfApplicable loopLabel lenv instance |> ignore
-            il.Emit(OpCodes.Ldfld, fi)
+            il.Ldfld(fi)
         | ILExpr.Error _ ->
             failwith "Should not be emitting opcodes for an ilExpr with errors"
 
@@ -226,14 +286,14 @@ let emit (il:ILGenerator) ilExpr =
         match expr with
         | InstanceFieldGet(instance, fi) when fi.FieldType.IsValueType ->
             emitValueAddressIfApplicable loopLabel lenv instance |> ignore
-            il.Emit(OpCodes.Ldflda, fi)
+            il.Ldflda(fi)
             true
         | StaticFieldGet(fi) when fi.FieldType.IsValueType ->
-            il.Emit(OpCodes.Ldsflda, fi)
+            il.Ldsflda(fi)
             true
         | VarGet(name, ty) when ty.IsValueType ->
             let local = lenv |> Map.find name
-            il.Emit(OpCodes.Ldloca, local)
+            il.Ldloca(local)
             true
         | _ -> 
             emitWith loopLabel lenv expr

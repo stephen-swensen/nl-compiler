@@ -742,7 +742,7 @@ let rec semantWith env synTopLevel =
                 ILExpr.Cast(x,ty)
             //implicit or explicit coersion of numeric primitive to numeric primitive or char to numeric primitive (under-the-hood chars are ints)
             elif NumericPrimitive.sourceHasImplicitOrExplicitConvTo x.Type ty || (x.Type = typeof<char> && NumericPrimitive.isNumericPrimitive ty) then
-                ILExpr.Coerce(env.Checked,x,ty) 
+                ILExpr.Coerce(env.Checked,x,ty)
             else
                 let meth = seq {
                     //giver implicit conversion op from either type over explicit ops; next prefer conversion op defined on lhs type over rhs type
