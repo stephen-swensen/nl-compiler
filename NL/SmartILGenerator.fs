@@ -44,6 +44,27 @@ type SmartILGenerator(ilgen:ILGenerator) =
     member this.Emit(oc:OpCode, x:Label) =
         if debug then opcodes.Add(oc,Some(x:>obj))
         ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:Byte) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:SByte) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:Int32) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:Int64) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:Single) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:Double) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:String) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
 
     member this.Ldsfld(fi:FieldInfo) =
         this.Emit(OpCodes.Ldsfld, fi)
@@ -103,6 +124,20 @@ type SmartILGenerator(ilgen:ILGenerator) =
         this.Emit(OpCodes.Brfalse_S, label)
     member this.Br(label:Label) =
         this.Emit(OpCodes.Br, label)
+    member this.Ldc_I4_S(x:Byte) =
+        this.Emit(OpCodes.Ldc_I4_S, x)
+    member this.Ldc_I4_S(x:SByte) =
+        this.Emit(OpCodes.Ldc_I4_S, x)
+    member this.Ldc_I4(x:Int32) =
+        this.Emit(OpCodes.Ldc_I4, x)
+    member this.Ldc_I8(x:Int64) =
+        this.Emit(OpCodes.Ldc_I8, int64 x)
+    member this.Ldc_R4(x:Single) =
+        this.Emit(OpCodes.Ldc_R4, x)
+    member this.Ldc_R8(x:Double) =
+        this.Emit(OpCodes.Ldc_R8, x)
+    member this.Ldstr(x:String) =
+        this.Emit(OpCodes.Ldstr, x)
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

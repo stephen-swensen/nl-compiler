@@ -30,22 +30,22 @@ let emit (il:SmartILGenerator) ilExpr =
                 il.Stloc(local)
 
         match ilExpr with
-        | Byte x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4_S, x)
-        | SByte x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4_S, x)
+        | Byte x  -> il.Ldc_I4_S(x)
+        | SByte x  -> il.Ldc_I4_S(x)
 
-        | Int16 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | Int32 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, x)
-        | Int64 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I8, x)
+        | Int16 x  -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | Int32 x  -> il.Ldc_I4(x)
+        | Int64 x  -> il.Ldc_I8(x)
 
-        | UInt16 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | UInt32 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, int32 x)
-        | UInt64 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I8, int64 x)
+        | UInt16 x  -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | UInt32 x  -> il.Ldc_I4(int32 x)             
+        | UInt64 x  -> il.Ldc_I8(int64 x)
         
-        | Single x -> il.ILGenerator.Emit(OpCodes.Ldc_R4, x)
-        | Double x -> il.ILGenerator.Emit(OpCodes.Ldc_R8, x)
+        | Single x -> il.Ldc_R4(x)
+        | Double x -> il.Ldc_R8(x)
 
-        | String x -> il.ILGenerator.Emit(OpCodes.Ldstr, x)
-        | Char x   -> il.ILGenerator.Emit(OpCodes.Ldc_I4_S, int8 x) //should be ushort (uint16) not byte (uint8)?
+        | String x -> il.Ldstr(x)
+        | Char x   -> il.Ldc_I4_S(int8 x) //should be ushort (uint16) not byte (uint8)?
         
         | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
 
