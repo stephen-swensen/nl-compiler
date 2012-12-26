@@ -4,69 +4,110 @@ open Swensen.NL.Ail
 open System
 open System.Reflection
 open System.Reflection.Emit
+open System.Collections.Generic
 
-type ILGenerator with
-    member il.Ldsfld(fi:FieldInfo) =
-        il.Emit(OpCodes.Ldsfld, fi)
-    member il.Ldflda(fi:FieldInfo) =
-        il.Emit(OpCodes.Ldflda, fi)
-    member il.Ldfld(fi:FieldInfo) =
-        il.Emit(OpCodes.Ldfld, fi)
-    member il.Ldsflda(fi:FieldInfo) = 
-        il.Emit(OpCodes.Ldsflda, fi)
-    member il.Ldloca(local: LocalBuilder) =
-        il.Emit(OpCodes.Ldloca, local)
-    member il.Ldloc(local :LocalBuilder) =
-        il.Emit(OpCodes.Ldloc, local)
-    member il.Ldnull() =
-        il.Emit(OpCodes.Ldnull)
-    member il.Stfld(fi:FieldInfo) =
-        il.Emit(OpCodes.Stfld, fi)
-    member il.Stsfld(fi:FieldInfo) =
-        il.Emit(OpCodes.Stsfld, fi)
-    member il.Stloc(local: LocalBuilder) =
-        il.Emit(OpCodes.Stloc, local)
-    member il.Initobj(ty:Type) =
-        il.Emit(OpCodes.Initobj, ty)
-    member il.Neg() =
-        il.Emit(OpCodes.Neg)
-    member il.Add() =
-        il.Emit(OpCodes.Add)
-    member il.Sub() =
-        il.Emit(OpCodes.Sub)
-    member il.Mul() =
-        il.Emit(OpCodes.Mul)
-    member il.Div() =
-        il.Emit(OpCodes.Div)
-    member il.Ceq() =
-        il.Emit(OpCodes.Ceq)
-    member il.Cgt() =
-        il.Emit(OpCodes.Cgt)
-    member il.Clt() =
-        il.Emit(OpCodes.Clt)
-    member il.Pop() =
-        il.Emit(OpCodes.Pop)
-    member il.Castclass(ty:Type) =
-        il.Emit(OpCodes.Castclass, ty)
-    member il.Unbox_Any(ty:Type) =
-        il.Emit(OpCodes.Unbox_Any, ty)
-    member il.Box(ty:Type) =
-        il.Emit(OpCodes.Box, ty)
-    member il.Ldtoken(ty:Type) =
-        il.Emit(OpCodes.Ldtoken, ty)
-    member il.Newobj(ctor:ConstructorInfo) =
-        il.Emit(OpCodes.Newobj, ctor)
-    member il.Call(meth:MethodInfo) =
-        il.Emit(OpCodes.Call, meth)
-    member il.Callvirt(meth:MethodInfo) =
-        il.Emit(OpCodes.Callvirt, meth)
-    member il.Brfalse_S(label:Label) =
-        il.Emit(OpCodes.Brfalse_S, label)
-    member il.Br(label:Label) =
-        il.Emit(OpCodes.Br, label)
+///A wrapper around the standard ILGenerator, which adds smart features
+///like correct statically type Emit overloads and opcode trace.
+type SmartILGenerator(ilgen:ILGenerator) =
+    let opcodes = List<OpCode * (obj option)>()
+    let debug = 
+        #if DEBUG 
+            true
+        #else
+            false
+        #endif
+
+    ///Access to the underlying ILGenerator. n.b. that if Emit is used directly then the OpCodes trace will have holes.
+    member this.ILGenerator = ilgen
+    ///A trace of the opcodes (with args) which have been emitted (in order from first to last). This is only enabled
+    ///if the DEBUG symbol is defined during compilation. n.b. that using if ILGenerator.Emit is used directly, then 
+    ///this trace wll have holes.
+    member this.OpCodes = opcodes |> Seq.readonly
+
+    member this.Emit(oc:OpCode) =
+        if debug then opcodes.Add(oc,None)
+        ilgen.Emit(oc)
+    member this.Emit(oc:OpCode, x:FieldInfo) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:LocalBuilder) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:Type) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:ConstructorInfo) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:MethodInfo) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+    member this.Emit(oc:OpCode, x:Label) =
+        if debug then opcodes.Add(oc,Some(x:>obj))
+        ilgen.Emit(oc,x)
+
+    member this.Ldsfld(fi:FieldInfo) =
+        this.Emit(OpCodes.Ldsfld, fi)
+    member this.Ldflda(fi:FieldInfo) =
+        this.Emit(OpCodes.Ldflda, fi)
+    member this.Ldfld(fi:FieldInfo) =
+        this.Emit(OpCodes.Ldfld, fi)
+    member this.Ldsflda(fi:FieldInfo) = 
+        this.Emit(OpCodes.Ldsflda, fi)
+    member this.Ldloca(local: LocalBuilder) =
+        this.Emit(OpCodes.Ldloca, local)
+    member this.Ldloc(local :LocalBuilder) =
+        this.Emit(OpCodes.Ldloc, local)
+    member this.Ldnull() =
+        this.Emit(OpCodes.Ldnull)
+    member this.Stfld(fi:FieldInfo) =
+        this.Emit(OpCodes.Stfld, fi)
+    member this.Stsfld(fi:FieldInfo) =
+        this.Emit(OpCodes.Stsfld, fi)
+    member this.Stloc(local: LocalBuilder) =
+        this.Emit(OpCodes.Stloc, local)
+    member this.Initobj(ty:Type) =
+        this.Emit(OpCodes.Initobj, ty)
+    member this.Neg() =
+        this.Emit(OpCodes.Neg)
+    member this.Add() =
+        this.Emit(OpCodes.Add)
+    member this.Sub() =
+        this.Emit(OpCodes.Sub)
+    member this.Mul() =
+        this.Emit(OpCodes.Mul)
+    member this.Div() =
+        this.Emit(OpCodes.Div)
+    member this.Ceq() =
+        this.Emit(OpCodes.Ceq)
+    member this.Cgt() =
+        this.Emit(OpCodes.Cgt)
+    member this.Clt() =
+        this.Emit(OpCodes.Clt)
+    member this.Pop() =
+        this.Emit(OpCodes.Pop)
+    member this.Castclass(ty:Type) =
+        this.Emit(OpCodes.Castclass, ty)
+    member this.Unbox_Any(ty:Type) =
+        this.Emit(OpCodes.Unbox_Any, ty)
+    member this.Box(ty:Type) =
+        this.Emit(OpCodes.Box, ty)
+    member this.Ldtoken(ty:Type) =
+        this.Emit(OpCodes.Ldtoken, ty)
+    member this.Newobj(ctor:ConstructorInfo) =
+        this.Emit(OpCodes.Newobj, ctor)
+    member this.Call(meth:MethodInfo) =
+        this.Emit(OpCodes.Call, meth)
+    member this.Callvirt(meth:MethodInfo) =
+        this.Emit(OpCodes.Callvirt, meth)
+    member this.Brfalse_S(label:Label) =
+        this.Emit(OpCodes.Brfalse_S, label)
+    member this.Br(label:Label) =
+        this.Emit(OpCodes.Br, label)
 
 ///Emit opcodes for the given ILExpr on the given ILGenerator. An exception will be raised if the expression tree contains any errors.
 let emit (il:ILGenerator) ilExpr =
+    let il = SmartILGenerator(il)
     let isDefaultOfValueType = function
         | Default(ty) when ty.IsValueType ->
             true
@@ -90,22 +131,22 @@ let emit (il:ILGenerator) ilExpr =
                 il.Stloc(local)
 
         match ilExpr with
-        | Byte x  -> il.Emit(OpCodes.Ldc_I4_S, x)
-        | SByte x  -> il.Emit(OpCodes.Ldc_I4_S, x)
+        | Byte x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4_S, x)
+        | SByte x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4_S, x)
 
-        | Int16 x  -> il.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | Int32 x  -> il.Emit(OpCodes.Ldc_I4, x)
-        | Int64 x  -> il.Emit(OpCodes.Ldc_I8, x)
+        | Int16 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | Int32 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, x)
+        | Int64 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I8, x)
 
-        | UInt16 x  -> il.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | UInt32 x  -> il.Emit(OpCodes.Ldc_I4, int32 x)
-        | UInt64 x  -> il.Emit(OpCodes.Ldc_I8, int64 x)
+        | UInt16 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | UInt32 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I4, int32 x)
+        | UInt64 x  -> il.ILGenerator.Emit(OpCodes.Ldc_I8, int64 x)
         
-        | Single x -> il.Emit(OpCodes.Ldc_R4, x)
-        | Double x -> il.Emit(OpCodes.Ldc_R8, x)
+        | Single x -> il.ILGenerator.Emit(OpCodes.Ldc_R4, x)
+        | Double x -> il.ILGenerator.Emit(OpCodes.Ldc_R8, x)
 
-        | String x -> il.Emit(OpCodes.Ldstr, x)
-        | Char x   -> il.Emit(OpCodes.Ldc_I4_S, int8 x) //should be ushort (uint16) not byte (uint8)?
+        | String x -> il.ILGenerator.Emit(OpCodes.Ldstr, x)
+        | Char x   -> il.ILGenerator.Emit(OpCodes.Ldc_I4_S, int8 x) //should be ushort (uint16) not byte (uint8)?
         
         | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
 
@@ -127,7 +168,7 @@ let emit (il:ILGenerator) ilExpr =
             | Lt -> il.Clt()
             | Gt -> il.Cgt()
         | ILExpr.Let(name, assign, body,_) ->
-            let local = il.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
+            let local = il.ILGenerator.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             setLocalVar local assign
             emitWith loopLabel (Map.add name local lenv) body
         | VarGet(name, _) ->
@@ -181,7 +222,7 @@ let emit (il:ILGenerator) ilExpr =
         | InstanceCall(instance,meth,args) ->
             let isValueAddress = emitValueAddressIfApplicable loopLabel lenv instance
             if not isValueAddress && instance.Type.IsValueType then
-                let loc = il.DeclareLocal(instance.Type)
+                let loc = il.ILGenerator.DeclareLocal(instance.Type)
                 il.Stloc(loc)
                 il.Ldloca(loc)
             
@@ -209,7 +250,7 @@ let emit (il:ILGenerator) ilExpr =
                 //(unless we see some good reason in the optimization phase).
                 emit <| Null(ty)
             else
-                let loc = il.DeclareLocal(ty)
+                let loc = il.ILGenerator.DeclareLocal(ty)
                 il.Ldloca(loc)
                 il.Initobj(ty)
                 il.Ldloc(loc)
@@ -218,33 +259,33 @@ let emit (il:ILGenerator) ilExpr =
             il.Emit(OpCodes.Ldc_I4_0)
             il.Ceq()
         | IfThen(x,y) ->
-            let endIfLabel = il.DefineLabel()
+            let endIfLabel = il.ILGenerator.DefineLabel()
             emit x
             il.Brfalse_S(endIfLabel)
             emit y
-            il.MarkLabel(endIfLabel)
+            il.ILGenerator.MarkLabel(endIfLabel)
         | IfThenElse(x,y,z,_) ->
-            let endIfLabel = il.DefineLabel()
-            let beginElseLabel = il.DefineLabel()
+            let endIfLabel = il.ILGenerator.DefineLabel()
+            let beginElseLabel = il.ILGenerator.DefineLabel()
             emit x
             il.Brfalse_S(beginElseLabel)
             emit y
             il.Br(endIfLabel)
-            il.MarkLabel(beginElseLabel)
+            il.ILGenerator.MarkLabel(beginElseLabel)
             emit z
-            il.MarkLabel(endIfLabel)
+            il.ILGenerator.MarkLabel(endIfLabel)
         | Nop -> ()
         | WhileLoop(condition, body) ->
-            let beginConditionLabel = il.DefineLabel()
-            let endBodyLabel = il.DefineLabel()
-            il.MarkLabel(beginConditionLabel)
+            let beginConditionLabel = il.ILGenerator.DefineLabel()
+            let endBodyLabel = il.ILGenerator.DefineLabel()
+            il.ILGenerator.MarkLabel(beginConditionLabel)
             emit condition
             il.Brfalse_S(endBodyLabel)
             emitWith (Some(beginConditionLabel, endBodyLabel)) lenv body
             if body.Type <> typeof<Void> then
                 il.Pop()
             il.Br(beginConditionLabel)
-            il.MarkLabel(endBodyLabel)
+            il.ILGenerator.MarkLabel(endBodyLabel)
         | Continue ->
             match loopLabel with
             | Some(beginConditionLabel,_) ->

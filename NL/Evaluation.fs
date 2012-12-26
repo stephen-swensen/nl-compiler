@@ -22,6 +22,7 @@ let tryEvalWith<'a> options code : 'a option =
     let mkDm (ilExpr:ILExpr) =
         let dm = DynamicMethod("Eval", ilExpr.Type, null)
         let il = dm.GetILGenerator()
+        
         Emission.emit il ilExpr
         il.Emit(OpCodes.Ret)
         dm
