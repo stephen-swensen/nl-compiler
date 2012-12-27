@@ -338,3 +338,7 @@ let ``instance of instance field get is optimized`` () =
 [<Fact>] //to at least test path of instance field get even though we can't test the instance actually being optimized
 let ``instance of instance field get is valid`` () =
     test <@ C.lexParseAndSemant (openPrefix + "x = NonGenericClass1() in x.instance_field_int") |> O.optimize = C.lexParseAndSemant (openPrefix + "x = NonGenericClass1() in x.instance_field_int") @>
+
+[<Fact>]
+let ``optimize throw expression`` () =
+    test <@ C.lexParseAndSemant "throw(exception((1 + 1).tostring()))" |> O.optimize = C.lexParseAndSemant ("throw(exception(2.tostring()))") @>

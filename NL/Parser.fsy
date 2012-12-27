@@ -49,6 +49,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token WHILE BREAK CONTINUE
 %token EOF
 %token CHECKED UNCHECKED
+%token THROW
 
 %right SEMICOLON
 %nonassoc SET
@@ -191,6 +192,9 @@ expr:
         { SynExpr.Char($1) }
     | BOOL                                  
         { SynExpr.Bool($1) }
+
+    | THROW LPAREN expr RPAREN
+        { SynExpr.Throw($3, range parseState 3 3) }
     
     | NULL LBRACKET tySig RBRACKET              
         { SynExpr.Null($3) }

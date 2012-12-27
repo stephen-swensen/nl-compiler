@@ -87,6 +87,7 @@
     <Compile Include="NliTests.fs" />
     <Compile Include="LexAndParseTests.fs" />
     <Compile Include="CheckedAndUncheckedTests.fs" />
+    <Compile Include="ThrowTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">

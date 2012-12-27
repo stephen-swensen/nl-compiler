@@ -826,6 +826,13 @@ let rec semantWith env synTopLevel =
             semantExprWith {env with Checked=true} x
         | SynExpr.Unchecked(x) ->
             semantExprWith {env with Checked=false} x
+        | SynExpr.Throw(x, pos) ->
+            let x = semantExpr x
+            if typeof<Exception>.IsAssignableFrom(x.Type) then
+                ILExpr.Throw(x)
+            else
+                EM.Throw_type_does_not_extend_Exception pos (x.Type.ToString())
+                ILExpr.Error(typeof<Void>)
 
     match synTopLevel with
     | SynTopLevel.StmtList(xl) ->

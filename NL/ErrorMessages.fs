@@ -151,3 +151,6 @@ module ErrorMessages =
 
     let Single_literal_out_of_range pos = 
         mk ErrorLevel.Error ErrorType.Semantic 47 pos "'System.Single' literal must be between %f and %f but is %s" Single.MinValue Single.MaxValue
+
+    let Throw_type_does_not_extend_Exception pos =
+        mk ErrorLevel.Error ErrorType.Semantic 48 pos "Cannot throw expression of type '%s' since it does not extend 'System.Exception'"
