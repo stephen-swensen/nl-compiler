@@ -8,6 +8,7 @@ open System.Reflection.Emit
 open Microsoft.FSharp.Text.Lexing
 open Lexer
 open Parser
+open System.Text.RegularExpressions
 
 type EL = ErrorLogger
 module C = Compilation
@@ -81,8 +82,12 @@ type Nli(?options: CompilerOptions) =
 
                 //force the ty static constructor to execute (i.e. when we have no fields to init, just code to run)
                 //http://stackoverflow.com/a/4181676/236255
-                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
-        
+                try
+                    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
+                with 
+                    | :? TypeInitializationException as ex when Regex.IsMatch(ex.Message, @"^The type initializer for 'NLI_(\d+).TOP_LEVEL' threw an exception.$") && ex.InnerException <> null ->
+                        raise ex.InnerException
+                    
                 ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
                 |> Seq.map (fun fi -> fi.Name, fi.GetValue(null), fi.FieldType)
                 |> Seq.toArray

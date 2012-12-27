@@ -30,6 +30,14 @@ let ``let and do statements intersparsed`` options =
 let ``Submit throws NliException when errors found`` options =
     raises<NliException> <@ Nli(options).Submit("INVALID") @>
 
+[<Theory;NliData>]
+let ``issue 57: Need to strip TypeInitializationException from source NLI exceptions`` options =
+    raisesWith<System.FormatException> <@ Nli(options).TrySubmit("int32.parse(\"x\")") @>
+
+[<Theory(Skip="todo");NliData>]
+let ``issue 57: Need to strip TypeInitializationException from source NLI exceptions but not if geniune`` options =
+    raisesWith<System.FormatException> <@ Nli(options).TrySubmit("int32.parse(\"x\")") @>
+
 [<Theory(Skip="todo");NliData;>]
 let ``issue 56: can reference variable from previous statement in same submit`` options =
     test <@ 
