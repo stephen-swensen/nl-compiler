@@ -10,6 +10,8 @@ type ErrorLogger() =
     
     ///Get a snapshot of all the logged errors
     member __.GetErrors() = errors.ToArray()
+    ///Get a snapshot of all the logged errors with the given level
+    member __.GetErrors(level:ErrorLevel) = errors |> Seq.filter(fun err -> err.Level = level) |> Seq.toArray
 
     abstract Log : CompilerError -> unit
     ///Log the compiler error

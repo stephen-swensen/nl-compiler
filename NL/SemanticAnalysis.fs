@@ -696,9 +696,13 @@ let rec semantWith env synTopLevel =
         
             let body = semantExprWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
-        | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)) as x, (_,pos)) ->
+        | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)|SynExpr.Throw(_)) as x, (y,pos)) ->
+            let x = semantExpr x
+            
             EM.Unreachable_code_detected pos
-            semantExpr x //error recovery
+            
+            let y = semantExpr y
+            ILExpr.Sequential(x,y,y.Type)
         | SynExpr.Sequential(x,(y,_)) ->
             let x, y = semantExpr x, semantExpr y
             ILExpr.Sequential(x,y,y.Type)

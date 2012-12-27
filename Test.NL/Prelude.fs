@@ -14,6 +14,10 @@ let openPrefix = openAsm + OpenNamespaceOrType
 
 let expectedErrors codes = 
     fun (e:CompilerServiceException) ->
-        let errors = e.Errors
+        let errors = e.Errors |> Array.filter (fun err -> err.Level = ErrorLevel.Error)
         <@ errors |> Array.map (fun err -> err.Code) = codes @>
+
+let expectedWarnings codes = 
+    let errors = ErrorLogger.ActiveLogger.GetErrors(ErrorLevel.Warning)
+    <@ errors |> Array.map (fun err -> err.Code) = codes @>
 

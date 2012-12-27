@@ -24,3 +24,10 @@ let ``throw with non default overload`` options =
 let ``throw with non default overload and compound expression`` options =
     raisesWith<System.Exception> <@ evalWith options "throw(x = \"hi\" in exception(x))" @>
         (fun x -> <@ x.Message = "hi" @>)
+
+[<Theory;EvalData>]
+let ``unreachable throw warning`` options =
+    try 
+        evalWith options "throw(exception()); ()"
+    with _ -> ()
+    test <| expectedWarnings [|17|]
