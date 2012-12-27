@@ -32,11 +32,11 @@ let ``Submit throws NliException when errors found`` options =
 
 [<Theory;NliData>]
 let ``issue 57: Need to strip TypeInitializationException from source NLI exceptions`` options =
-    raisesWith<System.FormatException> <@ Nli(options).TrySubmit("int32.parse(\"x\")") @>
+    raises<System.FormatException> <@ Nli(options).TrySubmit("int32.parse(\"x\")") @>
 
-[<Theory(Skip="todo");NliData>]
+[<Theory;NliData>]
 let ``issue 57: Need to strip TypeInitializationException from source NLI exceptions but not if geniune`` options =
-    raisesWith<System.FormatException> <@ Nli(options).TrySubmit("throw(TypeInitializationException())") @>
+    raises<System.TypeInitializationException> <@ Nli(options).TrySubmit("throw(TypeInitializationException(\"System.Exception\", exception()))") @>
 
 [<Theory(Skip="todo");NliData;>]
 let ``issue 56: can reference variable from previous statement in same submit`` options =
