@@ -47,6 +47,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <Compile Include="Prelude.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="PositionRange.fs" />
     <Compile Include="CompilerError.fs" />
