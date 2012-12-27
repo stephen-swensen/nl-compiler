@@ -5,7 +5,7 @@ open System.Reflection
 open Swensen.NL.Ast
 open Swensen.NL.Ail
 
-module EM = ErrorMessages
+module EM = CompilerMessages
 let abort() = raise CompilerInterruptException
 
 let sprintSeqForDisplay xs f =

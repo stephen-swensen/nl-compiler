@@ -181,7 +181,7 @@ type NliSessionManager() =
             | Some(results) -> results
             | None ->
                 
-                [|  let errors = Swensen.NL.ErrorLogger.ActiveLogger.GetErrors()
+                [|  let errors = Swensen.NL.MessageLogger.ActiveLogger.GetErrors()
                     for error in errors do
                         yield (sprintf "error%i" errorCount,  error :> obj, error.GetType())
                         errorCount <- errorCount + 1  |]

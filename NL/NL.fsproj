@@ -50,9 +50,9 @@
     <Compile Include="Prelude.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="PositionRange.fs" />
-    <Compile Include="CompilerError.fs" />
-    <Compile Include="ErrorLoggers.fs" />
-    <Compile Include="ErrorMessages.fs" />
+    <Compile Include="CompilerMessage.fs" />
+    <Compile Include="MessageLoggers.fs" />
+    <Compile Include="CompilerMessages.fs" />
     <Compile Include="CompilerInterruptException.fs" />
     <Compile Include="CompilerServiceExceptions.fs" />
     <Compile Include="Ast.fs" />

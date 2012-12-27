@@ -3,22 +3,22 @@
 open System
 ///The base, in-memory error logger. Not thread-safe.
 [<AllowNullLiteral>]
-type ErrorLogger() =
-    let errors = System.Collections.Generic.List<CompilerError>()
+type MessageLogger() =
+    let errors = System.Collections.Generic.List<CompilerMessage>()
     let mutable errorCount = 0
     let mutable warningCount = 0
     
     ///Get a snapshot of all the logged errors
     member __.GetErrors() = errors.ToArray()
     ///Get a snapshot of all the logged errors with the given level
-    member __.GetErrors(level:ErrorLevel) = errors |> Seq.filter(fun err -> err.Level = level) |> Seq.toArray
+    member __.GetErrors(level:MessageLevel) = errors |> Seq.filter(fun err -> err.Level = level) |> Seq.toArray
 
-    abstract Log : CompilerError -> unit
+    abstract Log : CompilerMessage -> unit
     ///Log the compiler error
-    default __.Log(ce:CompilerError) =
+    default __.Log(ce:CompilerMessage) =
         match ce.Level with
-        | ErrorLevel.Error -> errorCount <- errorCount + 1
-        | ErrorLevel.Warning -> warningCount <- warningCount + 1
+        | MessageLevel.Error -> errorCount <- errorCount + 1
+        | MessageLevel.Warning -> warningCount <- warningCount + 1
 
         errors.Add(ce)
 
@@ -32,33 +32,33 @@ type ErrorLogger() =
     
     //based on https://github.com/fsharp/fsharp/blob/master/src/fsharp/ErrorLogger.fs
     [<System.ThreadStatic; DefaultValue>]
-    static val mutable private activeLogger : ErrorLogger
+    static val mutable private activeLogger : MessageLogger
 
     ///The thread static active error logger; if not set, the default error logger is installed
     static member ActiveLogger
         with get() = 
-            if ErrorLogger.activeLogger = null then
-               ErrorLogger.activeLogger <- ErrorLogger()
-            ErrorLogger.activeLogger
+            if MessageLogger.activeLogger = null then
+               MessageLogger.activeLogger <- MessageLogger()
+            MessageLogger.activeLogger
         and set(v) = 
-            ErrorLogger.activeLogger <- v
+            MessageLogger.activeLogger <- v
 
     static member InstallInMemoryLogger = fun () ->
-        ErrorLogger.activeLogger <- new ErrorLogger()
+        MessageLogger.activeLogger <- new MessageLogger()
 
     static member InstallConsoleLogger = fun () ->
-        ErrorLogger.activeLogger <- new ConsoleErrorLogger()
+        MessageLogger.activeLogger <- new ConsoleMessageLogger()
     
-///Maybe make ErrorLogger event driven instead of inheritence driven (i.e.
+///Maybe make MessageLogger event driven instead of inheritence driven (i.e.
 ///have a "ErrorLogged" event which can have a "ConsoleListener" event attached
 ///if desired).
-and ConsoleErrorLogger() = 
-    inherit ErrorLogger()
-    override  __.Log(ce:CompilerError) =
+and ConsoleMessageLogger() = 
+    inherit MessageLogger()
+    override  __.Log(ce:CompilerMessage) =
         base.Log(ce)
         let writer =
             match ce.Level with
-            | ErrorLevel.Error -> stderr
-            | ErrorLevel.Warning -> stdout
+            | MessageLevel.Error -> stderr
+            | MessageLevel.Warning -> stdout
         
         writer.WriteLine(sprintf "|%s|" (ce.ToString()))

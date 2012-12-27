@@ -13,7 +13,7 @@ type CompilerOptions =
     { 
         Optimize:bool 
         SemanticEnvironment:SemanticEnvironment 
-        InstallErrorLogger: unit -> unit
+        InstallMessageLogger: unit -> unit
         //Target:CompilerTarget
     }
 [<RequireQualifiedAccess>]
@@ -23,5 +23,5 @@ module CompilerOptions =
         { 
             Optimize=true
             SemanticEnvironment = SemanticEnvironment.Default
-            InstallErrorLogger = ErrorLogger.InstallInMemoryLogger
+            InstallMessageLogger = MessageLogger.InstallInMemoryLogger
         }
