@@ -60,7 +60,7 @@ module ErrorMessages =
         mk ErrorLevel.Error ErrorType.Semantic 16 pos "'System.Void' is not a valid assignment value in a let binding"
 
     let Unreachable_code_detected pos = 
-        mk ErrorLevel.Error ErrorType.Semantic 17 pos "Unreachable code detected"
+        mk ErrorLevel.Warning ErrorType.Semantic 17 pos "Unreachable code detected"
 
     let Namespace_or_type_not_found pos = 
         mk ErrorLevel.Error ErrorType.Semantic 18 pos "Namespace or type '%s' does not exist in any currently open assemblies %s"
