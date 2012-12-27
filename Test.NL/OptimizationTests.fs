@@ -13,7 +13,7 @@ module C = Compilation
 open System
 
 //so that we see error details in console output while doing parse operations which don't install their own error loggers
-Swensen.NL.ErrorLogger.InstallConsoleLogger()
+Swensen.NL.MessageLogger.InstallConsoleLogger()
 
 //N.B. we use lexParseAndSemant to obtain a ILExpr tree for convienence and readability, but we are really only testing 
 //ILExpr -> ILExpr transformations for optimization. (this does make me a little nervous, of course, but hand constructing

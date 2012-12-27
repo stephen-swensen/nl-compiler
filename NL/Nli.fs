@@ -10,7 +10,7 @@ open Lexer
 open Parser
 open System.Text.RegularExpressions
 
-type EL = ErrorLogger
+type EL = MessageLogger
 module C = Compilation
 
 ///The NL interactive
@@ -23,7 +23,7 @@ type Nli(?options: CompilerOptions) =
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string) =
-        options.InstallErrorLogger()
+        options.InstallMessageLogger()
 
         let asmName = "NLI_" + asmCounter.ToString()
         asmCounter <- asmCounter + 1I
@@ -51,7 +51,7 @@ type Nli(?options: CompilerOptions) =
 
             match ilTopLevel.NormalizedStmts with
             | None ->
-                ErrorMessages.Could_not_normalize_nli_fragment (sprintf "%A" ilTopLevel)
+                CompilerMessages.Could_not_normalize_nli_fragment (sprintf "%A" ilTopLevel)
                 None
             | Some(stmts) ->
                 ///Define the fields to bind to the tyBuilder and define the tyBuilder static constructor which initializes the fields.

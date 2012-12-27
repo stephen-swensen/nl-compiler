@@ -27,6 +27,6 @@ let main(args:string[]) =
     Console.OutputEncoding <- System.Text.Encoding.UTF8 
 
     printfn "NL Interactive"
-    let nli = new Nli({ CompilerOptions.Default with InstallErrorLogger=ErrorLogger.InstallConsoleLogger })
+    let nli = new Nli({ CompilerOptions.Default with InstallMessageLogger=MessageLogger.InstallConsoleLogger })
     loop(nli)
     0

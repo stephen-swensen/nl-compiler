@@ -9,7 +9,7 @@ open Microsoft.FSharp.Text.Lexing
 open Lexer
 open Parser
 
-type EL = ErrorLogger
+type EL = MessageLogger
 module SA = SemanticAnalysis
 
 let lexParseAndSemantWith env code =
@@ -32,11 +32,11 @@ let lexParseAndSemantWith env code =
     //fslex/yacc do not use specific exception types
     | e when e.Message = "parse error" -> //we handle lex errors explicitly now (this error message should not be possible): || e.Message = "unrecognized input" ->
         EL.ActiveLogger.Log
-            (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Syntactic, ErrorLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
+            (CompilerMessage(PositionRange(lexbuf.StartPos,lexbuf.EndPos), MessageType.Syntactic, MessageLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
         ILTopLevel.Error
     | e ->
         EL.ActiveLogger.Log
-            (CompilerError(PositionRange(lexbuf.StartPos,lexbuf.EndPos), ErrorType.Internal, ErrorLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
+            (CompilerMessage(PositionRange(lexbuf.StartPos,lexbuf.EndPos), MessageType.Internal, MessageLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
         ILTopLevel.Error
 
 let lexParseAndSemant = lexParseAndSemantWith SemanticEnvironment.Default
