@@ -83,6 +83,7 @@ type ILExpr =
     | StaticFieldGet      of FieldInfo
     | InstanceFieldGet    of ILExpr * FieldInfo
     | InstanceFieldSet    of ILExpr * FieldInfo * ILExpr
+    | Throw               of ILExpr
     with 
         member this.Type =
             match this with
@@ -123,6 +124,7 @@ type ILExpr =
             | Continue
             | StaticFieldSet _
             | InstanceFieldSet _
+            | Throw _
             | WhileLoop _           -> typeof<Void>
 
             //Explicitly constructed with types

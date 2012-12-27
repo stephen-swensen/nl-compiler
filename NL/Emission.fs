@@ -217,6 +217,9 @@ let emit (il:SmartILGenerator) ilExpr =
         | InstanceFieldGet(instance, fi) ->
             emitValueAddressIfApplicable loopLabel lenv instance |> ignore
             il.Ldfld(fi)
+        | ILExpr.Throw(x) ->
+            emit x
+            il.Emit(OpCodes.Throw)
         | ILExpr.Error _ ->
             failwith "Should not be emitting opcodes for an ilExpr with errors"
 

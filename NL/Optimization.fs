@@ -181,6 +181,8 @@ let optimize (tl:ILTopLevel) =
                 ILExpr.Char(Unchecked.defaultof<char>)
             else
                 exp        
+        | ILExpr.Throw(x) ->
+            ILExpr.Throw(optimizeExpr x)
         | Byte _  
         | SByte _ 
 

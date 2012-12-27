@@ -238,6 +238,7 @@ type SynExpr =
     | LogicBinop       of SynLogicBinop * (SynExpr * PositionRange) * (SynExpr * PositionRange)
     | Checked          of SynExpr
     | Unchecked        of SynExpr
+    | Throw            of SynExpr * PositionRange
 
 type SynStmt =
     | Let                   of string * (SynExpr * PositionRange)

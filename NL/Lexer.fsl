@@ -17,7 +17,6 @@ let keywords =
         "open", OPEN
         "in", IN
         "if", IF
-        //"then", THEN
         "else", ELSE
         "null", NULL
         "type", TYPE
@@ -29,6 +28,7 @@ let keywords =
         "default", DEFAULT
         "checked", CHECKED
         "unchecked", UNCHECKED
+        "throw", THROW
     ] |> Map.ofList
 }
 

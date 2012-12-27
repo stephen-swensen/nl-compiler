@@ -36,7 +36,7 @@ let ``issue 57: Need to strip TypeInitializationException from source NLI except
 
 [<Theory(Skip="todo");NliData>]
 let ``issue 57: Need to strip TypeInitializationException from source NLI exceptions but not if geniune`` options =
-    raisesWith<System.FormatException> <@ Nli(options).TrySubmit("int32.parse(\"x\")") @>
+    raisesWith<System.FormatException> <@ Nli(options).TrySubmit("throw(TypeInitializationException())") @>
 
 [<Theory(Skip="todo");NliData;>]
 let ``issue 56: can reference variable from previous statement in same submit`` options =
