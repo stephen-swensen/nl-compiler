@@ -23,7 +23,7 @@ let tryEvalWith<'a> options code : 'a option =
         let dm = DynamicMethod("Eval", ilExpr.Type, null)
         let il = dm.GetILGenerator() |> SmartILGenerator.fromILGenerator
         
-        Emission.emit il ilExpr
+        Emission.emit options.Optimize il ilExpr
         il.Emit(OpCodes.Ret)
         dm
 
