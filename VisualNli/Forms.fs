@@ -47,10 +47,10 @@ module CodeEditorService =
                 | Parser.token.IN _
                 | Parser.token.NULL _
                 | Parser.token.OPEN _
-                | Parser.token.THEN _
                 | Parser.token.TYPE _
                 | Parser.token.UNCHECKED
                 | Parser.token.WHILE _
+                | Parser.token.THROW 
                     -> yield curRange(), Color.Blue
                 //string and char literals
                 | Parser.token.CHAR _
@@ -74,8 +74,8 @@ module CodeEditorService =
 
 [<AllowNullLiteral>]
 type CodeEditor() as self =
-    inherit RichTextBox(AcceptsTab=true)
-
+    inherit RichTextBox(AcceptsTab=true,ShortcutsEnabled=true)
+    
     let submitEvent = new Event<_>()
     let update = Win32.LockWindowUpdate self
 
@@ -213,7 +213,9 @@ type public NliForm() as self =
 
     let nli = NliSessionManager()
     //data
-    let textFont = new Font(FontFamily.GenericMonospace, 12.0f)
+    let textFont = 
+        let fontFamily = FontFamily.GenericMonospace //i.e. Courier New on Windows
+        new Font(fontFamily, 11.0f)
 
     //controls
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
@@ -296,8 +298,6 @@ type public NliForm() as self =
                     )
                 |]
             )
-            
-
 
     //event handlers
     do 

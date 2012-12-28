@@ -44,7 +44,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token COMMA DOT SEMICOLON DOUBLE_SEMICOLON
 %token OPEN
 %token LBRACKET RBRACKET LBRACE RBRACE
-%token IF THEN ELSE
+%token IF ELSE
 %token SET
 %token WHILE BREAK CONTINUE
 %token EOF

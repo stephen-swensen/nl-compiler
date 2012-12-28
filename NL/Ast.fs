@@ -51,7 +51,7 @@ type SynComparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
             | Gt -> ">"
             | LtEq -> "<="
             | GtEq -> ">="
-            | Neq -> "~="
+            | Neq -> "!="
 
         member x.Name =
             match x with
