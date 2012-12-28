@@ -173,8 +173,7 @@ let emit optimize (il:SmartILGenerator) ilExpr =
             il.ILGenerator.MarkLabel(beginElseLabel)
             emit z
             il.ILGenerator.MarkLabel(endIfLabel)
-        | Nop when optimize -> ()
-        | Nop when not optimize -> il.Nop()
+        | Nop -> if optimize then () else il.Nop()
         | WhileLoop(condition, body) ->
             let beginConditionLabel = il.ILGenerator.DefineLabel()
             let endBodyLabel = il.ILGenerator.DefineLabel()
