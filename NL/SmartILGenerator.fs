@@ -138,6 +138,8 @@ type SmartILGenerator(ilgen:ILGenerator) =
         this.Emit(OpCodes.Ldc_R8, x)
     member this.Ldstr(x:String) =
         this.Emit(OpCodes.Ldstr, x)
+    member this.Nop() =
+        this.Emit(OpCodes.Nop)
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
