@@ -179,25 +179,26 @@ type NliSessionManager() =
 
 
     member __.Submit(code:String) = 
+        let collectMessages() = [|  
+            let msgs = Swensen.NL.MessageLogger.ActiveLogger.GetMessages()
+            for msg in msgs do
+                match msg.Level with
+                | MessageLevel.Error ->
+                    yield (sprintf "error%i" errorCount,  msg :> obj, msg.GetType())
+                    errorCount <- errorCount + 1 
+                | MessageLevel.Warning ->
+                    yield (sprintf "warning%i" warningCount,  msg :> obj, msg.GetType())
+                    warningCount <- warningCount + 1
+        |]
+
         try
             match nli.TrySubmit(code) with
-            | Some(results) -> results
-            | None ->
-                [|  let msgs = Swensen.NL.MessageLogger.ActiveLogger.GetMessages()
-                    for msg in msgs do
-                        match msg.Level with
-                        | MessageLevel.Error ->
-                            yield (sprintf "error%i" errorCount,  msg :> obj, msg.GetType())
-                            errorCount <- errorCount + 1 
-                        | MessageLevel.Warning ->
-                            yield (sprintf "warning%i" warningCount,  msg :> obj, msg.GetType())
-                            warningCount <- warningCount + 1
-                |]
-                
+            | Some(results) -> [| yield! collectMessages(); yield! results |]
+            | None -> collectMessages()
         with e ->
             let result = sprintf "exn%i" exnCount, e :> obj, e.GetType()
             exnCount <- exnCount + 1
-            [|result|]
+            [| yield! collectMessages(); yield result |]
 
 
 type public NliForm() as self =
