@@ -6,7 +6,7 @@ open System.Reflection
 open System.Reflection.Emit
 
 ///Emit opcodes for the given ILExpr on the given ILGenerator. An exception will be raised if the expression tree contains any errors.
-let emit (il:SmartILGenerator) ilExpr =
+let emit optimize (il:SmartILGenerator) ilExpr =
     let isDefaultOfValueType = function
         | Default(ty) when ty.IsValueType ->
             true
@@ -173,7 +173,8 @@ let emit (il:SmartILGenerator) ilExpr =
             il.ILGenerator.MarkLabel(beginElseLabel)
             emit z
             il.ILGenerator.MarkLabel(endIfLabel)
-        | Nop -> ()
+        | Nop when optimize -> ()
+        | Nop when not optimize -> il.Nop()
         | WhileLoop(condition, body) ->
             let beginConditionLabel = il.ILGenerator.DefineLabel()
             let endBodyLabel = il.ILGenerator.DefineLabel()

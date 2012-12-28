@@ -55,9 +55,10 @@ type Nli(?options: CompilerOptions) =
                 None
             | Some(stmts) ->
                 ///Define the fields to bind to the tyBuilder and define the tyBuilder static constructor which initializes the fields.
-                let emit () =
+                do
                     let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
                     let il = tyInitBuilder.GetILGenerator()  |> SmartILGenerator.fromILGenerator
+                    let emit = Emission.emit options.Optimize il
                     //need final it
                     for stmt in stmts do
                         match stmt with
@@ -65,17 +66,14 @@ type Nli(?options: CompilerOptions) =
                             if x.Type <> typeof<Void> then
                                 let fi = tyBuilder.DefineField("it" + itCounter.ToString(), x.Type, fieldAttrs)
                                 itCounter <- itCounter + 1I
-                                Emission.emit il (ILExpr.StaticFieldSet(fi,x))
+                                emit (ILExpr.StaticFieldSet(fi,x))
                             else
-                                Emission.emit il x
+                                emit x
                         | ILStmt.Let(name,x) -> 
                             let fi = tyBuilder.DefineField(name, x.Type, fieldAttrs)
-                            Emission.emit il (ILExpr.StaticFieldSet(fi,x))
+                            emit (ILExpr.StaticFieldSet(fi,x))
 
                     il.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
-
-
-                emit ()
 
                 let ty = tyBuilder.CreateType()
                 env <- env.ConsType(ty) //cons the new type to the environment so that it is available (and at head of shadowing scope) for the next submit

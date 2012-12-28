@@ -12,6 +12,8 @@ open Parser
 type EL = MessageLogger
 module SA = SemanticAnalysis
 
+//todo: currently we assume no optimization
+
 let lexParseAndSemantWith env code =
     let lexbuf = LexBuffer<char>.FromString(code)
     lexbuf.EndPos <- 
@@ -25,7 +27,6 @@ let lexParseAndSemantWith env code =
     try 
         Parser.start Lexer.tokenize lexbuf
         |> SA.semantWith env
-
     with
     | CompilerInterruptException ->
         ILTopLevel.Error
@@ -59,7 +60,7 @@ let compileFromAil ail asmName =
             failwithf "not a valid compiler expression: %A" ail //todo: remove
 
     let il = methBuilder.GetILGenerator() |> SmartILGenerator.fromILGenerator
-    Emission.emit il ilExpr
+    Emission.emit false il ilExpr
     il.Emit(OpCodes.Ret)
 
     tyBuilder.CreateType() |> ignore
@@ -75,7 +76,7 @@ let compileFromString =
 ///fileNames -> assemblyName -> unit
 let compileFromFiles fileNames =
     fileNames
-    |> Seq.map System.IO.File.ReadAllText
+    |> Seq.map System.IO.File.ReadAllText                     
     |> String.concat System.Environment.NewLine
     //|> (fun text -> printfn "%s" text; text)
     |> compileFromString
