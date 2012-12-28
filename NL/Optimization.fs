@@ -116,6 +116,7 @@ let optimize (tl:ILTopLevel) =
             match x, y with
             | ILExpr.Nop, ILExpr.Nop -> ILExpr.Nop //();() -> ()
             | ILExpr.Nop, _ -> y // (); exp -> exp
+            | (ILExpr.Break | ILExpr.Continue | ILExpr.Throw(_)), _ -> x
             | _,_ -> ILExpr.Sequential(x,y,ty)
         | ILExpr.UMinus(cked, x, ty) ->
             let x = optimizeExpr x
