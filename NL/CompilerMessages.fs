@@ -78,7 +78,7 @@ module CompilerMessages =
         mk MessageLevel.Error MessageType.Semantic 22 pos "Cast from type '%s' to type '%s' will always fail"
 
     let IfThenElse_branch_type_mismatch pos =
-        mk MessageLevel.Error MessageType.Semantic 23 pos "'if ... then' and 'else' branches must be of same type but instead are '%s' and '%s'"
+        mk MessageLevel.Error MessageType.Semantic 23 pos "'if' and 'else' branches must be of same type but instead are '%s' and '%s'"
 
     let Internal_error pos =
         mk MessageLevel.Error MessageType.Internal 24 pos "%s"
