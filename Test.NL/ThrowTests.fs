@@ -4,8 +4,13 @@ open Xunit;; open Xunit.Extensions
 open Swensen.Unquote.Assertions
 open Swensen.NL
 open System.Collections.Generic
+open System
 
 open Evaluation
+
+[<Theory;EvalData>]
+let ``throw in let`` options =
+    raises<ArgumentException> <@ evalWith options "x = throw(argumentexception()); 0 in x" @>
 
 [<Theory;EvalData>]
 let ``throw with default overload`` options =
