@@ -220,6 +220,33 @@ let emit optimize (il:SmartILGenerator) ilExpr =
         | ILExpr.Throw(x) ->
             emit x
             il.Emit(OpCodes.Throw)
+        | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
+            //for non-void expressions, a local var for the return value of the try or catch blocks
+            let retval = if tx.Type = typeof<System.Void> then None else Some(il.ILGenerator.DeclareLocal(tx.Type))
+
+            il.ILGenerator.BeginExceptionBlock() |> ignore
+            emit tx
+            retval |> Option.iter (fun retval -> il.Stloc(retval))
+            for catch in catchList do
+                match catch with
+                | Filtered(filterTy, filterName, cx) ->
+                    il.ILGenerator.BeginCatchBlock(filterTy)
+                    let local = il.ILGenerator.DeclareLocal(filterTy)
+                    il.Stloc(local)
+                    emitWith loopLabel (Map.add filterName local lenv) cx
+                | Unfiltered(cx) ->
+                    il.ILGenerator.BeginCatchBlock(typeof<exn>)
+                    il.Pop()
+                    emit cx
+                retval |> Option.iter (fun retval -> il.Stloc(retval))
+            match fx with
+            | Some(fx) ->
+                il.ILGenerator.BeginFinallyBlock()
+                emit fx
+            | None -> ()
+            
+            il.ILGenerator.EndExceptionBlock()
+            retval |> Option.iter (fun retval -> il.Ldloc(retval)) //load the return value of the try or catch(es), if any
         | ILExpr.Error _ ->
             failwith "Should not be emitting opcodes for an ilExpr with errors"
 
