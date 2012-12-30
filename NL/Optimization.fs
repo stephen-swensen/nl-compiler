@@ -116,7 +116,8 @@ let optimize (tl:ILTopLevel) =
             match x, y with
             | ILExpr.Nop, ILExpr.Nop -> ILExpr.Nop //();() -> ()
             | ILExpr.Nop, _ -> y // (); exp -> exp
-            | (ILExpr.Break | ILExpr.Continue | ILExpr.Throw(_)), _ -> x
+            //the following dead code optimization attempt can change the semantic meaning of the ILExpr resulting in invalid IL
+            //| (ILExpr.Break | ILExpr.Continue | ILExpr.Throw(_)), _ -> x
             | _,_ -> ILExpr.Sequential(x,y,ty)
         | ILExpr.UMinus(cked, x, ty) ->
             let x = optimizeExpr x
@@ -185,7 +186,29 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.Throw(x) ->
             ILExpr.Throw(optimizeExpr x)
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
-            ILExpr.TryCatchFinally(tx, catchList, fx, ty) //todo:remove unreachable catch stmts
+            let tx = optimizeExpr tx
+
+            let rec loop (catchList:ILCatch list) acc =
+                match catchList with
+                | [] -> acc
+                | Unfiltered(catch)::tl ->
+                    (Unfiltered(optimizeExpr catch))::acc //no other catch after this one is reachable, so return here
+                | Filtered(filterTy, name, catch)::tl ->
+                    match acc with
+                    | Filtered(prevFilterTy,_,_)::_ when filterTy.IsAssignableFrom(prevFilterTy) -> acc //this catch is unreachable, so return acc here
+                    | _ -> loop tl (Filtered(filterTy, name, (optimizeExpr catch))::acc)
+            let catchList = loop catchList [] |> List.rev
+
+            let fx = 
+                match fx with
+                | Some(fx) ->
+                    let fx = optimizeExpr fx
+                    match fx with
+                    | Nop -> None //finally block is nop, so we ignore it all together
+                    | _ -> Some(fx)
+                | None -> None
+
+            ILExpr.TryCatchFinally(tx, catchList, fx, ty)
         | Byte _  
         | SByte _ 
 
