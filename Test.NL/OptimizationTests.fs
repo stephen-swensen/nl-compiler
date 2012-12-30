@@ -342,15 +342,3 @@ let ``instance of instance field get is valid`` () =
 [<Fact>]
 let ``optimize throw expression`` () =
     test <@ C.lexParseAndSemant "throw(exception((1 + 1).tostring()))" |> O.optimize = C.lexParseAndSemant ("throw(exception(2.tostring()))") @>
-
-[<Fact>]
-let ``trim unreachable code after throw`` () =
-    test <@ C.lexParseAndSemant "throw(exception()); ()" |> O.optimize = C.lexParseAndSemant "throw(exception())" @>
-
-[<Fact>]
-let ``trim unreachable code after break`` () =
-    test <@ C.lexParseAndSemant "while System.Boolean.Parse(\"false\") { break(); () }" |> O.optimize = C.lexParseAndSemant "while System.Boolean.Parse(\"false\") { break() }" @>
-
-[<Fact>]
-let ``trim unreachable code after continue`` () =
-    test <@ C.lexParseAndSemant "while System.Boolean.Parse(\"false\") { continue(); () }" |> O.optimize = C.lexParseAndSemant "while System.Boolean.Parse(\"false\") { continue() }" @>
