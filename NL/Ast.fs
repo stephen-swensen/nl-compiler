@@ -162,7 +162,7 @@ type TySig(genericName:string, genericArgs: TySig list, pos:PositionRange) =
 let (|TySig|) (tySig:TySig) =
     (tySig.GenericName, tySig.GenericArgs)
 type TySig with
-    ///i.e. Dictionary<String,Int>
+    ///e.g. Dictionary[String,Int]
     member x.Name =
         let rec build = function
             | TySig(name, []) -> name
@@ -170,12 +170,16 @@ type TySig with
         build x
     override x.ToString() =
         x.Name
+
+type Catch =
+    | Filtered of TySig * String * SynExpr * PositionRange
+    | Unfiltered of SynExpr * PositionRange
     
 //n.b. PositionRange convention is: 1) if position range applies to the entire expression,
 //     then it is the last element in the tupled case, 2) if position range applies to a pariticular
 //     sub-expression or token, then it is tupled with the subexpression or token
 ///Raw (untyped) parsed expression
-type SynExpr =    
+and SynExpr =    
     //we do the actual parsing semantic analysis of the numeric const in SemanticAnalysis
     | SByte             of string * PositionRange //y
     | Byte              of string * PositionRange //uy
@@ -239,6 +243,7 @@ type SynExpr =
     | Checked          of SynExpr
     | Unchecked        of SynExpr
     | Throw            of SynExpr * PositionRange
+    | TryCatchFinally of SynExpr * (Catch list) * (SynExpr option) * PositionRange
 
 type SynStmt =
     | Let                   of string * (SynExpr * PositionRange)

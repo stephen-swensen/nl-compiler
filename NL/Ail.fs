@@ -30,8 +30,12 @@ type ILComparisonBinop = Eq | Lt | Gt
 
             fsop lhs rhs
 
+type ILCatch =
+    | Filtered of Type * string * ILExpr
+    | Unfiltered of ILExpr
+
 ///Typed expression
-type ILExpr =
+and ILExpr =
     | SByte         of SByte //y
     | Byte          of Byte //uy
 
@@ -51,39 +55,40 @@ type ILExpr =
     | Char          of char
     | Bool          of bool
     | Null          of Type
-    | Typeof        of Type
-    | VarGet        of string * Type
+    | Typeof of Type
+    | VarGet of string * Type
     //Default value of ValueType ("zero") or Ref type (null)
-    | Default       of Type
+    | Default of Type
     | Nop
     | Break         
     | Continue
-    | Error         of Type
+    | Error of Type
     //bool indicates whether checked
-    | NumericBinop  of bool * ILNumericBinop * ILExpr * ILExpr * Type
+    | NumericBinop of bool * ILNumericBinop * ILExpr * ILExpr * Type
     //bool indicates whether checked
-    | UMinus        of bool * ILExpr * Type
-    | Let           of string * ILExpr * ILExpr * Type
+    | UMinus of bool * ILExpr * Type
+    | Let of string * ILExpr * ILExpr * Type
     //primitive coersion
     //bool indicates whether checked
-    | Coerce        of bool * ILExpr * Type
+    | Coerce of bool * ILExpr * Type
     ///box / box value type or down / up cast ref type
-    | Cast          of ILExpr * Type
-    | StaticCall    of System.Reflection.MethodInfo * ILExpr list
-    | InstanceCall  of ILExpr * System.Reflection.MethodInfo * ILExpr list
-    | Sequential    of ILExpr * ILExpr * Type
-    | Ctor          of System.Reflection.ConstructorInfo * ILExpr list * Type
-    | LogicalNot    of ILExpr
-    | IfThen        of ILExpr * ILExpr
-    | IfThenElse    of ILExpr * ILExpr * ILExpr * Type
-    | ComparisonBinop  of ILComparisonBinop * ILExpr * ILExpr
-    | VarSet        of string * ILExpr
-    | WhileLoop     of ILExpr * ILExpr
-    | StaticFieldSet      of FieldInfo * ILExpr
-    | StaticFieldGet      of FieldInfo
-    | InstanceFieldGet    of ILExpr * FieldInfo
-    | InstanceFieldSet    of ILExpr * FieldInfo * ILExpr
-    | Throw               of ILExpr
+    | Cast of ILExpr * Type
+    | StaticCall of System.Reflection.MethodInfo * ILExpr list
+    | InstanceCall of ILExpr * System.Reflection.MethodInfo * ILExpr list
+    | Sequential of ILExpr * ILExpr * Type
+    | Ctor of System.Reflection.ConstructorInfo * ILExpr list * Type
+    | LogicalNot of ILExpr
+    | IfThen of ILExpr * ILExpr
+    | IfThenElse of ILExpr * ILExpr * ILExpr * Type
+    | ComparisonBinop of ILComparisonBinop * ILExpr * ILExpr
+    | VarSet of string * ILExpr
+    | WhileLoop of ILExpr * ILExpr
+    | StaticFieldSet of FieldInfo * ILExpr
+    | StaticFieldGet of FieldInfo
+    | InstanceFieldGet of ILExpr * FieldInfo
+    | InstanceFieldSet of ILExpr * FieldInfo * ILExpr
+    | Throw of ILExpr
+    | TryCatchFinally of ILExpr * (ILCatch list) * (ILExpr option) * Type
     with 
         member this.Type =
             match this with
@@ -139,6 +144,7 @@ type ILExpr =
             | Default(ty)
             | Null(ty)
             | IfThenElse(_,_,_,ty)
+            | TryCatchFinally(_,_,_,ty)
             | Error(ty) //ty is the recovery typeof the expression. (maybe add optional first parameter with the specific branch which was type checked but in error?)
                 -> ty
 

@@ -184,6 +184,8 @@ let optimize (tl:ILTopLevel) =
                 exp        
         | ILExpr.Throw(x) ->
             ILExpr.Throw(optimizeExpr x)
+        | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
+            ILExpr.TryCatchFinally(tx, catchList, fx, ty) //todo:remove unreachable catch stmts
         | Byte _  
         | SByte _ 
 

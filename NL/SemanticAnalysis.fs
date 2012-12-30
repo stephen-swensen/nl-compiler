@@ -835,8 +835,47 @@ let rec semantWith env synTopLevel =
             if typeof<Exception>.IsAssignableFrom(x.Type) then
                 ILExpr.Throw(x)
             else
-                EM.Throw_type_does_not_extend_Exception pos (x.Type.ToString())
+                EM.Throw_type_does_not_extend_Exception pos x.Type.Name
                 ILExpr.Error(typeof<Void>)
+        | SynExpr.TryCatchFinally(tx, [], None, pos) ->
+            let tx = semantExpr tx
+            EM.Try_without_catch_or_finally pos
+            ILExpr.Error(tx.Type)            
+        | SynExpr.TryCatchFinally(tx, catchList, fx, _) ->
+            let tx = semantExpr tx
+
+            let validateCatch pos (catch:ILExpr) =
+                if catch.Type <> tx.Type then
+                    EM.Catch_type_does_not_match_Try_type pos catch.Type.Name tx.Type.Name
+                    ILExpr.Error(tx.Type)
+                else
+                    catch
+
+            let catchList =
+                let rec loop xl acc lastFilterTy =
+                    match xl with
+                    | [] -> acc
+                    | hd::tl ->
+                        match hd with
+                        | Catch.Unfiltered(catch, pos) ->
+                            let catch = semantExpr catch |> validateCatch pos
+                            loop tl (ILCatch.Unfiltered(catch)::acc) (Some(typeof<System.Exception>))
+                        | Catch.Filtered(filterTySig, name, catch, pos) ->
+                            let filterTy = resolveTySig env filterTySig
+                            let catch = semantExprWith (env.ConsVariable(name, filterTy)) catch |> validateCatch pos
+                            match lastFilterTy with
+                            | Some(lastFilterTy) when filterTy.IsAssignableFrom(lastFilterTy) ->
+                                EM.Unreachable_code_detected pos
+                            | _ -> 
+                                ()
+                            loop tl (ILCatch.Filtered(filterTy, name, catch)::acc) (Some(filterTy))
+
+
+                loop catchList [] None
+                |> List.rev
+
+            let fx = fx |> Option.map semantExpr
+            ILExpr.TryCatchFinally(tx, catchList, fx, tx.Type)
 
     match synTopLevel with
     | SynTopLevel.StmtList(xl) ->

@@ -29,6 +29,10 @@ let keywords =
         "checked", CHECKED
         "unchecked", UNCHECKED
         "throw", THROW
+        //"rethrow", RETHROW
+        "try", TRY
+        "catch", CATCH
+        "finally", FINALLY
     ] |> Map.ofList
 }
 
