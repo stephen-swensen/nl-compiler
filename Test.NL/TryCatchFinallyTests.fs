@@ -39,3 +39,8 @@ let ``try catch finally - final catch unreachable `` options =
 [<Theory;EvalData>]
 let ``try catch finally - finally is called`` options =
     test <@ evalWith options "x = 0 in try { 0 } catch{ 1 } finally { x <- 2 }; x" = 2 @>
+
+[<Theory;EvalData>]
+let ``try catch finally - either catch or finally required`` options =
+    raisesWith <@ evalWith options "try { 0 }" = 0 @>
+        (expectedErrors [|50|])
