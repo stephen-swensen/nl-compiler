@@ -342,3 +342,11 @@ let ``instance of instance field get is valid`` () =
 [<Fact>]
 let ``optimize throw expression`` () =
     test <@ C.lexParseAndSemant "throw(exception((1 + 1).tostring()))" |> O.optimize = C.lexParseAndSemant ("throw(exception(2.tostring()))") @>
+
+[<Fact>]
+let ``catches following filterless catch are trimmed`` () =
+    test <@ C.lexParseAndSemant "try { 1 } catch { 2 } catch[exception] x { 3 }" |> O.optimize = C.lexParseAndSemant ("try { 1 } catch { 2 }") @>
+
+[<Fact>]
+let ``unit finally is trimmed`` () =
+    test <@ C.lexParseAndSemant "try { 1 } catch { 2 } finally { ();() }" |> O.optimize = C.lexParseAndSemant ("try { 1 } catch { 2 }") @>
