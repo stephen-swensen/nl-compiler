@@ -243,7 +243,8 @@ and SynExpr =
     | Checked          of SynExpr
     | Unchecked        of SynExpr
     | Throw            of SynExpr * PositionRange
-    | TryCatchFinally of SynExpr * (Catch list) * (SynExpr option) * PositionRange
+    | Rethrow          of PositionRange
+    | TryCatchFinally  of SynExpr * (Catch list) * (SynExpr option) * PositionRange
 
 type SynStmt =
     | Let                   of string * (SynExpr * PositionRange)

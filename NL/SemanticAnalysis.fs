@@ -858,11 +858,11 @@ let rec semantWith env synTopLevel =
                     | hd::tl ->
                         match hd with
                         | Catch.Unfiltered(catch, pos) ->
-                            let catch = semantExpr catch |> validateCatch pos
+                            let catch = semantExprWith {env with IsCatchBody=true} catch |> validateCatch pos
                             loop tl (ILCatch.Unfiltered(catch)::acc) (Some(typeof<System.Exception>))
                         | Catch.Filtered(filterTySig, name, catch, pos) ->
                             let filterTy = resolveTySig env filterTySig
-                            let catch = semantExprWith (env.ConsVariable(name, filterTy)) catch |> validateCatch pos
+                            let catch = semantExprWith ({ env.ConsVariable(name, filterTy) with IsCatchBody=true }) catch |> validateCatch pos
                             match lastFilterTy with
                             | Some(lastFilterTy) when filterTy.IsAssignableFrom(lastFilterTy) ->
                                 EM.Unreachable_code_detected pos
@@ -876,6 +876,12 @@ let rec semantWith env synTopLevel =
 
             let fx = fx |> Option.map semantExpr
             ILExpr.TryCatchFinally(tx, catchList, fx, tx.Type)
+        | SynExpr.Rethrow pos ->
+            if env.IsCatchBody then
+                ILExpr.Rethrow
+            else
+                EM.Rethrow_not_valid_outside_of_catch_body pos
+                ILExpr.Error(typeof<System.Void>)
 
     match synTopLevel with
     | SynTopLevel.StmtList(xl) ->

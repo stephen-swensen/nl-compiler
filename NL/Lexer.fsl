@@ -29,7 +29,7 @@ let keywords =
         "checked", CHECKED
         "unchecked", UNCHECKED
         "throw", THROW
-        //"rethrow", RETHROW
+        "rethrow", RETHROW
         "try", TRY
         "catch", CATCH
         "finally", FINALLY

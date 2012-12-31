@@ -232,8 +232,9 @@ let optimize (tl:ILTopLevel) =
         | StaticFieldGet _
         | VarGet _
         | Nop
-        | Break         
-        | Continue -> exp //atomic expressions
+        | Break
+        | Continue 
+        | Rethrow -> exp //atomic expressions
         | ILExpr.Error _ ->
             failwith "Should not be optimizing an expression with errors"
 
