@@ -35,3 +35,7 @@ let ``try catch finally 6`` options =
 let ``try catch finally - final catch unreachable `` options =
     test <@ evalWith options "try { throw(argumentexception()); 0 } catch { 1 } catch[argumentexception] x { 2 }" = 1 @>
     test <| expectedWarnings [|17|]
+
+[<Theory;EvalData>]
+let ``try catch finally - finally is called`` options =
+    test <@ evalWith options "x = 0 in try { 0 } catch{ 1 } finally { x <- 2 }; x" = 2 @>
