@@ -220,6 +220,8 @@ let emit optimize (il:SmartILGenerator) ilExpr =
         | ILExpr.Throw(x) ->
             emit x
             il.Emit(OpCodes.Throw)
+        | ILExpr.Rethrow ->
+            il.Emit(OpCodes.Rethrow)
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
             //for non-void expressions, a local var for the return value of the try or catch blocks
             let retval = if tx.Type = typeof<System.Void> then None else Some(il.ILGenerator.DeclareLocal(ty))
@@ -227,7 +229,7 @@ let emit optimize (il:SmartILGenerator) ilExpr =
             il.ILGenerator.BeginExceptionBlock() |> ignore
             emit tx
             retval |> Option.iter (fun retval -> il.Stloc(retval))
-            for catch in catchList do
+            for catch in catchList do                   
                 match catch with
                 | Filtered(filterTy, filterName, cx) ->
                     il.ILGenerator.BeginCatchBlock(filterTy)

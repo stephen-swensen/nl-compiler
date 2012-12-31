@@ -161,4 +161,7 @@ module CompilerMessages =
     let Try_without_catch_or_finally pos = 
         mk MessageLevel.Error MessageType.Semantic 50 pos "'try' is missing required 'catch' or 'finally'"
 
+    let Rethrow_not_valid_outside_of_catch_body pos = 
+        mk MessageLevel.Error MessageType.Semantic 51 pos "'rethrow' is not valid outside of a 'catch' body"
+
 
