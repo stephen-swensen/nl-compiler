@@ -842,6 +842,9 @@ let rec semantWith env synTopLevel =
             EM.Try_without_catch_or_finally pos
             ILExpr.Error(tx.Type)            
         | SynExpr.TryCatchFinally(tx, catchList, fx, _) ->
+            let env = { env with IsFinallyBodyOfCurrentExceptionHandler=false }
+            let semantExpr = semantExprWith env
+            
             let tx = semantExpr tx
 
             let validateCatch pos (catch:ILExpr) =
@@ -874,12 +877,16 @@ let rec semantWith env synTopLevel =
                 loop catchList [] None
                 |> List.rev
 
-            let fx = fx |> Option.map semantExpr
+            let fx = fx |> Option.map (semantExprWith {env with IsFinallyBodyOfCurrentExceptionHandler=true})
             ILExpr.TryCatchFinally(tx, catchList, fx, tx.Type)
         | SynExpr.Rethrow pos ->
-            if env.IsCatchBody then
+            match env with
+            | {IsCatchBody=true; IsFinallyBodyOfCurrentExceptionHandler=false} ->
                 ILExpr.Rethrow
-            else
+            | {IsCatchBody=true; IsFinallyBodyOfCurrentExceptionHandler=true} ->
+                EM.Rethrow_of_outer_catch_not_valid_inside_nested_finally_body pos
+                ILExpr.Error(typeof<System.Void>)
+            | {IsCatchBody=false} ->
                 EM.Rethrow_not_valid_outside_of_catch_body pos
                 ILExpr.Error(typeof<System.Void>)
 

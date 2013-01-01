@@ -164,4 +164,5 @@ module CompilerMessages =
     let Rethrow_not_valid_outside_of_catch_body pos = 
         mk MessageLevel.Error MessageType.Semantic 51 pos "'rethrow' is not valid outside of a 'catch' body"
 
-
+    let Rethrow_of_outer_catch_not_valid_inside_nested_finally_body pos = 
+        mk MessageLevel.Error MessageType.Semantic 52 pos "'rethrow' of an outer exception is not valid inside a 'finally' body"

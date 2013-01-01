@@ -10,6 +10,8 @@ type NVT =
 ///Environmental context passed to each recursive expression process during semantic analysis
 type SemanticEnvironment = 
     {
+        ///Indicates that the current expression is inside a finally body of the current exception handler
+        IsFinallyBodyOfCurrentExceptionHandler: bool
         ///Indicates that the current expression is inside a catch body
         IsCatchBody: bool
         ///Indicates that the current expression is inside a checked body
@@ -18,7 +20,6 @@ type SemanticEnvironment =
         IsLoopBody: bool
         ///All "open" loaded assemblies
         Assemblies: Assembly list
-        
         ///All "open" namespaces, variables, and types
         NVTs: NVT list
     }
@@ -27,7 +28,7 @@ type SemanticEnvironment =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
 module SemanticEnvironment =
     ///The "empty" semantic environment
-    let Empty = { IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
+    let Empty = { IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
     ///The "default" / initial semantic environment
     let Default =
         { Empty with 
