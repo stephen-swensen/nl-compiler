@@ -231,13 +231,13 @@ let emit optimize (il:SmartILGenerator) ilExpr =
             retval |> Option.iter (fun retval -> il.Stloc(retval))
             for catch in catchList do                   
                 match catch with
-                | Filtered(filterTy, filterName, cx) ->
+                | (filterTy, Some(filterName), cx) ->
                     il.ILGenerator.BeginCatchBlock(filterTy)
                     let local = il.ILGenerator.DeclareLocal(filterTy)
                     il.Stloc(local)
                     emitWith loopLabel (Map.add filterName local lenv) cx
-                | Unfiltered(cx) ->
-                    il.ILGenerator.BeginCatchBlock(typeof<exn>)
+                | (filterTy, None, cx) ->
+                    il.ILGenerator.BeginCatchBlock(filterTy)
                     il.Pop()
                     emit cx
                 retval |> Option.iter (fun retval -> il.Stloc(retval))

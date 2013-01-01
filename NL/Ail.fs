@@ -30,12 +30,8 @@ type ILComparisonBinop = Eq | Lt | Gt
 
             fsop lhs rhs
 
-type ILCatch =
-    | Filtered of Type * string * ILExpr
-    | Unfiltered of ILExpr
-
 ///Typed expression
-and ILExpr =
+type ILExpr =
     | SByte         of SByte //y
     | Byte          of Byte //uy
 
@@ -89,7 +85,7 @@ and ILExpr =
     | InstanceFieldSet of ILExpr * FieldInfo * ILExpr
     | Throw of ILExpr
     | Rethrow
-    | TryCatchFinally of ILExpr * (ILCatch list) * (ILExpr option) * Type
+    | TryCatchFinally of ILExpr * ((Type * string option * ILExpr) list) * (ILExpr option) * Type
     with 
         member this.Type =
             match this with

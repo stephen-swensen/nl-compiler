@@ -80,9 +80,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %type <TySig> tySig
 %type <TySig list> tySigList
 
-%type <Catch> filteredCatch
-%type <Catch> unfilteredCatch
-%type <Catch list> catchList
+%type <((TySig option) * (String option) * SynExpr * PositionRange) list> catchList
 
 %type <Path> path
 
@@ -101,19 +99,19 @@ ifThenElse:
         { SynExpr.IfThenElse(($2, range parseState 2 2), $4, Some($7), range parseState 1 7) }
 
 catchList:
-    | filteredCatch { [$1] }
-    | filteredCatch catchList { $1::$2 }
-    | unfilteredCatch { [$1] }
-    | unfilteredCatch catchList { $1::$2 }
+    | catch { [$1] }
+    | catch catchList { $1::$2 }
     | { [] }
 
-filteredCatch:
-    | CATCH LBRACKET tySig RBRACKET path LBRACE expr RBRACE 
-        { Catch.Filtered($3, $5.Text, $7, range parseState 1 4) }
-
-unfilteredCatch: 
+catch:
     | CATCH LBRACE expr RBRACE 
-        { Catch.Unfiltered($3, range parseState 1 1) }
+        { (None, None, $3, range parseState 1 1) }
+    | CATCH LBRACKET tySig RBRACKET LBRACE expr RBRACE 
+        { (Some($3), None, $6, range parseState 1 4) }
+    | CATCH path LBRACE expr RBRACE 
+        { (None, Some($2.Text), $4, range parseState 1 1) }
+    | CATCH LBRACKET tySig RBRACKET path LBRACE expr RBRACE 
+        { (Some($3), Some($5.Text), $7, range parseState 1 4) }
 
 path:
     | IDENT { Path($1, range parseState 1 1) }

@@ -171,15 +171,12 @@ type TySig with
     override x.ToString() =
         x.Name
 
-type Catch =
-    | Filtered of TySig * String * SynExpr * PositionRange
-    | Unfiltered of SynExpr * PositionRange
     
 //n.b. PositionRange convention is: 1) if position range applies to the entire expression,
 //     then it is the last element in the tupled case, 2) if position range applies to a pariticular
 //     sub-expression or token, then it is tupled with the subexpression or token
 ///Raw (untyped) parsed expression
-and SynExpr =    
+type SynExpr =    
     //we do the actual parsing semantic analysis of the numeric const in SemanticAnalysis
     | SByte             of string * PositionRange //y
     | Byte              of string * PositionRange //uy
@@ -244,7 +241,8 @@ and SynExpr =
     | Unchecked        of SynExpr
     | Throw            of SynExpr * PositionRange
     | Rethrow          of PositionRange
-    | TryCatchFinally  of SynExpr * (Catch list) * (SynExpr option) * PositionRange
+    ///try * catch list * finally option * pos
+    | TryCatchFinally  of SynExpr * (((TySig option) * (String option) * SynExpr * PositionRange) list) * (SynExpr option) * PositionRange
 
 type SynStmt =
     | Let                   of string * (SynExpr * PositionRange)

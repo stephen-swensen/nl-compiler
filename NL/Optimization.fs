@@ -188,15 +188,13 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
             let tx = optimizeExpr tx
 
-            let rec loop (catchList:ILCatch list) acc =
+            let rec loop (catchList:(Type * string option * ILExpr) list) acc =
                 match catchList with
                 | [] -> acc
-                | Unfiltered(catch)::tl ->
-                    (Unfiltered(optimizeExpr catch))::acc //no other catch after this one is reachable, so return here
-                | Filtered(filterTy, name, catch)::tl ->
+                | (filterTy, name, catch)::tl ->
                     match acc with
-                    | Filtered(prevFilterTy,_,_)::_ when filterTy.IsAssignableFrom(prevFilterTy) -> acc //this catch is unreachable, so return acc here
-                    | _ -> loop tl (Filtered(filterTy, name, (optimizeExpr catch))::acc)
+                    | (prevFilterTy:Type,_,_)::_ when prevFilterTy.IsAssignableFrom(filterTy) -> acc //this catch is unreachable, so return acc here
+                    | _ -> loop tl ((filterTy, name, (optimizeExpr catch))::acc)
             let catchList = loop catchList [] |> List.rev
 
             let fx = 
