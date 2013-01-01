@@ -7,6 +7,11 @@ module Option =
         | null -> None
         | _ -> Some(nullable)
 
+    let getOrDefault fallback input =
+        match input with
+        | Some(x) -> x 
+        | None -> fallback
+
 module Seq =
     ///cons x with xs
     let cons x xs =

@@ -855,26 +855,29 @@ let rec semantWith env synTopLevel =
                     catch
 
             let catchList =
-                let rec loop xl acc lastFilterTy =
+                let rec loop xl acc =
                     match xl with
                     | [] -> acc
-                    | hd::tl ->
-                        match hd with
-                        | Catch.Unfiltered(catch, pos) ->
-                            let catch = semantExprWith {env with IsCatchBody=true} catch |> validateCatch pos
-                            loop tl (ILCatch.Unfiltered(catch)::acc) (Some(typeof<System.Exception>))
-                        | Catch.Filtered(filterTySig, name, catch, pos) ->
-                            let filterTy = resolveTySig env filterTySig
-                            let catch = semantExprWith ({ env.ConsVariable(name, filterTy) with IsCatchBody=true }) catch |> validateCatch pos
-                            match lastFilterTy with
-                            | Some(lastFilterTy) when filterTy.IsAssignableFrom(lastFilterTy) ->
-                                EM.Unreachable_code_detected pos
-                            | _ -> 
-                                ()
-                            loop tl (ILCatch.Filtered(filterTy, name, catch)::acc) (Some(filterTy))
+                    | (filterTySig, name, catch, pos)::tl ->
+                        let filterTy = 
+                            filterTySig
+                            |> Option.map (resolveTySig env)
+                            |> Option.getOrDefault (typeof<System.Exception>)
 
+                        let env = 
+                            let env = {env with IsCatchBody=true}
+                            match name with
+                            | Some(name) -> env.ConsVariable(name, filterTy)
+                            | None -> env
+                               
+                        let catch = semantExprWith env catch |> validateCatch pos
+                        match acc with
+                        | (prevFilterTy:Type,_,_)::_ when prevFilterTy.IsAssignableFrom(filterTy) ->
+                            EM.Unreachable_code_detected pos
+                        | _ -> ()
+                        loop tl ((filterTy, name, catch)::acc)
 
-                loop catchList [] None
+                loop catchList []
                 |> List.rev
 
             let fx = fx |> Option.map (semantExprWith {env with IsFinallyBodyOfCurrentExceptionHandler=true})
