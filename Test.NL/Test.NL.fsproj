@@ -89,6 +89,7 @@
     <Compile Include="CheckedAndUncheckedTests.fs" />
     <Compile Include="ThrowTests.fs" />
     <Compile Include="TryCatchFinallyTests.fs" />
+    <Compile Include="RethrowTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">
