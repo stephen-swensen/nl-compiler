@@ -23,4 +23,5 @@ let ``nested rethrow`` options =
 
 [<Theory;EvalData>]
 let ``nested rethrow in finally`` options =
-    raises<ArgumentException> <@ evalWith options "try { throw(argumentexception()) } catch { try { () } catch { () } finally { rethrow() } }" @>
+    raisesWith <@ evalWith options "try { throw(argumentexception()) } catch { try { () } catch { () } finally { rethrow() } }" @>
+        (expectedErrors [|52|])
