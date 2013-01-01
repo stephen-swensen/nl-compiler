@@ -44,3 +44,4 @@ let ``try catch finally - finally is called`` options =
 let ``try catch finally - either catch or finally required`` options =
     raisesWith <@ evalWith options "try { 0 }" = 0 @>
         (expectedErrors [|50|])
+
