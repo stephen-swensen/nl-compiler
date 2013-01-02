@@ -20,8 +20,16 @@ let ``try catch finally - yes ty filter, yes var, yes exn`` options =
     test <@ evalWith options "try { throw(exception()); 0 } catch[exception] x { 1 }" = 1 @>
 
 [<Theory;EvalData>]
+let ``try catch finally - yes ty filter, no var, yes exn`` options =
+    test <@ evalWith options "try { throw(exception()); 0 } catch[exception] { 1 }" = 1 @>
+
+[<Theory;EvalData>]
 let ``try catch finally - yes ty filter, yes var, yes exn, access caught exn`` options =
     test <@ evalWith options "try { throw(exception()); type[string] } catch[exception] x { x.gettype() }" = typeof<exn> @>
+
+[<Theory;EvalData>]
+let ``try catch finally - no ty filter, yes var, yes exn, access caught exn`` options =
+    test <@ evalWith options "try { throw(exception()); type[string] } catch x { x.gettype() }" = typeof<exn> @>
 
 [<Theory;EvalData>]
 let ``try catch finally - two catch blocks, second catches exn`` options =
