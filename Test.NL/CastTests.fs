@@ -68,11 +68,11 @@ let ``cast double to int, a narrowing coersion`` options =
     test <@ evalWith options "3.0[int32]" = 3 @>
 
 [<Theory;EvalData>]
-let ``cast int32 to biginteger, a biginteger.op_implicit `` options =
+let ``cast int32 to biginteger, a biginteger op_implicit `` options =
     test <@ evalWith options "3[biginteger]" = 3I @>
 
 [<Theory;EvalData>]
-let ``cast biginteger to int32, a biginteger.op_explicit `` options =
+let ``cast biginteger to int32, a biginteger op_explicit `` options =
     test <@ evalWith options "biginteger()[int32]" = 0 @>
 
 [<Theory;EvalData>]
