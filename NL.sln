@@ -1,6 +1,13 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{3C0D8048-702B-4541-AE25-0627F59638C5}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NL", "NL\NL.fsproj", "{E25F2830-8E94-4680-882B-39E30CE3D586}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.NL", "Test.NL\Test.NL.fsproj", "{82730E14-DF66-4FE8-9EB6-BDB35C4FCA65}"
@@ -14,13 +21,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Helpers", "Test.Helpers\Test.Helpers.csproj", "{7FE87916-4378-4556-9931-BA9BEA5C0101}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VisualNli", "VisualNli\VisualNli.fsproj", "{EEDCB6D1-6C2E-4AC7-AFEC-862E8BEB1806}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{3C0D8048-702B-4541-AE25-0627F59638C5}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
