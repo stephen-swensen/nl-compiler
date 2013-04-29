@@ -1,9 +1,46 @@
 ﻿[<AutoOpen>]
-[<System.ObsoleteAttribute>] //marking as obsolete is a workaround F# not honoring EditorBrowsable(EditorBrowsableState.Never) to hide intellisense discoverability, thanks to Tomas Petricek's answer on SO: http://stackoverflow.com/questions/6527141/is-it-possible-to-mark-a-module-function-as-hidden-from-intellisense-discovery/6527933#6527933
 module Swensen.NL.Prelude
+
+open System
 
 #nowarn "42" //for raises (inline IL)
 
 ///raise is not inlined in Core.Operators, so shows up in stack traces.  We inline it here for clean stacktraces.
 let inline raise (e: System.Exception) = (# "throw" e : 'U #)
 
+let (|StringTy|_|) ty =
+    if ty = typeof<string> then Some() else None
+
+let (|ByteTy|_|) ty =
+    if ty = typeof<Byte> then Some() else None
+
+let (|SByteTy|_|) ty =
+    if ty = typeof<SByte> then Some() else None
+
+let (|UInt16Ty|_|) ty =
+    if ty = typeof<UInt16> then Some() else None
+
+let (|UInt32Ty|_|) ty =
+    if ty = typeof<UInt32> then Some() else None
+
+let (|UInt64Ty|_|) ty =
+    if ty = typeof<UInt64> then Some() else None
+
+let (|Int16Ty|_|) ty =
+    if ty = typeof<Int16> then Some() else None
+
+let (|Int32Ty|_|) ty =
+    if ty = typeof<Int32> then Some() else None
+
+let (|Int64Ty|_|) ty =
+    if ty = typeof<Int64> then Some() else None
+
+let (|BooleanTy|_|) ty =
+    if ty = typeof<Boolean> then Some() else None
+
+let (|SingleTy|_|) ty =
+    if ty = typeof<Single> then Some() else None
+
+let (|DoubleTy|_|) ty =
+    if ty = typeof<Double> then Some() else None
+    
