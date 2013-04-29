@@ -189,46 +189,26 @@ type ILExpr =
             if fi.IsLiteral && not fi.IsInitOnly then
                 let fiTy = 
                     let fiTy = fi.FieldType
-                    if fiTy.IsEnum then
-                        fiTy.GetEnumUnderlyingType()
-                    else
-                        fiTy
+                    if fiTy.IsEnum then fiTy.GetEnumUnderlyingType()
+                    else fiTy
 
                 let fiVal = fi.GetValue(null)
 
-                if not fiTy.IsValueType && fiTy <> typeof<string> then
-                    Null(fiTy)
-                elif fiTy = typeof<String> then
-                    String(fiVal :?> String)
-
-                elif fiTy = typeof<Byte> then
-                    Byte(fiVal :?> Byte)                
-                elif fiTy = typeof<SByte> then
-                    SByte(fiVal :?> SByte)
-
-                elif fiTy = typeof<UInt16> then
-                    UInt16(fiVal :?> UInt16)                
-                elif fiTy = typeof<UInt32> then
-                    UInt32(fiVal :?> UInt32)
-                elif fiTy = typeof<UInt64> then
-                    UInt64(fiVal :?> UInt64)
-
-                elif fiTy = typeof<Int16> then
-                    Int16(fiVal :?> Int16)                
-                elif fiTy = typeof<Int32> then
-                    Int32(fiVal :?> Int32)
-                elif fiTy = typeof<Int64> then
-                    Int64(fiVal :?> Int64)
-                
-                elif fiTy = typeof<Boolean> then
-                    Bool(fiVal :?> Boolean)
-
-                elif fiTy = typeof<Single> then
-                    Single(fiVal :?> Single)                
-                elif fiTy = typeof<Double> then
-                    Double(fiVal :?> Double)
-                else
-                    failwithf "const field of type '%s' with value '%s' not currently supported" fiTy.Name (fiVal |> string)
+                match fiTy with
+                | _ when not fiTy.IsValueType && fiTy <> typeof<string> -> Null(fiTy)
+                | StringTy -> String(fiVal :?> String)
+                | ByteTy -> Byte(fiVal :?> Byte)                
+                | SByteTy -> SByte(fiVal :?> SByte)
+                | UInt16Ty -> UInt16(fiVal :?> UInt16)                
+                | UInt32Ty -> UInt32(fiVal :?> UInt32)
+                | UInt64Ty -> UInt64(fiVal :?> UInt64)
+                | Int16Ty -> Int16(fiVal :?> Int16)                
+                | Int32Ty -> Int32(fiVal :?> Int32)
+                | Int64Ty -> Int64(fiVal :?> Int64)
+                | BooleanTy -> Bool(fiVal :?> Boolean)
+                | SingleTy -> Single(fiVal :?> Single)                
+                | DoubleTy -> Double(fiVal :?> Double)
+                | _ -> failwithf "const field of type '%s' with value '%s' not currently supported" fiTy.Name (fiVal |> string)
             else
                 StaticFieldGet(fi)
 
