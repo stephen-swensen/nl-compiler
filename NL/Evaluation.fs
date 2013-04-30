@@ -20,7 +20,8 @@ let tryEvalWith<'a> options code : 'a option =
 
     ///Create a dynamic method from a typed expression using the default environment
     let mkDm (ilExpr:ILExpr) =
-        let dm = DynamicMethod("Eval", ilExpr.Type, null)
+        let retTy = if isVoidOrEscapeTy ilExpr.Type then typeof<Void> else ilExpr.Type
+        let dm = DynamicMethod("Eval", retTy, null)
         let il = dm.GetILGenerator() |> SmartILGenerator.fromILGenerator
         
         Emission.emit options.Optimize il ilExpr

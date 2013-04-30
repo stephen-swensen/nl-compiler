@@ -122,13 +122,15 @@ type ILExpr =
             | IfThen _
             | Nop
             | VarSet _
+            | StaticFieldSet _
+            | InstanceFieldSet _ 
+            | WhileLoop _ -> typeof<Void>
+
+            //control flow expressions (similar to, but slightly different semantics to void)            
             | Break
             | Continue
-            | StaticFieldSet _
-            | InstanceFieldSet _
             | Throw _
-            | Rethrow
-            | WhileLoop _           -> typeof<Void>
+            | Rethrow -> typeof<Escape>
 
             //Explicitly constructed with types
             | NumericBinop(_,_,_,_,ty)

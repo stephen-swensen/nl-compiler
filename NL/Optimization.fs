@@ -14,8 +14,9 @@ let optimize (tl:ILTopLevel) =
             | ILExpr.Bool(true) -> thenBranch
             | ILExpr.Bool(false) -> elseBranch
             | _ -> 
-                match thenBranch with
-                | ILExpr.Nop -> ILExpr.IfThen(condition, thenBranch) //asser ty = typeof<void>
+                //todo: HUH?! should this match be on the elseBranch?
+                match thenBranch with 
+                | ILExpr.Nop -> ILExpr.IfThen(condition, thenBranch)
                 | _ ->
                     ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty)
         | ILExpr.IfThen(condition, thenBranch) -> //unreachable code elimination
