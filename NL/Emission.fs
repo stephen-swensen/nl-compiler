@@ -133,7 +133,7 @@ let emit optimize (il:SmartILGenerator) ilExpr =
                 il.Callvirt(meth)
         | Sequential(x,y,_) ->
             emit x
-            if x.Type <> typeof<System.Void> then il.Pop()
+            if not <| isVoidOrEscapeTy x.Type then il.Pop()
             emit y
         | Ctor(ctor, args, _) -> 
             emitAll args
@@ -181,7 +181,7 @@ let emit optimize (il:SmartILGenerator) ilExpr =
             emit condition
             il.Brfalse_S(endBodyLabel)
             emitWith (Some(beginConditionLabel, endBodyLabel)) lenv body
-            if body.Type <> typeof<Void> then
+            if not <| isVoidOrEscapeTy body.Type then
                 il.Pop()
             il.Br(beginConditionLabel)
             il.ILGenerator.MarkLabel(endBodyLabel)
@@ -224,7 +224,7 @@ let emit optimize (il:SmartILGenerator) ilExpr =
             il.Emit(OpCodes.Rethrow)
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
             //for non-void expressions, a local var for the return value of the try or catch blocks
-            let retval = if tx.Type = typeof<System.Void> then None else Some(il.ILGenerator.DeclareLocal(ty))
+            let retval = if isVoidOrEscapeTy tx.Type then None else Some(il.ILGenerator.DeclareLocal(ty))
 
             il.ILGenerator.BeginExceptionBlock() |> ignore
             emit tx

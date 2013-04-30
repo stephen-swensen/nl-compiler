@@ -691,20 +691,19 @@ let rec semantWith env synTopLevel =
                 PR.resolveILExprInstancePathSet instance path assign assignPos
         | SynExpr.Let(name, (assign, assignPos), body) ->
             let assign = semantExpr assign
-            if assign.Type = typeof<Void> then
+            if isVoidOrEscapeTy assign.Type then
                 EM.Void_invalid_in_let_binding assignPos
         
             let body = semantExprWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
-        | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)|SynExpr.Throw(_)) as x, (y,pos)) ->
+        | SynExpr.Sequential(x,(y,pos)) ->
             let x = semantExpr x
             
-            EM.Unreachable_code_detected pos
-            
+            match x.Type with
+            | EscapeTy -> EM.Unreachable_code_detected pos
+            | _ -> ()
+
             let y = semantExpr y
-            ILExpr.Sequential(x,y,y.Type)
-        | SynExpr.Sequential(x,(y,_)) ->
-            let x, y = semantExpr x, semantExpr y
             ILExpr.Sequential(x,y,y.Type)
         | SynExpr.OpenNamespaceOrType(nsOrTy, x) ->
             match nsOrTy.GenericArgs with
@@ -792,15 +791,19 @@ let rec semantWith env synTopLevel =
             | Some(elseBranch) ->
                 let elseBranch = semantExpr elseBranch
                 if thenBranch.Type <> elseBranch.Type then
-                    //maybe could use 
-                    EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
-                    ILExpr.IfThenElse(condition,thenBranch, ILExpr.Error(thenBranch.Type), thenBranch.Type)
+                    match thenBranch.Type, elseBranch.Type with
+                    | EscapeTy, retTy | retTy, EscapeTy -> 
+                        ILExpr.IfThenElse(condition,thenBranch,elseBranch,retTy)
+                    | _ ->
+                        EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
+                        ILExpr.IfThenElse(condition,thenBranch, ILExpr.Error(thenBranch.Type), thenBranch.Type)
                 else
                     ILExpr.IfThenElse(condition,thenBranch,elseBranch,thenBranch.Type)
             | None ->
-                if thenBranch.Type = typeof<Void> then
-                    ILExpr.IfThen(condition,thenBranch)
-                else
+                match thenBranch.Type with
+                | VoidOrEscapeTy ->
+                    ILExpr.IfThen(condition, thenBranch)
+                | _ ->
                     ILExpr.IfThenElse(condition, thenBranch, ILExpr.Default(thenBranch.Type), thenBranch.Type)
         | SynExpr.Nop ->
             ILExpr.Nop
@@ -808,7 +811,7 @@ let rec semantWith env synTopLevel =
             let condition = 
                 let condition = semantExpr condition
                 if condition.Type <> typeof<bool> then
-                    EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
+                    EM.Expected_type_but_got_type conditionPos typeof<bool>.Name condition.Type.Name
                     ILExpr.Error(typeof<bool>)
                 else
                     condition
@@ -817,13 +820,13 @@ let rec semantWith env synTopLevel =
         | SynExpr.Break(pos) ->
             if not env.IsLoopBody then
                 EM.Break_outside_of_loop pos
-                ILExpr.Error(typeof<Void>)
+                ILExpr.Error(typeof<Escape>)
             else
                 ILExpr.Break
         | SynExpr.Continue(pos) ->
             if not env.IsLoopBody then
                 EM.Continue_outside_of_loop pos
-                ILExpr.Error(typeof<Void>)
+                ILExpr.Error(typeof<Escape>)
             else
                 ILExpr.Continue
         | SynExpr.Checked(x) ->
@@ -836,7 +839,7 @@ let rec semantWith env synTopLevel =
                 ILExpr.Throw(x)
             else
                 EM.Throw_type_does_not_extend_Exception pos x.Type.Name
-                ILExpr.Error(typeof<Void>)
+                ILExpr.Error(typeof<Escape>)
         | SynExpr.TryCatchFinally(tx, [], None, pos) ->
             let tx = semantExpr tx
             EM.Try_without_catch_or_finally pos
@@ -848,11 +851,11 @@ let rec semantWith env synTopLevel =
             let tx = semantExpr tx
 
             let validateCatch pos (catch:ILExpr) =
-                if catch.Type <> tx.Type then
+                match tx.Type, catch.Type with
+                | ObjEq | (VoidOrEscapeTy,VoidOrEscapeTy) -> catch
+                | _ ->
                     EM.Catch_type_does_not_match_Try_type pos catch.Type.Name tx.Type.Name
                     ILExpr.Error(tx.Type)
-                else
-                    catch
 
             let catchList =
                 let rec loop xl acc =
@@ -888,10 +891,10 @@ let rec semantWith env synTopLevel =
                 ILExpr.Rethrow
             | {IsCatchBody=true; IsFinallyBodyOfCurrentExceptionHandler=true} ->
                 EM.Rethrow_of_outer_catch_not_valid_inside_nested_finally_body pos
-                ILExpr.Error(typeof<System.Void>)
+                ILExpr.Error(typeof<Escape>)
             | {IsCatchBody=false} ->
                 EM.Rethrow_not_valid_outside_of_catch_body pos
-                ILExpr.Error(typeof<System.Void>)
+                ILExpr.Error(typeof<Escape>)
 
     match synTopLevel with
     | SynTopLevel.StmtList(xl) ->
@@ -905,7 +908,7 @@ let rec semantWith env synTopLevel =
                     loop env synStmts (ilStmt::ilStmts)                
                 | SynStmt.Let(name, (assign,assignPos)) ->
                     let assign = semantExprWith env assign
-                    if assign.Type = typeof<Void> then
+                    if isVoidOrEscapeTy assign.Type then
                         EM.Void_invalid_in_let_binding assignPos
 
                     let ilStmt = ILStmt.Let(name, assign)

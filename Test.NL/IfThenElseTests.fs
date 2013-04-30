@@ -53,3 +53,24 @@ let ``else if syntax deeply nested no else`` options =
 let ``else if syntax deeply nested with else`` options =
     test <@ evalWith options "if false { false } else if false { false } else if false { false } else { true }" = true @>
 
+[<Theory;EvalData>]
+let ``if branch throw else branch non void`` options =
+    test <@ evalWith options "if false { throw(exception()) } else { 0 }" = 0 @>
+
+[<Theory;EvalData>]
+let ``if branch 0 else branch throw`` options =
+    test <@ evalWith options "if true { 0 } else { throw(exception()) }" = 0 @>
+
+[<Theory;EvalData>]
+let ``if branch 0 else branch void type mismatch error`` options =
+    raisesWith <@ evalWith options "if true { 1 } else { () }" @>
+        (expectedErrors [|23|])
+
+[<Theory;EvalData>]
+let ``if branch void else branch non void type mismatch error`` options =
+    raisesWith <@ evalWith options "if true { () } else { 1 }" @>
+        (expectedErrors [|23|])
+
+[<Theory;EvalData>]
+let ``if branch 0 else branch escape default prevails`` options =
+    test <@ evalWith options "if true { 0 } else { throw(exception()) }" = 0 @>

@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Swensen.NL.Prelude
+module internal Swensen.NL.Prelude
 
 open System
 
@@ -43,4 +43,25 @@ let (|SingleTy|_|) ty =
 
 let (|DoubleTy|_|) ty =
     if ty = typeof<Double> then Some() else None
+
+let (|VoidTy|_|) ty =
+    if ty = typeof<Void> then Some() else None
     
+///Used to represent the type of control flow expressions such as break, continue, throw and rethrow
+///(these are similar to, but slightly different semantics to void expressions)
+type Escape = struct end
+
+let (|EscapeTy|_|) ty =
+    if ty = typeof<Escape> then Some() else None
+
+let (|VoidOrEscapeTy|_|) = function
+    | VoidTy | EscapeTy -> Some()
+    | _ -> None
+    
+let isVoidOrEscapeTy = function
+    | VoidOrEscapeTy -> true
+    | _ -> false
+
+let (|ObjEq|ObjNotEq|) (x,y) = 
+    if x = y then ObjEq
+    else ObjNotEq

@@ -63,7 +63,7 @@ type Nli(?options: CompilerOptions) =
                     for stmt in stmts do
                         match stmt with
                         | ILStmt.Do(x) ->
-                            if x.Type <> typeof<Void> then
+                            if not <| isVoidOrEscapeTy x.Type then
                                 let fi = tyBuilder.DefineField("it" + itCounter.ToString(), x.Type, fieldAttrs)
                                 itCounter <- itCounter + 1I
                                 emit (ILExpr.StaticFieldSet(fi,x))
