@@ -103,8 +103,8 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.Coerce(cked, x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExpr x
             match cked, x with //todo: these need to be expanded.
-            | false, Int32(x) when ty = typeof<double> -> ILExpr.Double(double x)
-            | false, Double(x) when ty = typeof<int32> -> ILExpr.Int32(int32 x)
+            | false, Int32(x) when ty = typeof<Double> -> ILExpr.Double(double x)
+            | false, Double(x) when ty = typeof<Int32> -> ILExpr.Int32(int32 x)
             | _ -> ILExpr.Coerce(cked, x, ty)
         | ILExpr.LogicalNot(x) ->
             let x = optimizeExpr x
@@ -154,36 +154,20 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.InstanceFieldSet(x,fi,y) ->
             ILExpr.InstanceFieldSet(optimizeExpr x, fi, optimizeExpr y)
         | Default(ty) ->
-            if ty = typeof<Byte> then
-                ILExpr.Byte(Unchecked.defaultof<Byte>)
-            elif ty = typeof<SByte> then
-                ILExpr.SByte(Unchecked.defaultof<SByte>)
-
-            elif ty = typeof<Int16> then
-                ILExpr.Int16(Unchecked.defaultof<Int16>)
-            elif ty = typeof<Int32> then
-                ILExpr.Int32(Unchecked.defaultof<Int32>)
-            elif ty = typeof<Int64> then
-                ILExpr.Int64(Unchecked.defaultof<Int64>)
-
-            elif ty = typeof<UInt16> then
-                ILExpr.UInt16(Unchecked.defaultof<UInt16>)
-            elif ty = typeof<UInt32> then
-                ILExpr.UInt32(Unchecked.defaultof<UInt32>)
-            elif ty = typeof<UInt64> then
-                ILExpr.UInt64(Unchecked.defaultof<UInt64>)
-
-            elif ty = typeof<single> then
-                ILExpr.Single(Unchecked.defaultof<Single>)
-            elif ty = typeof<double> then
-                ILExpr.Double(Unchecked.defaultof<Double>)
-            
-            elif ty = typeof<bool> then
-                ILExpr.Bool(Unchecked.defaultof<bool>)
-            elif ty = typeof<char> then
-                ILExpr.Char(Unchecked.defaultof<char>)
-            else
-                exp        
+            match ty with
+            | ByteTy -> ILExpr.Byte(Unchecked.defaultof<Byte>)
+            | SByteTy -> ILExpr.SByte(Unchecked.defaultof<SByte>)
+            | Int16Ty -> ILExpr.Int16(Unchecked.defaultof<Int16>)
+            | Int32Ty -> ILExpr.Int32(Unchecked.defaultof<Int32>)
+            | Int64Ty -> ILExpr.Int64(Unchecked.defaultof<Int64>)
+            | UInt16Ty -> ILExpr.UInt16(Unchecked.defaultof<UInt16>)
+            | UInt32Ty -> ILExpr.UInt32(Unchecked.defaultof<UInt32>)
+            | UInt64Ty -> ILExpr.UInt64(Unchecked.defaultof<UInt64>)
+            | SingleTy -> ILExpr.Single(Unchecked.defaultof<Single>)
+            | DoubleTy -> ILExpr.Double(Unchecked.defaultof<Double>)
+            | BooleanTy -> ILExpr.Bool(Unchecked.defaultof<Boolean>)
+            | CharTy -> ILExpr.Char(Unchecked.defaultof<Char>)
+            | _ -> exp
         | ILExpr.Throw(x) ->
             ILExpr.Throw(optimizeExpr x)
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
