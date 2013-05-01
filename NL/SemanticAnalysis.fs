@@ -9,7 +9,7 @@ module EM = CompilerMessages
 let abort() = raise CompilerInterruptException
 
 let sprintSeqForDisplay xs f =
-    if xs = Seq.empty then "()" 
+    if Seq.isEmpty xs then "()" 
     else (xs |> Seq.map (fun x -> sprintf "'%s'" (f x)) |> String.concat ", ")
 
 let sprintTypes (tarr:Type seq) =
@@ -367,8 +367,8 @@ module PathResolution =
                 
         match attempt with
         | None ->
-            EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text //TODO: may not be accurate any more!
-            abort() //need error message too!
+            EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text
+            abort()
         | Some(ilExpr) ->
             ilExpr
 
