@@ -852,7 +852,9 @@ let rec semantWith env synTopLevel =
 
             let validateCatch pos (catch:ILExpr) =
                 match tx.Type, catch.Type with
-                | ObjEq | (VoidOrEscapeTy,VoidOrEscapeTy) -> catch
+                | ObjEq
+                | (VoidOrEscapeTy, VoidOrEscapeTy) 
+                | (_,EscapeTy) -> catch
                 | _ ->
                     EM.Catch_type_does_not_match_Try_type pos catch.Type.Name tx.Type.Name
                     ILExpr.Error(tx.Type)

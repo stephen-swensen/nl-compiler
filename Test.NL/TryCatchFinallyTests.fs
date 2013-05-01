@@ -54,3 +54,6 @@ let ``try catch finally - either catch or finally required`` options =
     raisesWith <@ evalWith options "try { 0 }" = 0 @>
         (expectedErrors [|50|])
 
+[<Theory;EvalData>]
+let ``int type in try block and Escape type in catch block`` options =
+    test <@ evalWith options "try { 1 } catch { rethrow() }" = 1 @>
