@@ -9,7 +9,10 @@ open System
 let inline raise (e: System.Exception) = (# "throw" e : 'U #)
 
 let (|StringTy|_|) ty =
-    if ty = typeof<string> then Some() else None
+    if ty = typeof<String> then Some() else None
+
+let (|CharTy|_|) ty =
+    if ty = typeof<Char> then Some() else None
 
 let (|ByteTy|_|) ty =
     if ty = typeof<Byte> then Some() else None
