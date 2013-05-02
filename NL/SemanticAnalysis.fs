@@ -726,11 +726,11 @@ let rec semantWith env synTopLevel =
             | Some(asm) -> semantExprWith {env with Assemblies=asm::env.Assemblies} x
         | SynExpr.LogicalNot(x,pos) ->
             let x = semantExpr x
-            if x.Type <> typeof<bool> then
-                EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
+            match x.Type with
+            | BooleanTy -> ILExpr.LogicalNot(x)
+            | _ ->
+                EM.Expected_type_but_got_type pos typeof<bool>.Name x.Type.Name
                 ILExpr.Error(typeof<bool>)
-            else
-                ILExpr.LogicalNot(x)
         | SynExpr.Cast(x, tySig, pos) ->
             let x = semantExpr x
             let ty = resolveTySig env tySig
@@ -762,18 +762,20 @@ let rec semantWith env synTopLevel =
                     ILExpr.Error(ty)
         | SynExpr.LogicBinop(op,(x,xpos),(y,ypos)) ->
             let x =
-                match semantExpr x with
-                | x when x.Type <> typeof<bool> -> 
-                    EM.Expected_type_but_got_type xpos "System.Boolean" x.Type.Name
+                let x = semantExpr x
+                match x.Type with
+                | BooleanTy -> x
+                | _ ->
+                    EM.Expected_type_but_got_type xpos typeof<bool>.Name x.Type.Name
                     ILExpr.Error(typeof<bool>)
-                | x -> x
 
             let y = 
-                match semantExpr y with
-                | y when y.Type <> typeof<bool> ->
-                    EM.Expected_type_but_got_type ypos "System.Boolean" y.Type.Name
+                let y = semantExpr y
+                match y.Type with
+                | BooleanTy -> y
+                | _ ->
+                    EM.Expected_type_but_got_type ypos typeof<bool>.Name y.Type.Name
                     ILExpr.Error(typeof<bool>)
-                | y -> y
         
             match op with
             | SynLogicBinop.And -> ILExpr.IfThenElse(x, y, ILExpr.Bool(false), typeof<bool>)
@@ -781,11 +783,12 @@ let rec semantWith env synTopLevel =
         | SynExpr.IfThenElse((condition, conditionPos),thenBranch,elseBranch,pos) ->
             let condition = 
                 let condition = semantExpr condition
-                if condition.Type <> typeof<bool> then
-                    EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
+                match condition.Type with
+                | BooleanTy -> condition
+                | _ ->
+                    EM.Expected_type_but_got_type conditionPos typeof<bool>.Name condition.Type.Name
                     ILExpr.Error(typeof<bool>)
-                else
-                    condition
+
             let thenBranch = semantExpr thenBranch
             match elseBranch with
             | Some(elseBranch) ->
@@ -810,25 +813,25 @@ let rec semantWith env synTopLevel =
         | SynExpr.WhileLoop((condition, conditionPos), body) ->
             let condition = 
                 let condition = semantExpr condition
-                if condition.Type <> typeof<bool> then
+                match condition.Type with
+                | BooleanTy -> condition
+                | _ ->
                     EM.Expected_type_but_got_type conditionPos typeof<bool>.Name condition.Type.Name
                     ILExpr.Error(typeof<bool>)
-                else
-                    condition
             let body = semantExprWith {env with IsLoopBody=true} body
             ILExpr.WhileLoop(condition, body)
         | SynExpr.Break(pos) ->
-            if not env.IsLoopBody then
+            if env.IsLoopBody then 
+                ILExpr.Break
+            else
                 EM.Break_outside_of_loop pos
                 ILExpr.Error(typeof<Escape>)
-            else
-                ILExpr.Break
         | SynExpr.Continue(pos) ->
-            if not env.IsLoopBody then
+            if env.IsLoopBody then
+                ILExpr.Continue
+            else
                 EM.Continue_outside_of_loop pos
                 ILExpr.Error(typeof<Escape>)
-            else
-                ILExpr.Continue
         | SynExpr.Checked(x) ->
             semantExprWith {env with Checked=true} x
         | SynExpr.Unchecked(x) ->
