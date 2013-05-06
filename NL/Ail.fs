@@ -32,25 +32,20 @@ type ILComparisonBinop = Eq | Lt | Gt
 
 ///Typed expression
 type ILExpr =
-    | SByte         of SByte //y
-    | Byte          of Byte //uy
-
-    | Int16         of Int16 //s
-    | UInt16        of UInt16 //us
-    
-    | Int32         of Int32 //no suffix
-    | UInt32        of UInt32 //u
-    
-    | Int64         of Int64 //L
-    | UInt64        of UInt64 //UL
-    
-    | Single        of Single //f
-    | Double        of Double //no suffix
-        
-    | String        of string
-    | Char          of char
-    | Bool          of bool
-    | Null          of Type
+    | SByte of SByte //y
+    | Byte of Byte //uy
+    | Int16 of Int16 //s
+    | UInt16 of UInt16 //us
+    | Int32  of Int32 //no suffix
+    | UInt32 of UInt32 //u
+    | Int64 of Int64 //L
+    | UInt64 of UInt64 //UL
+    | Single of Single //f
+    | Double of Double //no suffix
+    | String of string
+    | Char of char
+    | Bool of bool
+    | Null of Type
     | Typeof of Type
     | VarGet of string * Type
     //Default value of ValueType ("zero") or Ref type (null)
@@ -90,34 +85,26 @@ type ILExpr =
         member this.Type =
             match this with
             //Other implicit
-            | SByte _               -> typeof<SByte> //y
-            | Byte  _               -> typeof<Byte> //uy
-
-            | Int16 _               -> typeof<Int16> //s
-            | UInt16 _              -> typeof<UInt16> //us
-    
-            | Int32 _               -> typeof<Int32> //no suffix
-            | UInt32 _              -> typeof<UInt32> //u
-    
-            | Int64 _               -> typeof<Int64> //L
-            | UInt64 _              -> typeof<UInt64> //UL
-    
-            | Single _              -> typeof<Single> //f
-            | Double _              -> typeof<Double> //no suffix
-
-            | String _              -> typeof<string>
-            | Char _                -> typeof<char>
-            | Bool _                -> typeof<bool>
-
-            | LogicalNot _          -> typeof<bool>
-
-            | Typeof _              -> typeof<Type>
-            | ComparisonBinop _     -> typeof<bool>
-            | StaticFieldGet fi     -> fi.FieldType
+            | SByte _ -> typeof<SByte> //y
+            | Byte  _ -> typeof<Byte> //uy
+            | Int16 _ -> typeof<Int16> //s
+            | UInt16 _ -> typeof<UInt16> //us
+            | Int32 _ -> typeof<Int32> //no suffix
+            | UInt32 _ -> typeof<UInt32> //u
+            | Int64 _ -> typeof<Int64> //L
+            | UInt64 _  -> typeof<UInt64> //UL
+            | Single _ -> typeof<Single> //f
+            | Double _ -> typeof<Double> //no suffix
+            | String _ -> typeof<string>
+            | Char _ -> typeof<char>
+            | Bool _ -> typeof<bool>
+            | LogicalNot _ -> typeof<bool>
+            | Typeof _ -> typeof<Type>
+            | ComparisonBinop _ -> typeof<bool>
+            | StaticFieldGet fi -> fi.FieldType
             | InstanceFieldGet(_,fi) -> fi.FieldType
-            | StaticCall(mi,_)       -> mi.ReturnType
-            | InstanceCall(_,mi,_)   -> mi.ReturnType
-
+            | StaticCall(mi,_) -> mi.ReturnType
+            | InstanceCall(_,mi,_) -> mi.ReturnType
             //Always void
             | IfThen _
             | Nop
@@ -125,13 +112,11 @@ type ILExpr =
             | StaticFieldSet _
             | InstanceFieldSet _ 
             | WhileLoop _ -> typeof<Void>
-
             //control flow expressions (similar to, but slightly different semantics to void)            
             | Break
             | Continue
             | Throw _
             | Rethrow -> typeof<Escape>
-
             //Explicitly constructed with types
             | NumericBinop(_,_,_,_,ty)
             | UMinus(_,_,ty)
@@ -220,14 +205,14 @@ type ILExpr =
 ///represents a top level statement
 type ILStmt =
     //variable stmt
-    | Let               of string * ILExpr
+    | Let of string * ILExpr
     //expression stmt
-    | Do                of ILExpr
+    | Do of ILExpr
 
 ///represents a semantically checked top level language element
 type ILTopLevel =
-    | Expr               of ILExpr
-    | StmtList           of ILStmt list
+    | Expr of ILExpr
+    | StmtList of ILStmt list
     | Error
 
     ///Try to "normalize" the top level NL fragment to a list of statements

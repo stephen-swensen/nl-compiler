@@ -452,38 +452,29 @@ let rec semantWith env synTopLevel =
         let semantExpr = semantExprWith env
 
         match synExpr with
-        | SynExpr.Byte(x,pos)   -> NumericParsing.parseByte x pos
-        | SynExpr.SByte(x,pos)  -> NumericParsing.parseSByte x pos
-
-        | SynExpr.Int16(x,pos)  -> NumericParsing.parseInt16 x pos
-        | SynExpr.Int32(x,pos)  -> NumericParsing.parseInt32 x pos
-        | SynExpr.Int64(x,pos)  -> NumericParsing.parseInt64 x pos
-        
+        | SynExpr.Byte(x,pos) -> NumericParsing.parseByte x pos
+        | SynExpr.SByte(x,pos) -> NumericParsing.parseSByte x pos
+        | SynExpr.Int16(x,pos) -> NumericParsing.parseInt16 x pos
+        | SynExpr.Int32(x,pos) -> NumericParsing.parseInt32 x pos
+        | SynExpr.Int64(x,pos) -> NumericParsing.parseInt64 x pos
         | SynExpr.UInt16(x,pos) -> NumericParsing.parseUInt16 x pos
         | SynExpr.UInt32(x,pos) -> NumericParsing.parseUInt32 x pos
         | SynExpr.UInt64(x,pos) -> NumericParsing.parseUInt64 x pos
-        
         | SynExpr.Single(x,pos) -> NumericParsing.parseSingle x pos
         | SynExpr.Double(x,pos) -> NumericParsing.parseDouble x pos
-
-        | SynExpr.UMinus(SynExpr.Byte(x,xpos),upos)   -> NumericParsing.parseByte ("-"+x) (PositionRange(upos,xpos))
-        | SynExpr.UMinus(SynExpr.SByte(x,xpos),upos)  -> NumericParsing.parseSByte ("-"+x) (PositionRange(upos,xpos))
-
-        | SynExpr.UMinus(SynExpr.Int16(x,xpos),upos)  -> NumericParsing.parseInt16 ("-"+x) (PositionRange(upos,xpos))
-        | SynExpr.UMinus(SynExpr.Int32(x,xpos),upos)  -> NumericParsing.parseInt32 ("-"+x) (PositionRange(upos,xpos))
-        | SynExpr.UMinus(SynExpr.Int64(x,xpos),upos)  -> NumericParsing.parseInt64 ("-"+x) (PositionRange(upos,xpos))
-        
+        | SynExpr.UMinus(SynExpr.Byte(x,xpos),upos) -> NumericParsing.parseByte ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.SByte(x,xpos),upos) -> NumericParsing.parseSByte ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int16(x,xpos),upos) -> NumericParsing.parseInt16 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int32(x,xpos),upos) -> NumericParsing.parseInt32 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int64(x,xpos),upos) -> NumericParsing.parseInt64 ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.UInt16(x,xpos),upos) -> NumericParsing.parseUInt16 ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.UInt32(x,xpos),upos) -> NumericParsing.parseUInt32 ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.UInt64(x,xpos),upos) -> NumericParsing.parseUInt64 ("-"+x) (PositionRange(upos,xpos))
-        
         | SynExpr.UMinus(SynExpr.Single(x,xpos),upos) -> NumericParsing.parseSingle ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.Double(x,xpos),upos) -> NumericParsing.parseDouble ("-"+x) (PositionRange(upos,xpos))
-        
         | SynExpr.String(x) -> ILExpr.String(x)
-        | SynExpr.Char(x)   -> ILExpr.Char(x)
-        | SynExpr.Bool(x)   -> ILExpr.Bool(x)
-
+        | SynExpr.Char(x) -> ILExpr.Char(x)
+        | SynExpr.Bool(x) -> ILExpr.Bool(x)
         | SynExpr.Null(tySig) -> 
             let ty = resolveTySig env tySig
             if ty.IsValueType then
