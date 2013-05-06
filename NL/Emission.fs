@@ -30,36 +30,30 @@ let emit optimize (il:SmartILGenerator) ilExpr =
                 il.Stloc(local)
 
         match ilExpr with
-        | Byte x  -> il.Ldc_I4_S(x)
-        | SByte x  -> il.Ldc_I4_S(x)
-
-        | Int16 x  -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | Int32 x  -> il.Ldc_I4(x)
-        | Int64 x  -> il.Ldc_I8(x)
-
-        | UInt16 x  -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | UInt32 x  -> il.Ldc_I4(int32 x)             
-        | UInt64 x  -> il.Ldc_I8(int64 x)
-        
+        | Byte x -> il.Ldc_I4_S(x)
+        | SByte x -> il.Ldc_I4_S(x)
+        | Int16 x -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | Int32 x -> il.Ldc_I4(x)
+        | Int64 x -> il.Ldc_I8(x)
+        | UInt16 x -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | UInt32 x -> il.Ldc_I4(int32 x)             
+        | UInt64 x -> il.Ldc_I8(int64 x)
         | Single x -> il.Ldc_R4(x)
         | Double x -> il.Ldc_R8(x)
-
         | String x -> il.Ldstr(x)
-        | Char x   -> il.Ldc_I4_S(int8 x) //should be ushort (uint16) not byte (uint8)?
-        
-        | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
-
-        | Null ty  -> il.Ldnull()
+        | Char x -> il.Ldc_I4_S(int8 x) //should be ushort (uint16) not byte (uint8)?
+        | Bool x -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
+        | Null ty -> il.Ldnull()
         | UMinus(cked, x, _) -> 
             emit x
             il.Neg()
         | NumericBinop(cked, op,x,y,_) -> 
             emitAll [x;y]
             match op with
-            | ILNumericBinop.Plus  -> il.Add()
+            | ILNumericBinop.Plus -> il.Add()
             | ILNumericBinop.Minus -> il.Sub()
             | ILNumericBinop.Times -> il.Mul()
-            | ILNumericBinop.Div   -> il.Div()
+            | ILNumericBinop.Div -> il.Div()
         | ComparisonBinop(op,x,y) -> 
             emitAll [x;y]
             match op with

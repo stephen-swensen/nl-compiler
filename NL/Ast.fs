@@ -178,80 +178,74 @@ type TySig with
 ///Raw (untyped) parsed expression
 type SynExpr =    
     //we do the actual parsing semantic analysis of the numeric const in SemanticAnalysis
-    | SByte             of string * PositionRange //y
-    | Byte              of string * PositionRange //uy
-
-    | Int16             of string * PositionRange //s
-    | UInt16            of string * PositionRange //us
-    
-    | Int32             of string * PositionRange //no suffix
-    | UInt32            of string * PositionRange //u
-    
-    | Int64             of string * PositionRange //L
-    | UInt64            of string * PositionRange //UL
-    
-    | Single            of string * PositionRange //f
-    | Double            of string * PositionRange //no suffix
-    
-    | String            of String
-    | Char              of Char
-    | Bool              of Boolean
-                        
-    | Null              of TySig
-    | Typeof            of TySig
-    | Default           of TySig
-    | NumericBinop      of SynNumericBinop * SynExpr * SynExpr * PositionRange
-    | Pow               of SynExpr * SynExpr * PositionRange
+    | SByte of string * PositionRange //y
+    | Byte of string * PositionRange //uy
+    | Int16 of string * PositionRange //s
+    | UInt16 of string * PositionRange //us
+    | Int32 of string * PositionRange //no suffix
+    | UInt32 of string * PositionRange //u
+    | Int64 of string * PositionRange //L
+    | UInt64 of string * PositionRange //UL
+    | Single of string * PositionRange //f
+    | Double of string * PositionRange //no suffix
+    | String of String
+    | Char of Char
+    | Bool of Boolean
+    | Null of TySig
+    | Typeof of TySig
+    | Default of TySig
+    | NumericBinop of SynNumericBinop * SynExpr * SynExpr * PositionRange
+    | Pow of SynExpr * SynExpr * PositionRange
     //TODO: implement semantic analysis
-    | UMinus            of SynExpr * PositionRange
-    //| Fact             of SynExpr * PositionRange
+    | UMinus of SynExpr * PositionRange
+    //| Fact of SynExpr * PositionRange
     ///bind a variable
-    | Let               of string * (SynExpr * PositionRange) * SynExpr
+    | Let of string * (SynExpr * PositionRange) * SynExpr
     ///get the value of a path (var, field, property, ...)
-    | PathGet           of Path
+    | PathGet of Path
     ///set the value of a path (var, field, property, ...)
-    | PathSet           of Path * (SynExpr * PositionRange)
+    | PathSet of Path * (SynExpr * PositionRange)
     ///call instance method on a variable or call a static method or call a constructor
-    | PathCall          of Path * TySig list * SynExpr list * PositionRange
+    | PathCall of Path * TySig list * SynExpr list * PositionRange
     ///static type name * static type generic args * method name * (optional) method generic args * method args * position
     | GenericTypeStaticCall of string * TySig list * string * TySig list * SynExpr list * PositionRange
     ///call instance method on an expression
     ///instance expresion * instance method name * (optional) generic type args * method arguments * pos info
-    | ExprPathCall          of SynExpr * Path * TySig list * SynExpr list * PositionRange
-    | ExprPathGet           of SynExpr * Path
-    | ExprPathSet           of SynExpr * Path * (SynExpr * PositionRange)
-    //| ExprPathGet           of SynExpr * Path * TySig list * SynExpr list * PositionRange
-    //| ExprDataMember    of SynExpr * (Path * PositionRange)
+    | ExprPathCall of SynExpr * Path * TySig list * SynExpr list * PositionRange
+    | ExprPathGet of SynExpr * Path
+    | ExprPathSet of SynExpr * Path * (SynExpr * PositionRange)
+    //| ExprPathGet of SynExpr * Path * TySig list * SynExpr list * PositionRange
+    //| ExprDataMember of SynExpr * (Path * PositionRange)
     ///discard left hand side, return right hand side
-    | Sequential            of SynExpr * (SynExpr * PositionRange)
+    | Sequential of SynExpr * (SynExpr * PositionRange)
     ///open a namespace or type
-    | OpenNamespaceOrType   of TySig * SynExpr 
+    | OpenNamespaceOrType of TySig * SynExpr 
     ///reference an assembly by name or dll path
-    | OpenAssembly          of (string * PositionRange) * SynExpr
-    | LogicalNot       of SynExpr * PositionRange
-    | Cast             of SynExpr * TySig * PositionRange
-    | IfThenElse       of (SynExpr * PositionRange) * SynExpr * SynExpr option * PositionRange //should be pos for each!
-    | ComparisonBinop  of SynComparisonBinop * SynExpr * SynExpr * PositionRange
+    | OpenAssembly of (string * PositionRange) * SynExpr
+    | LogicalNot of SynExpr * PositionRange
+    | Cast of SynExpr * TySig * PositionRange
+    | IfThenElse of (SynExpr * PositionRange) * SynExpr * SynExpr option * PositionRange //should be pos for each!
+    | ComparisonBinop of SynComparisonBinop * SynExpr * SynExpr * PositionRange
     | Nop
-    | WhileLoop        of (SynExpr * PositionRange) * SynExpr
-    | Break            of PositionRange
-    | Continue         of PositionRange
-    | LogicBinop       of SynLogicBinop * (SynExpr * PositionRange) * (SynExpr * PositionRange)
-    | Checked          of SynExpr
-    | Unchecked        of SynExpr
-    | Throw            of SynExpr * PositionRange
-    | Rethrow          of PositionRange
+    | WhileLoop of (SynExpr * PositionRange) * SynExpr
+    | Break of PositionRange
+    | Continue of PositionRange
+    | LogicBinop of SynLogicBinop * (SynExpr * PositionRange) * (SynExpr * PositionRange)
+    | Checked of SynExpr
+    | Unchecked of SynExpr
+    | Throw of SynExpr * PositionRange
+    | Rethrow of PositionRange
     ///try * catch list * finally option * pos
-    | TryCatchFinally  of SynExpr * (((TySig option) * (String option) * SynExpr * PositionRange) list) * (SynExpr option) * PositionRange
+    | TryCatchFinally of SynExpr * (((TySig option) * (String option) * SynExpr * PositionRange) list) * (SynExpr option) * PositionRange
 
 type SynStmt =
-    | Let                   of string * (SynExpr * PositionRange)
-    | OpenNamespaceOrType   of TySig
-    | OpenAssembly          of string * PositionRange
-    | Do                    of SynExpr
+    | Let of string * (SynExpr * PositionRange)
+    | OpenNamespaceOrType of TySig
+    | OpenAssembly of string * PositionRange
+    | Do of SynExpr
 
 //represents a "raw" top level language element
 type SynTopLevel =
-    | Expr          of SynExpr
-    | StmtList      of SynStmt list
+    | Expr of SynExpr
+    | StmtList of SynStmt list
 
