@@ -49,6 +49,10 @@ let (|DoubleTy|_|) ty =
 
 let (|VoidTy|_|) ty =
     if ty = typeof<Void> then Some() else None
+
+let (|EnumTy|_|) (ty:Type) =
+    if ty.IsEnum then Some(ty.GetEnumUnderlyingType())
+    else None
     
 ///Used to represent the type of control flow expressions such as break, continue, throw and rethrow
 ///(these are similar to, but slightly different semantics to void expressions)

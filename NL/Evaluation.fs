@@ -40,8 +40,12 @@ let tryEvalWith<'a> options code : 'a option =
             None
         | Some(ilExpr) ->
             let dm = mkDm ilExpr
-            dm.Invoke(null,null) |> unbox |> Some
-
+            let value = dm.Invoke(null,null) 
+            let expectedResultType = typeof<'a>
+            if value = null && typeof<ValueType>.IsAssignableFrom(expectedResultType) then
+                raise (invalidArg "'a" (sprintf "null eval result cannot be cast to ValueType '%s'" expectedResultType.Name))
+            else 
+                value|> unbox |> Some
 
 let tryEval<'a> = tryEvalWith<'a> CompilerOptions.Default
 
