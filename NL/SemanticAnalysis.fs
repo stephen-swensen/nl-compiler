@@ -838,26 +838,22 @@ let rec semantWith env synTopLevel =
             let tx = semantExpr tx
             EM.Try_without_catch_or_finally pos
             ILExpr.Error(tx.Type)            
-        | SynExpr.TryCatchFinally(tx, catchList, fx, _) ->
+        | SynExpr.TryCatchFinally(tx, catchList, fx, txPos) ->
             let env = { env with IsFinallyBodyOfCurrentExceptionHandler=false }
             let semantExpr = semantExprWith env
             
             let tx = semantExpr tx
 
-            let validateCatch pos (catch:ILExpr) =
-                match tx.Type, catch.Type with
-                | ObjEq
-                | (VoidOrEscapeTy, VoidOrEscapeTy) 
-                | (_,EscapeTy) -> catch
-                | _ ->
-                    EM.Catch_type_does_not_match_Try_type pos catch.Type.Name tx.Type.Name
-                    ILExpr.Error(tx.Type)
+            let firstNonEscapeTy =
+                match tx.Type with
+                | EscapeTy -> None
+                | ty -> Some(ty)
 
-            let catchList =
-                let rec loop xl acc =
+            let catchList, firstNonEscapeTy =
+                let rec loop xl acc firstNonEscapeTy =
                     match xl with
-                    | [] -> acc
-                    | (filterTySig, name, catch, pos)::tl ->
+                    | [] -> acc, firstNonEscapeTy
+                    | (filterTySig, name, catch, catchPos)::tl ->
                         let filterTy = 
                             filterTySig
                             |> Option.map (resolveTySig env)
@@ -869,18 +865,32 @@ let rec semantWith env synTopLevel =
                             | Some(name) -> env.ConsVariable(name, filterTy)
                             | None -> env
                                
-                        let catch = semantExprWith env catch |> validateCatch pos
+                        let catch = semantExprWith env catch
+                        //insure consistent branch types w/ error correction in case of mismatch
+                        let catch, firstNonEscapeTy =
+                            match firstNonEscapeTy with
+                            | Some(prevTy)  when prevTy <> catch.Type && catch.Type <> typeof<Escape> ->
+                                EM.Inconsistent_try_catch_branch_types catchPos catch.Type.Name prevTy.Name
+                                ILExpr.Error(prevTy), firstNonEscapeTy
+                            | None when catch.Type <> typeof<Escape> -> catch, Some(catch.Type)
+                            | _ -> catch, firstNonEscapeTy
+
                         match acc with
                         | (prevFilterTy:Type,_,_)::_ when prevFilterTy.IsAssignableFrom(filterTy) ->
-                            EM.Unreachable_code_detected pos
+                            EM.Unreachable_code_detected catchPos
                         | _ -> ()
-                        loop tl ((filterTy, name, catch)::acc)
+                        loop tl ((filterTy, name, catch)::acc) firstNonEscapeTy
 
-                loop catchList []
-                |> List.rev
+                let catchList, firstNonEscapeTy = loop catchList [] firstNonEscapeTy
+                List.rev catchList, firstNonEscapeTy
 
             let fx = fx |> Option.map (semantExprWith {env with IsFinallyBodyOfCurrentExceptionHandler=true})
-            ILExpr.TryCatchFinally(tx, catchList, fx, tx.Type)
+            
+            let xty = match firstNonEscapeTy with
+                      | Some(ty) -> ty 
+                      | _ -> typeof<Escape>
+
+            ILExpr.TryCatchFinally(tx, catchList, fx, xty)
         | SynExpr.Rethrow pos ->
             match env with
             | {IsCatchBody=true; IsFinallyBodyOfCurrentExceptionHandler=false} ->

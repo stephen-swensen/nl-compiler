@@ -155,8 +155,8 @@ module CompilerMessages =
     let Throw_type_does_not_extend_Exception pos =
         mk MessageLevel.Error MessageType.Semantic 48 pos "Cannot throw expression of type '%s' since it does not extend 'System.Exception'"
 
-    let Catch_type_does_not_match_Try_type pos = 
-        mk MessageLevel.Error MessageType.Semantic 49 pos "'catch' type '%s' does not match 'try' type '%s'"
+    let Inconsistent_try_catch_branch_types pos = 
+        mk MessageLevel.Error MessageType.Semantic 49 pos "'catch' type '%s' does not match prior 'try' or 'catch' type '%s'"
 
     let Try_without_catch_or_finally pos = 
         mk MessageLevel.Error MessageType.Semantic 50 pos "'try' is missing required 'catch' or 'finally'"

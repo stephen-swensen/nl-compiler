@@ -217,12 +217,15 @@ let emit optimize (il:SmartILGenerator) ilExpr =
         | ILExpr.Rethrow ->
             il.Emit(OpCodes.Rethrow)
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
-            //for non-void expressions, a local var for the return value of the try or catch blocks
-            let retval = if isVoidOrEscapeTy tx.Type then None else Some(il.ILGenerator.DeclareLocal(ty))
+            //for non-void expressions, a local var for the return value of non-void or escape the try or catch blocks
+            let retval = if isVoidOrEscapeTy ty then None else Some(il.ILGenerator.DeclareLocal(ty))
+            let maybe_stloc_retval branchTy =
+                if isVoidOrEscapeTy branchTy |> not then
+                    retval |> Option.iter (fun retval -> il.Stloc(retval))
 
             il.ILGenerator.BeginExceptionBlock() |> ignore
             emit tx
-            retval |> Option.iter (fun retval -> il.Stloc(retval))
+            maybe_stloc_retval tx.Type
             for catch in catchList do                   
                 match catch with
                 | (filterTy, Some(filterName), cx) ->
@@ -232,9 +235,11 @@ let emit optimize (il:SmartILGenerator) ilExpr =
                     emitWith loopLabel (Map.add filterName local lenv) cx
                 | (filterTy, None, cx) ->
                     il.ILGenerator.BeginCatchBlock(filterTy)
-                    il.Pop()
+                    il.Pop() //discard the exn on the stack, we don't want it
                     emit cx
-                retval |> Option.iter (fun retval -> il.Stloc(retval))
+                
+                let (_,_,cx) = catch    
+                maybe_stloc_retval cx.Type
             match fx with
             | Some(fx) ->
                 il.ILGenerator.BeginFinallyBlock()
