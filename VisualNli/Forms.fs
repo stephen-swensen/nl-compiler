@@ -85,6 +85,8 @@ type CodeEditor(font:Font) as this =
     let submitEvent = new Event<_>()
 
     do
+        this.Margins.[0].Width <- 22;
+
         //http://scintillanet.codeplex.com/wikipage?title=FAQ
         this.Indentation.SmartIndentType <- SmartIndent.None;
         this.ConfigurationManager.Language <- String.Empty;
