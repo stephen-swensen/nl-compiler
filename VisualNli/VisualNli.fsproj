@@ -62,6 +62,9 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
+    <Reference Include="ScintillaNET">
+      <HintPath>..\lib\scintilla\ScintillaNET.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -73,6 +76,11 @@
     <ProjectReference Include="..\NL\NL.fsproj">
       <Name>NL</Name>
       <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\VisualNli.CSharp\VisualNli.CSharp.csproj">
+      <Name>VisualNli.CSharp</Name>
+      <Project>{4ccf11bb-5c7d-45f5-b602-40b7644e232c}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
