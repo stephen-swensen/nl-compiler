@@ -93,20 +93,17 @@ type CodeEditor(font:Font) as this =
         this.Lexing.LexerName <- "container";
         this.Lexing.Lexer <- Lexer.Container;
 
-        let defaultStyle = this.Styles.[0] in
-            defaultStyle.Font <- font
+        let stylesConfig = [
+            (0, Color.Black)
+            (1, Color.Blue)
+            (2, Color.DarkRed)
+            (3, Color.Teal)
+        ]
 
-        let keywordStyle = this.Styles.[1] in
-            keywordStyle.ForeColor <- Color.Blue;
-            keywordStyle.Font <- font
-
-        let textStyle = this.Styles.[2] in
-            textStyle.ForeColor <- Color.DarkRed;
-            textStyle.Font <- font
-
-        let numberStyle = this.Styles.[3] in
-            numberStyle.ForeColor <- Color.Teal;
-            numberStyle.Font <- font
+        for (index, color) in stylesConfig do
+            let style = this.Styles.[index]
+            style.ForeColor <- color
+            style.Font <- font
 
         this.StyleNeeded.Add (fun e ->
             let text = e.Range.Text
