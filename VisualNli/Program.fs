@@ -1,4 +1,4 @@
-﻿namespace VisualNli
+﻿namespace Swensen.NL.VisualNli
 
 open System
 open System.Drawing

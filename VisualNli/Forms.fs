@@ -1,4 +1,4 @@
-﻿namespace VisualNli
+﻿namespace Swensen.NL.VisualNli
 
 open System
 open System.Drawing
@@ -11,6 +11,8 @@ open System.Text.RegularExpressions
 open System.Drawing
 open Swensen.NL
 open Microsoft.FSharp.Text.Lexing
+
+open ScintillaNET
 
 module Win32 =
     module DllImports =
@@ -50,12 +52,15 @@ module CodeEditorService =
                 | Parser.token.TYPE _
                 | Parser.token.UNCHECKED
                 | Parser.token.WHILE _
-                | Parser.token.THROW 
-                    -> yield curRange(), Color.Blue
+                | Parser.token.THROW
+                | Parser.token.TRY
+                | Parser.token.CATCH
+                | Parser.token.FINALLY 
+                    -> yield curRange(), 1
                 //string and char literals
                 | Parser.token.CHAR _
                 | Parser.token.STRING _
-                    -> yield curRange(), Color.DarkRed
+                    -> yield curRange(), 2
                 //numeric literals
                 | Parser.token.BOOL _
                 | Parser.token.BYTE _
@@ -68,101 +73,62 @@ module CodeEditorService =
                 | Parser.token.UINT16 _
                 | Parser.token.UINT32 _
                 | Parser.token.UINT64 _
-                    -> yield curRange(), Color.Teal
-                | _ ->  ()
+                    -> yield curRange(), 3
+                | _ 
+                    -> yield curRange(), 0 //default
         }
 
 [<AllowNullLiteral>]
-type CodeEditor() as self =
-    inherit RichTextBox(AcceptsTab=true,ShortcutsEnabled=true)
+type CodeEditor(font:Font) as this =
+    inherit StandardScintilla()
     
     let submitEvent = new Event<_>()
-    let update = Win32.LockWindowUpdate self
 
-    ///used to detect whether text changed is a paste event or not, see http://stackoverflow.com/a/6638841/236255
-    let mutable lastCursorPos = 0
+    do
+        //http://scintillanet.codeplex.com/wikipage?title=FAQ
+        this.Indentation.SmartIndentType <- SmartIndent.None;
+        this.ConfigurationManager.Language <- String.Empty;
+        this.Lexing.LexerName <- "container";
+        this.Lexing.Lexer <- Lexer.Container;
 
-    ///offset is corresponds to the position at the start of the text being colorized.
-    ///The curors will be placed at the end of text with respect to the offset
-    let colorize offset (text:String) =
-        CodeEditorService.textColorRanges text
-        |> Seq.iter(fun ((startPos, endPos), color) ->
-            self.SelectionStart     <- offset + startPos
-            self.SelectionLength    <- endPos - startPos
-            self.SelectionFont      <- self.Font
-            self.SelectionColor     <- color)
+        let defaultStyle = this.Styles.[0] in
+            defaultStyle.Font <- font
 
-    let resetCursor pos =
-        self.SelectionStart     <- pos
-        self.SelectionLength    <- 0
-        self.SelectionBackColor <- self.BackColor
-        self.SelectionColor     <- self.ForeColor
-        self.SelectionFont      <- self.Font
+        let keywordStyle = this.Styles.[1] in
+            keywordStyle.ForeColor <- Color.Blue;
+            keywordStyle.Font <- font
 
-    let resetSelection startPos length =
+        let textStyle = this.Styles.[2] in
+            textStyle.ForeColor <- Color.DarkRed;
+            textStyle.Font <- font
 
-        //select what was just pasted (need to do again after last operation)
-        self.SelectionStart     <- startPos
-        self.SelectionLength    <- length
+        let numberStyle = this.Styles.[3] in
+            numberStyle.ForeColor <- Color.Teal;
+            numberStyle.Font <- font
 
-        //make pasted text plain styles
-        self.SelectionFont      <- self.Font
-        self.SelectionBackColor <- self.BackColor
-        self.SelectionColor     <- self.ForeColor
+        this.StyleNeeded.Add (fun e ->
+            let text = e.Range.Text
+            let offset = e.Range.Start
+            CodeEditorService.textColorRanges text
+            |> Seq.iter(fun ((startPos, endPos), styleIndex) ->
+                let startPos, endPos = startPos+offset, endPos+offset
+                let range = this.GetRange(startPos,endPos)
+                range.SetStyle(styleIndex) |> ignore))
 
-    member self.Submit = submitEvent.Publish
+    member this.Submit = submitEvent.Publish
 
-    override self.OnKeyDown(e:KeyEventArgs) =
+    ///Alt+Enter submits selection if any, otherwise all text
+    override this.OnKeyDown(e:KeyEventArgs) =
         base.OnKeyDown(e)
-        if not (e.Control && e.KeyCode = Keys.V) then
-            lastCursorPos <- self.SelectionStart
-        
-        
-        if e.Alt && e.KeyCode = Keys.Enter && not <| String.IsNullOrWhiteSpace(self.SelectedText) then
-            submitEvent.Trigger(self.SelectedText)
+        if e.Alt && e.KeyCode = Keys.Enter then
+            if this.Selection.Length > 0 then
+                submitEvent.Trigger(this.Selection.Text)
+            else
+                submitEvent.Trigger(this.Text)
+
             e.SuppressKeyPress <- true //so doesn't make "ping" noise
-
-    override self.OnGotFocus(e:_) =
-        base.OnGotFocus(e)
-        lastCursorPos <- self.SelectionStart
-
-    override self.OnTextChanged(e:System.EventArgs) =
-        base.OnTextChanged(e)
-        update <| fun () ->
-            if self.SelectionStart - lastCursorPos > 1 then //hack to detect pasted range of text
-                //calculate pasted text start pos and length
-                let cursorPos = self.SelectionStart
-                let pastedLength = cursorPos - lastCursorPos
-                
-                //select what was just pasted
-                self.SelectionStart     <- lastCursorPos
-                self.SelectionLength    <- pastedLength
-                let text = self.SelectedText
-
-                //make rtf plain text
-                self.SelectedText <- text
-
-                resetSelection lastCursorPos text.Length
-
-                //colorize it
-                colorize lastCursorPos text
-                resetCursor cursorPos
-            else //single char text change (e.g. normal typing), for performance reasons only colorize the current line
-                let cursorPos = self.SelectionStart
-                let offset = max 0 (cursorPos - 500)
-                let length = min (self.Text.Length - offset) (offset + 1000)
-
-                //select text from startOfLastColorizedToken to current position
-                self.SelectionStart     <- offset
-                self.SelectionLength    <- length
-                let text = self.SelectedText
-                
-                resetSelection offset text.Length
-                
-                colorize offset text
-                resetCursor cursorPos
-
-            lastCursorPos <- self.SelectionStart
+        else 
+            ()
 
 type NliSessionManager() =
     //data
@@ -201,7 +167,7 @@ type NliSessionManager() =
             [| yield! collectMessages(); yield result |]
 
 
-type public NliForm() as self =
+type public NliForm() as this =
     inherit Form(
         Icon = null,
         Text = "VisualNli", 
@@ -220,7 +186,7 @@ type public NliForm() as self =
     //controls
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
     
-    let editor = new CodeEditor(Dock=DockStyle.Fill, Font=textFont)
+    let editor = new CodeEditor(textFont, Dock=DockStyle.Fill)
     do splitc.Panel1.Controls.Add(editor)
 
     let treeViewPanel = new Panel(Dock=DockStyle.Fill, BackColor=System.Drawing.SystemColors.Control)
@@ -228,10 +194,10 @@ type public NliForm() as self =
     do treeViewPanel.Controls.Add(treeView)
     do splitc.Panel2.Controls.Add(treeViewPanel)
 
-    do self.Controls.Add(splitc)
+    do this.Controls.Add(splitc)
 
     do
-        self.Menu <- 
+        this.Menu <- 
             new MainMenu(
                 [|
                     yield (
