@@ -36,8 +36,8 @@ namespace Swensen.NL.VisualNli {
 
             this.FindReplace.Window.FormBorderStyle = FormBorderStyle.FixedDialog; //so we can actually see the text title
 
-            this.ConfigurationManager.Language = "js"; //not a bad default language
-            this.ConfigurationManager.Configure();
+            //this.ConfigurationManager.Language = "js"; //not a bad default language
+            //this.ConfigurationManager.Configure();
         }
 
         protected override void OnTextDeleted(ScintillaNET.TextModifiedEventArgs e) {
