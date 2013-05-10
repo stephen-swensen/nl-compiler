@@ -2,6 +2,7 @@
 open Swensen.NL
 open Microsoft.FSharp.Text.Lexing
 
+///Code editor services for e.g. syntax highlighting a range of text.
 module CodeEditorService =
     let textColorRanges text =
         seq {
