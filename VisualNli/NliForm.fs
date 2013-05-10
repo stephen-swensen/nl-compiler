@@ -10,6 +10,18 @@ open Swensen.NL
 
 open ScintillaNET
 
+type ScintillaTextWriter(scintilla:StandardScintilla, style:int) =
+    inherit System.IO.TextWriter()
+
+    override __.Write(c:char) =
+        base.Write(c)
+        
+        scintilla.SuspendReadonly(fun () -> 
+            let range = scintilla.AppendText(c |> string)
+            range.SetStyle(style))
+
+    override __.Encoding = Console.OutputEncoding
+
 type public NliForm() as this =
     inherit Form(
         Icon = null,
@@ -29,9 +41,8 @@ type public NliForm() as this =
     //controls
     let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
     let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleRight)
-    do 
-        statusStrip.Items.Add(statusLabel) |> ignore
-        this.Controls.Add(statusStrip)
+    do statusStrip.Items.Add(statusLabel) |> ignore
+    do this.Controls.Add(statusStrip)
 
     let updateStatus text = 
         statusLabel.Text <- text
@@ -42,11 +53,32 @@ type public NliForm() as this =
     let editor = new CodeEditor(textFont, Dock=DockStyle.Fill)
     do splitc.Panel1.Controls.Add(editor)
 
+    let tabControl = new TabControl(Dock=DockStyle.Fill)
+    
+    let watchTab = new TabPage("Watch")
     let treeViewPanel = new Panel(Dock=DockStyle.Fill, BackColor=System.Drawing.SystemColors.Control)
     let treeView = new WatchTreeView(Dock=DockStyle.Fill, Font=textFont)
     do treeViewPanel.Controls.Add(treeView)
-    do splitc.Panel2.Controls.Add(treeViewPanel)
+    do watchTab.Controls.Add(treeViewPanel)
+    do tabControl.TabPages.Add(watchTab)
 
+    let outputTab = new TabPage("Output")
+    let outputScintilla = new StandardScintilla(IsReadOnly=true, Dock=DockStyle.Fill)
+    do 
+        let stdoutStyle = outputScintilla.Styles.[0]
+        stdoutStyle.Font <- textFont
+        stdoutStyle.ForeColor <- System.Drawing.Color.Black
+        System.Console.SetOut(ScintillaTextWriter(outputScintilla, 0)) //todo head this warning and dispose of this when form is disposed
+    do
+        let stdoutStyle = outputScintilla.Styles.[1]
+        stdoutStyle.Font <- textFont
+        stdoutStyle.ForeColor <- System.Drawing.Color.DarkRed
+        System.Console.SetError(ScintillaTextWriter(outputScintilla, 1)) //todo head this warning and dispose of this when form is disposed
+
+    do outputTab.Controls.Add(outputScintilla)
+    do tabControl.TabPages.Add(outputTab)
+
+    do splitc.Panel2.Controls.Add(tabControl)
     do this.Controls.Add(splitc)
 
     do
