@@ -33,7 +33,9 @@ type public NliForm() as this =
         statusStrip.Items.Add(statusLabel) |> ignore
         this.Controls.Add(statusStrip)
 
-    let updateStatus text = statusLabel.Text <- text
+    let updateStatus text = 
+        statusLabel.Text <- text
+        statusStrip.Update()
 
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
     
@@ -123,7 +125,6 @@ type public NliForm() as this =
         editor.Submit.Add <| fun code ->
             let sw = System.Diagnostics.Stopwatch.StartNew()
             updateStatus "Processing submission..."
-            statusStrip.Update()
             treeView.BeginUpdate()
             for name, value, ty in nli.Submit(code) do
                 treeView.Watch(name, value, ty)
