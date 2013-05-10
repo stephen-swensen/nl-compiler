@@ -183,6 +183,14 @@ type public NliForm() as this =
         new Font(fontFamily, 11.0f)
 
     //controls
+    let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
+    let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleRight)
+    do 
+        statusStrip.Items.Add(statusLabel) |> ignore
+        this.Controls.Add(statusStrip)
+
+    let updateStatus text = statusLabel.Text <- text
+
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
     
     let editor = new CodeEditor(textFont, Dock=DockStyle.Fill)
@@ -208,6 +216,7 @@ type public NliForm() as this =
                                     let dialog = new OpenFileDialog()
                                     if dialog.ShowDialog() = DialogResult.OK then
                                         editor.Text <- System.IO.File.ReadAllText(dialog.FileName)
+                                        updateStatus ("Filed opened: " + dialog.FileName)
                                 exitMi
                             )
 
@@ -229,6 +238,7 @@ type public NliForm() as this =
                                 resetMi.Click.Add <| fun _ ->
                                     nli.Reset()
                                     treeView.ClearAll()
+                                    updateStatus "Session reset"
                                 resetMi
                             )
                         |]
@@ -239,23 +249,23 @@ type public NliForm() as this =
                         watchesMi.MenuItems.AddRange [|
                             yield (
                                 let mi = new MenuItem("Archive Watches")
-                                mi.Click.Add(fun _ -> treeView.Archive())
+                                mi.Click.Add(fun _ -> treeView.Archive(); updateStatus "Watches archived")
                                 mi
                             )
                             yield new MenuItem("-")
                             yield (
                                 let mi = new MenuItem("Clear Archives")
-                                mi.Click.Add(fun _ -> treeView.ClearArchives())
+                                mi.Click.Add(fun _ -> treeView.ClearArchives(); updateStatus "Archives cleared")
                                 mi
                             )
                             yield (
                                 let mi = new MenuItem("Clear Watches")
-                                mi.Click.Add(fun _ -> treeView.ClearWatches())
+                                mi.Click.Add(fun _ -> treeView.ClearWatches(); updateStatus "Watches cleared")
                                 mi
                             )
                             yield (
                                 let mi = new MenuItem("Clear All")
-                                mi.Click.Add(fun _ -> treeView.ClearAll())
+                                mi.Click.Add(fun _ -> treeView.ClearAll(); updateStatus "All cleared")
                                 mi
                             )
                         |]
@@ -267,6 +277,9 @@ type public NliForm() as this =
     //event handlers
     do 
         editor.Submit.Add <| fun code ->
+            let sw = System.Diagnostics.Stopwatch.StartNew()
+            updateStatus "Processing submission..."
+            statusStrip.Update()
             treeView.BeginUpdate()
             for name, value, ty in nli.Submit(code) do
                 treeView.Watch(name, value, ty)
@@ -275,3 +288,5 @@ type public NliForm() as this =
                 treeView.Nodes.RemoveAt(treeView.Nodes.Count - 1)
                 treeView.Nodes.Insert(0, lastAdded)
             treeView.EndUpdate()
+            sw.Stop()
+            updateStatus (sprintf "Submission processed (in %ims)" sw.ElapsedMilliseconds)
