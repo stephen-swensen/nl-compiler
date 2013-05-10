@@ -18,7 +18,9 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int) =
         
         scintilla.SuspendReadonly(fun () -> 
             let range = scintilla.AppendText(c |> string)
-            range.SetStyle(style))
+            range.SetStyle(style)
+            scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
+            scintilla.Update())
 
     override __.Encoding = Console.OutputEncoding
 
@@ -34,9 +36,9 @@ type public NliForm() as this =
 
     let nli = NliSessionManager()
     //data
-    let textFont = 
+    let editorFont = 
         let fontFamily = FontFamily.GenericMonospace //i.e. Courier New on Windows
-        new Font(fontFamily, 11.0f)
+        new Font("Consolas", 10.0f)
 
     //controls
     let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
@@ -50,14 +52,14 @@ type public NliForm() as this =
 
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
     
-    let editor = new CodeEditor(textFont, Dock=DockStyle.Fill)
+    let editor = new CodeEditor(editorFont, Dock=DockStyle.Fill)
     do splitc.Panel1.Controls.Add(editor)
 
     let tabControl = new TabControl(Dock=DockStyle.Fill)
     
     let watchTab = new TabPage("Watch")
     let treeViewPanel = new Panel(Dock=DockStyle.Fill, BackColor=System.Drawing.SystemColors.Control)
-    let treeView = new WatchTreeView(Dock=DockStyle.Fill, Font=textFont)
+    let treeView = new WatchTreeView(Dock=DockStyle.Fill)
     do treeViewPanel.Controls.Add(treeView)
     do watchTab.Controls.Add(treeViewPanel)
     do tabControl.TabPages.Add(watchTab)
@@ -66,12 +68,12 @@ type public NliForm() as this =
     let outputScintilla = new StandardScintilla(IsReadOnly=true, Dock=DockStyle.Fill)
     do 
         let stdoutStyle = outputScintilla.Styles.[0]
-        stdoutStyle.Font <- textFont
+        stdoutStyle.Font <- editorFont
         stdoutStyle.ForeColor <- System.Drawing.Color.Black
         System.Console.SetOut(ScintillaTextWriter(outputScintilla, 0)) //todo head this warning and dispose of this when form is disposed
     do
         let stdoutStyle = outputScintilla.Styles.[1]
-        stdoutStyle.Font <- textFont
+        stdoutStyle.Font <- editorFont
         stdoutStyle.ForeColor <- System.Drawing.Color.DarkRed
         System.Console.SetError(ScintillaTextWriter(outputScintilla, 1)) //todo head this warning and dispose of this when form is disposed
 
@@ -155,15 +157,30 @@ type public NliForm() as this =
     //event handlers
     do 
         editor.Submit.Add <| fun code ->
-            let sw = System.Diagnostics.Stopwatch.StartNew()
             updateStatus "Processing submission..."
+            outputScintilla.Text <- ""
+            outputScintilla.Update()
             treeView.BeginUpdate()
-            for name, value, ty in nli.Submit(code) do
+            let sw = System.Diagnostics.Stopwatch.StartNew()
+            let results = nli.Submit(code)
+            sw.Stop()
+            for name, value, ty in results do
                 treeView.Watch(name, value, ty)
                 //add in reverse order (should have this functionality part of the watch tree view itself)
                 let lastAdded = treeView.Nodes.[treeView.Nodes.Count - 1]
                 treeView.Nodes.RemoveAt(treeView.Nodes.Count - 1)
                 treeView.Nodes.Insert(0, lastAdded)
             treeView.EndUpdate()
-            sw.Stop()
-            updateStatus (sprintf "Submission processed (in %ims)" sw.ElapsedMilliseconds)
+
+            let countMessages level = 
+                results
+                |> Seq.filter (fun (_,value,ty) -> 
+                    match value with 
+                    | :? CompilerMessage as value when value.Level = level -> true | _ -> false)
+                |> Seq.length 
+
+            let warningCount = countMessages MessageLevel.Warning
+            let errorCount = countMessages MessageLevel.Error
+            if errorCount > 0 then
+                tabControl.SelectTab(watchTab)
+            updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" sw.ElapsedMilliseconds warningCount errorCount)
