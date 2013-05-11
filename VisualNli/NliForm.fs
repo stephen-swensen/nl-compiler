@@ -20,7 +20,7 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int) =
             let range = scintilla.AppendText(c |> string)
             range.SetStyle(style)
             scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
-            scintilla.Update())
+            if c = '\n' then scintilla.Update())
 
     override __.Encoding = Console.OutputEncoding
 
@@ -117,6 +117,7 @@ type public NliForm() as this =
                                 resetMi.Click.Add <| fun _ ->
                                     nli.Reset()
                                     treeView.ClearAll()
+                                    outputScintilla.Text <- ""
                                     updateStatus "Session reset"
                                 resetMi
                             )
@@ -180,6 +181,4 @@ type public NliForm() as this =
 
             let warningCount = countMessages MessageLevel.Warning
             let errorCount = countMessages MessageLevel.Error
-            if errorCount > 0 then
-                tabControl.SelectTab(watchTab)
             updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" sw.ElapsedMilliseconds warningCount errorCount)

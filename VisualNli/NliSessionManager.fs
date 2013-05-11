@@ -3,39 +3,42 @@ open System
 open Swensen.NL
 
 //todo: move to maing NL namespace / assembly?
-type NliSessionManager() =
+type NliSessionManager() as this =
     //data
-    let mutable nli = Swensen.NL.Nli()
-    let mutable errorCount = 0
-    let mutable warningCount = 0
-    let mutable exnCount = 0
+    [<DefaultValue>] val mutable nli : Nli
+    [<DefaultValue>] val mutable errorCount : int
+    [<DefaultValue>] val mutable warningCount :int
+    [<DefaultValue>] val mutable exnCount :int
 
-    member __.Reset() =
-        nli <- Swensen.NL.Nli()
-        errorCount <- 0
-        warningCount <- 0
-        exnCount <- 0
+    do this.Reset()
+
+    member this.Reset() =
+        this.nli <- Swensen.NL.Nli({ CompilerOptions.Default with InstallMessageLogger=MessageLogger.InstallConsoleLogger })
+        this.errorCount <- 0
+        this.warningCount <- 0
+        this.exnCount <- 0
 
 
-    member __.Submit(code:String) = 
+    member this.Submit(code:String) = 
         let collectMessages() = [|  
             let msgs = Swensen.NL.MessageLogger.ActiveLogger.GetMessages()
             for msg in msgs do
                 match msg.Level with
                 | MessageLevel.Error ->
-                    yield (sprintf "error%i" errorCount,  msg :> obj, msg.GetType())
-                    errorCount <- errorCount + 1 
+                    yield (sprintf "error%i" this.errorCount,  msg :> obj, msg.GetType())
+                    this.errorCount <- this.errorCount + 1 
                 | MessageLevel.Warning ->
-                    yield (sprintf "warning%i" warningCount,  msg :> obj, msg.GetType())
-                    warningCount <- warningCount + 1
+                    yield (sprintf "warning%i" this.warningCount,  msg :> obj, msg.GetType())
+                    this.warningCount <- this.warningCount + 1
         |]
 
         try
-            match nli.TrySubmit(code) with
+            match this.nli.TrySubmit(code) with
             | Some(results) -> [| yield! collectMessages(); yield! results |]
             | None -> collectMessages()
         with e ->
-            let result = sprintf "exn%i" exnCount, e :> obj, e.GetType()
-            exnCount <- exnCount + 1
+            Console.WriteLine(e.ToString())
+            let result = sprintf "exn%i" this.exnCount, e :> obj, e.GetType()
+            this.exnCount <- this.exnCount + 1
             [| yield! collectMessages(); yield result |]
 
