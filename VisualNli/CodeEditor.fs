@@ -15,7 +15,8 @@ type CodeEditor(font:Font) as this =
         this.Margins.[0].Width <- 22;
 
         //http://scintillanet.codeplex.com/wikipage?title=FAQ
-        this.Indentation.SmartIndentType <- SmartIndent.None;
+        this.Indentation.BackspaceUnindents <- true;
+        this.Indentation.SmartIndentType <- SmartIndent.Simple;
         this.ConfigurationManager.Language <- String.Empty;
         this.Lexing.LexerName <- "container";
         this.Lexing.Lexer <- Lexer.Container;
@@ -55,5 +56,3 @@ type CodeEditor(font:Font) as this =
             e.SuppressKeyPress <- true //so doesn't make "ping" noise
         else 
             ()
-
-
