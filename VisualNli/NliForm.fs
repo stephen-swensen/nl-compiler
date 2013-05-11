@@ -37,7 +37,6 @@ type public NliForm() as this =
     let nli = NliSessionManager()
     //data
     let editorFont = 
-        let fontFamily = FontFamily.GenericMonospace //i.e. Courier New on Windows
         new Font("Consolas", 10.0f)
 
     //controls
@@ -70,12 +69,12 @@ type public NliForm() as this =
         let stdoutStyle = outputScintilla.Styles.[0]
         stdoutStyle.Font <- editorFont
         stdoutStyle.ForeColor <- System.Drawing.Color.Black
-        System.Console.SetOut(ScintillaTextWriter(outputScintilla, 0)) //todo head this warning and dispose of this when form is disposed
+        System.Console.SetOut(new ScintillaTextWriter(outputScintilla, 0))
     do
         let stdoutStyle = outputScintilla.Styles.[1]
         stdoutStyle.Font <- editorFont
         stdoutStyle.ForeColor <- System.Drawing.Color.DarkRed
-        System.Console.SetError(ScintillaTextWriter(outputScintilla, 1)) //todo head this warning and dispose of this when form is disposed
+        System.Console.SetError(new ScintillaTextWriter(outputScintilla, 1))
 
     do outputTab.Controls.Add(outputScintilla)
     do tabControl.TabPages.Add(outputTab)
