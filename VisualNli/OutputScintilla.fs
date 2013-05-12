@@ -17,8 +17,13 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
         scintilla.SuspendReadonly(fun () -> 
             let range = scintilla.AppendText(c |> string)
             range.SetStyle(style)
-            scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
-            if c = '\n' then scintilla.Update())
+            
+            if c = '\n' then 
+                scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
+                scintilla.Update())
+
+    //no point in overriding WriteLine since only Write is used by stdout and stderr
+
 
     override __.Encoding = encoding
 
