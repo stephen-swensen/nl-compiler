@@ -16,7 +16,7 @@ open Compilation
 ///Evaluate an NL code string using the default environment.
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let tryEvalWith<'a> options code : 'a option = 
-    options.InstallMessageLogger()
+    options.MessageLoggerInstaller()
 
     ///Create a dynamic method from a typed expression using the default environment
     let mkDm (ilExpr:ILExpr) =
