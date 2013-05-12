@@ -136,13 +136,11 @@ type public NliForm() as this =
             outputScintilla.Text <- ""
             outputScintilla.Update()
             treeView.BeginUpdate()
-            outputScintilla.OutWriter.Enabled <-true
-            outputScintilla.ErrWriter.Enabled <-true
+            outputScintilla.RedirectConsoleOutput <-true
             let sw = System.Diagnostics.Stopwatch.StartNew()
             let results = nli.Submit(code)
             sw.Stop()
-            outputScintilla.OutWriter.Enabled <-false
-            outputScintilla.ErrWriter.Enabled <-false
+            outputScintilla.RedirectConsoleOutput <-false
             for name, value, ty in results do
                 treeView.Watch(name, value, ty)
                 //add in reverse order (should have this functionality part of the watch tree view itself)

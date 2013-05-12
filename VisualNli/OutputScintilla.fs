@@ -52,5 +52,9 @@ type OutputScintilla(font:Font) as this =
         System.Console.SetOut(outWriter)
         System.Console.SetError(errWriter)
 
-    member __.OutWriter = outWriter
-    member __.ErrWriter = errWriter
+    member __.RedirectConsoleOutput 
+        with get() = 
+            outWriter.Enabled && errWriter.Enabled
+        and set(value) = 
+            outWriter.Enabled <- value
+            errWriter.Enabled <- value
