@@ -6,7 +6,7 @@ open System.Windows.Forms
 open ScintillaNET
 
 ///A TextWritter sufficient for redirecting stdout and stderr to a Scintilla control
-///including output follwoing (scrolling control to the end of the document) 
+///including output following (scrolling control to the end of the document) 
 ///and updating on signficant content change.
 type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
     inherit System.IO.TextWriter()
@@ -22,7 +22,7 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
 
     override __.Encoding = encoding
 
-///A readonly scintilla control which redirects stdout and stderr to itself
+///A readonly scintilla control which redirects stdout and stderr to itself (hence there should only ever be one instance of this control)
 type OutputScintilla(font:Font) as this =
     inherit StandardScintilla()
 
