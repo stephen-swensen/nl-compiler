@@ -47,8 +47,9 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Win32.fs" />
     <Compile Include="CodeEditorService.fs" />
-    <Compile Include="CodeEditor.fs" />
     <Compile Include="NliSessionManager.fs" />
+    <Compile Include="CodeEditor.fs" />
+    <Compile Include="OutputScintilla.fs" />
     <Compile Include="NliForm.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config">
