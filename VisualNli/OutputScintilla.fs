@@ -24,7 +24,6 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
 
     //no point in overriding WriteLine since only Write is used by stdout and stderr
 
-
     override __.Encoding = encoding
 
 ///A readonly scintilla control which redirects stdout and stderr to itself (hence there should only ever be one instance of this control)
