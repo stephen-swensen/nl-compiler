@@ -10,20 +10,6 @@ open Swensen.NL
 
 open ScintillaNET
 
-type ScintillaTextWriter(scintilla:StandardScintilla, style:int) =
-    inherit System.IO.TextWriter()
-
-    override __.Write(c:char) =
-        base.Write(c)
-        
-        scintilla.SuspendReadonly(fun () -> 
-            let range = scintilla.AppendText(c |> string)
-            range.SetStyle(style)
-            scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
-            if c = '\n' then scintilla.Update())
-
-    override __.Encoding = Console.OutputEncoding
-
 type public NliForm() as this =
     inherit Form(
         Icon = null,
@@ -64,18 +50,7 @@ type public NliForm() as this =
     do tabControl.TabPages.Add(watchTab)
 
     let outputTab = new TabPage("Output")
-    let outputScintilla = new StandardScintilla(IsReadOnly=true, Dock=DockStyle.Fill)
-    do 
-        let stdoutStyle = outputScintilla.Styles.[0]
-        stdoutStyle.Font <- editorFont
-        stdoutStyle.ForeColor <- System.Drawing.Color.Black
-        System.Console.SetOut(new ScintillaTextWriter(outputScintilla, 0))
-    do
-        let stdoutStyle = outputScintilla.Styles.[1]
-        stdoutStyle.Font <- editorFont
-        stdoutStyle.ForeColor <- System.Drawing.Color.DarkRed
-        System.Console.SetError(new ScintillaTextWriter(outputScintilla, 1))
-
+    let outputScintilla = new OutputScintilla(editorFont, Dock=DockStyle.Fill)
     do outputTab.Controls.Add(outputScintilla)
     do tabControl.TabPages.Add(outputTab)
 
