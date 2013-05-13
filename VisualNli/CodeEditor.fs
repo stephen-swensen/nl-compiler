@@ -44,15 +44,18 @@ type CodeEditor(font:Font) as this =
 
     member this.Submit = submitEvent.Publish
 
+    ///Triggers the Submit event with the selected text of all the text if none selected
+    member this.TriggerSubmit() =
+        if this.Selection.Length > 0 then
+            submitEvent.Trigger(this.Selection.Text)
+        else
+            submitEvent.Trigger(this.Text)
+
     ///Alt+Enter submits selection if any, otherwise all text
     override this.OnKeyDown(e:KeyEventArgs) =
         base.OnKeyDown(e)
         if e.Alt && e.KeyCode = Keys.Enter then
-            if this.Selection.Length > 0 then
-                submitEvent.Trigger(this.Selection.Text)
-            else
-                submitEvent.Trigger(this.Text)
-
+            this.TriggerSubmit()
             e.SuppressKeyPress <- true //so doesn't make "ping" noise
         else 
             ()
