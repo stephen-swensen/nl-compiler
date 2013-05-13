@@ -29,7 +29,6 @@ type public NliForm() as this =
     let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
     let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleRight)
     do statusStrip.Items.Add(statusLabel) |> ignore
-    do this.Controls.Add(statusStrip)
 
     let updateStatus text = 
         statusLabel.Text <- text
@@ -56,6 +55,7 @@ type public NliForm() as this =
 
     do splitc.Panel2.Controls.Add(tabControl)
     do this.Controls.Add(splitc)
+    do this.Controls.Add(statusStrip)
 
     do
         this.Menu <- 
@@ -135,19 +135,19 @@ type public NliForm() as this =
             updateStatus "Processing submission..."
             outputScintilla.Text <- ""
             outputScintilla.Update()
-            treeView.BeginUpdate()
+            
             outputScintilla.RedirectConsoleOutput <-true
             let sw = System.Diagnostics.Stopwatch.StartNew()
             let results = nli.Submit(code)
             sw.Stop()
             outputScintilla.RedirectConsoleOutput <-false
-            for name, value, ty in results do
-                treeView.Watch(name, value, ty)
-                //add in reverse order (should have this functionality part of the watch tree view itself)
-                let lastAdded = treeView.Nodes.[treeView.Nodes.Count - 1]
-                treeView.Nodes.RemoveAt(treeView.Nodes.Count - 1)
-                treeView.Nodes.Insert(0, lastAdded)
-            treeView.EndUpdate()
+            
+            Control.update treeView <| fun () ->
+                for name, value, ty in results do
+                    treeView.Watch(name, value, ty)
+
+            if(results.Length > 0) then
+                treeView.Nodes.[treeView.Nodes.Count - 1].EnsureVisible()
 
             let countMessages level = 
                 results
