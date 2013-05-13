@@ -14,8 +14,9 @@ let optimize (tl:ILTopLevel) =
             | ILExpr.Bool(true) -> thenBranch
             | ILExpr.Bool(false) -> elseBranch
             | _ -> 
-                match thenBranch with
-                | ILExpr.Nop -> ILExpr.IfThen(condition, thenBranch) //asser ty = typeof<void>
+                //todo: HUH?! should this match be on the elseBranch?
+                match thenBranch with 
+                | ILExpr.Nop -> ILExpr.IfThen(condition, thenBranch)
                 | _ ->
                     ILExpr.IfThenElse(condition, thenBranch, elseBranch, ty)
         | ILExpr.IfThen(condition, thenBranch) -> //unreachable code elimination
@@ -31,31 +32,26 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.NumericBinop(cked, op, x, y, ty) -> //numeric constants folding
             let x, y = optimizeExpr x, optimizeExpr y
             match cked, x, y with
-            
             | false, ILExpr.SByte(xval), ILExpr.SByte(yval) ->
                 ILExpr.SByte(op.Call(xval, yval))
             | false, ILExpr.Byte(xval), ILExpr.Byte(yval) ->
                 ILExpr.Byte(op.Call(xval, yval))
-            
             | false, ILExpr.UInt16(xval), ILExpr.UInt16(yval) ->
                 ILExpr.UInt16(op.Call(xval, yval))
             | false, ILExpr.UInt32(xval), ILExpr.UInt32(yval) ->
                 ILExpr.UInt32(op.Call(xval, yval))
             | false, ILExpr.UInt64(xval), ILExpr.UInt64(yval) ->
                 ILExpr.UInt64(op.Call(xval, yval))
-
             | false, ILExpr.Int16(xval), ILExpr.Int16(yval) ->
                 ILExpr.Int16(op.Call(xval, yval))
             | false, ILExpr.Int32(xval), ILExpr.Int32(yval) ->
                 ILExpr.Int32(op.Call(xval, yval))
             | false, ILExpr.Int64(xval), ILExpr.Int64(yval) ->
                 ILExpr.Int64(op.Call(xval, yval))
-
             | false, ILExpr.Single(xval), ILExpr.Single(yval) ->
                 ILExpr.Single((op.Call(xval, yval)))            
             | false, ILExpr.Double(xval), ILExpr.Double(yval) ->
                 ILExpr.Double((op.Call(xval, yval)))
-
             | _ -> ILExpr.NumericBinop(cked, op, x, y, ty)    
         | ILExpr.StaticCall(mi, args) ->
             let args = args |> List.map optimizeExpr
@@ -75,35 +71,30 @@ let optimize (tl:ILTopLevel) =
                 ILExpr.Bool(op.Call(xval, yval))
             | ILExpr.SByte(xval), ILExpr.SByte(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
-
             | ILExpr.Int16(xval), ILExpr.Int16(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
             | ILExpr.Int32(xval), ILExpr.Int32(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
             | ILExpr.Int64(xval), ILExpr.Int64(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
-
             | ILExpr.UInt16(xval), ILExpr.UInt16(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
             | ILExpr.UInt32(xval), ILExpr.UInt32(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
             | ILExpr.UInt64(xval), ILExpr.UInt64(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
-
             | ILExpr.Single(xval), ILExpr.Single(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))            
             | ILExpr.Double(xval), ILExpr.Double(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
-            
             | ILExpr.Bool(xval), ILExpr.Bool(yval) ->
                 ILExpr.Bool(op.Call(xval, yval))
-
             | _ -> ILExpr.ComparisonBinop(op, x, y)
         | ILExpr.Coerce(cked, x, ty) -> //mostly for implicit coersions to improve constants folding
             let x = optimizeExpr x
             match cked, x with //todo: these need to be expanded.
-            | false, Int32(x) when ty = typeof<double> -> ILExpr.Double(double x)
-            | false, Double(x) when ty = typeof<int32> -> ILExpr.Int32(int32 x)
+            | false, Int32(x) when ty = typeof<Double> -> ILExpr.Double(double x)
+            | false, Double(x) when ty = typeof<Int32> -> ILExpr.Int32(int32 x)
             | _ -> ILExpr.Coerce(cked, x, ty)
         | ILExpr.LogicalNot(x) ->
             let x = optimizeExpr x
@@ -153,36 +144,20 @@ let optimize (tl:ILTopLevel) =
         | ILExpr.InstanceFieldSet(x,fi,y) ->
             ILExpr.InstanceFieldSet(optimizeExpr x, fi, optimizeExpr y)
         | Default(ty) ->
-            if ty = typeof<Byte> then
-                ILExpr.Byte(Unchecked.defaultof<Byte>)
-            elif ty = typeof<SByte> then
-                ILExpr.SByte(Unchecked.defaultof<SByte>)
-
-            elif ty = typeof<Int16> then
-                ILExpr.Int16(Unchecked.defaultof<Int16>)
-            elif ty = typeof<Int32> then
-                ILExpr.Int32(Unchecked.defaultof<Int32>)
-            elif ty = typeof<Int64> then
-                ILExpr.Int64(Unchecked.defaultof<Int64>)
-
-            elif ty = typeof<UInt16> then
-                ILExpr.UInt16(Unchecked.defaultof<UInt16>)
-            elif ty = typeof<UInt32> then
-                ILExpr.UInt32(Unchecked.defaultof<UInt32>)
-            elif ty = typeof<UInt64> then
-                ILExpr.UInt64(Unchecked.defaultof<UInt64>)
-
-            elif ty = typeof<single> then
-                ILExpr.Single(Unchecked.defaultof<Single>)
-            elif ty = typeof<double> then
-                ILExpr.Double(Unchecked.defaultof<Double>)
-            
-            elif ty = typeof<bool> then
-                ILExpr.Bool(Unchecked.defaultof<bool>)
-            elif ty = typeof<char> then
-                ILExpr.Char(Unchecked.defaultof<char>)
-            else
-                exp        
+            match ty with
+            | ByteTy -> ILExpr.Byte(Unchecked.defaultof<Byte>)
+            | SByteTy -> ILExpr.SByte(Unchecked.defaultof<SByte>)
+            | Int16Ty -> ILExpr.Int16(Unchecked.defaultof<Int16>)
+            | Int32Ty -> ILExpr.Int32(Unchecked.defaultof<Int32>)
+            | Int64Ty -> ILExpr.Int64(Unchecked.defaultof<Int64>)
+            | UInt16Ty -> ILExpr.UInt16(Unchecked.defaultof<UInt16>)
+            | UInt32Ty -> ILExpr.UInt32(Unchecked.defaultof<UInt32>)
+            | UInt64Ty -> ILExpr.UInt64(Unchecked.defaultof<UInt64>)
+            | SingleTy -> ILExpr.Single(Unchecked.defaultof<Single>)
+            | DoubleTy -> ILExpr.Double(Unchecked.defaultof<Double>)
+            | BooleanTy -> ILExpr.Bool(Unchecked.defaultof<Boolean>)
+            | CharTy -> ILExpr.Char(Unchecked.defaultof<Char>)
+            | _ -> exp
         | ILExpr.Throw(x) ->
             ILExpr.Throw(optimizeExpr x)
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
@@ -209,23 +184,18 @@ let optimize (tl:ILTopLevel) =
             ILExpr.TryCatchFinally(tx, catchList, fx, ty)
         | Byte _  
         | SByte _ 
-
         | Int16 _ 
         | Int32 _ 
         | Int64 _ 
-        
         | UInt16 _
         | UInt32 _
         | UInt64 _
-        
         | Single _
         | Double _
-
         | String _
         | Char _
         | Bool _
         | Null _
-
         | Typeof _
         | StaticFieldGet _
         | VarGet _

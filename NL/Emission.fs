@@ -30,36 +30,30 @@ let emit optimize (il:SmartILGenerator) ilExpr =
                 il.Stloc(local)
 
         match ilExpr with
-        | Byte x  -> il.Ldc_I4_S(x)
-        | SByte x  -> il.Ldc_I4_S(x)
-
-        | Int16 x  -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | Int32 x  -> il.Ldc_I4(x)
-        | Int64 x  -> il.Ldc_I8(x)
-
-        | UInt16 x  -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
-        | UInt32 x  -> il.Ldc_I4(int32 x)             
-        | UInt64 x  -> il.Ldc_I8(int64 x)
-        
+        | Byte x -> il.Ldc_I4_S(x)
+        | SByte x -> il.Ldc_I4_S(x)
+        | Int16 x -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | Int32 x -> il.Ldc_I4(x)
+        | Int64 x -> il.Ldc_I8(x)
+        | UInt16 x -> il.Ldc_I4(int32 x) //not sure why needs to be conv to int32 first (has a int16 overload but results in invalid program)
+        | UInt32 x -> il.Ldc_I4(int32 x)             
+        | UInt64 x -> il.Ldc_I8(int64 x)
         | Single x -> il.Ldc_R4(x)
         | Double x -> il.Ldc_R8(x)
-
         | String x -> il.Ldstr(x)
-        | Char x   -> il.Ldc_I4_S(int8 x) //should be ushort (uint16) not byte (uint8)?
-        
-        | Bool x   -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
-
-        | Null ty  -> il.Ldnull()
+        | Char x -> il.Ldc_I4_S(int8 x) //should be ushort (uint16) not byte (uint8)?
+        | Bool x -> il.Emit(if x then OpCodes.Ldc_I4_1 else OpCodes.Ldc_I4_0)
+        | Null ty -> il.Ldnull()
         | UMinus(cked, x, _) -> 
             emit x
             il.Neg()
         | NumericBinop(cked, op,x,y,_) -> 
             emitAll [x;y]
             match op with
-            | ILNumericBinop.Plus  -> il.Add()
+            | ILNumericBinop.Plus -> il.Add()
             | ILNumericBinop.Minus -> il.Sub()
             | ILNumericBinop.Times -> il.Mul()
-            | ILNumericBinop.Div   -> il.Div()
+            | ILNumericBinop.Div -> il.Div()
         | ComparisonBinop(op,x,y) -> 
             emitAll [x;y]
             match op with
@@ -133,7 +127,7 @@ let emit optimize (il:SmartILGenerator) ilExpr =
                 il.Callvirt(meth)
         | Sequential(x,y,_) ->
             emit x
-            if x.Type <> typeof<System.Void> then il.Pop()
+            if not <| isVoidOrEscapeTy x.Type then il.Pop()
             emit y
         | Ctor(ctor, args, _) -> 
             emitAll args
@@ -181,7 +175,7 @@ let emit optimize (il:SmartILGenerator) ilExpr =
             emit condition
             il.Brfalse_S(endBodyLabel)
             emitWith (Some(beginConditionLabel, endBodyLabel)) lenv body
-            if body.Type <> typeof<Void> then
+            if not <| isVoidOrEscapeTy body.Type then
                 il.Pop()
             il.Br(beginConditionLabel)
             il.ILGenerator.MarkLabel(endBodyLabel)
@@ -223,12 +217,15 @@ let emit optimize (il:SmartILGenerator) ilExpr =
         | ILExpr.Rethrow ->
             il.Emit(OpCodes.Rethrow)
         | ILExpr.TryCatchFinally(tx, catchList, fx, ty) ->
-            //for non-void expressions, a local var for the return value of the try or catch blocks
-            let retval = if tx.Type = typeof<System.Void> then None else Some(il.ILGenerator.DeclareLocal(ty))
+            //for non-void expressions, a local var for the return value of non-void or escape the try or catch blocks
+            let retval = if isVoidOrEscapeTy ty then None else Some(il.ILGenerator.DeclareLocal(ty))
+            let maybe_stloc_retval branchTy =
+                if isVoidOrEscapeTy branchTy |> not then
+                    retval |> Option.iter (fun retval -> il.Stloc(retval))
 
             il.ILGenerator.BeginExceptionBlock() |> ignore
             emit tx
-            retval |> Option.iter (fun retval -> il.Stloc(retval))
+            maybe_stloc_retval tx.Type
             for catch in catchList do                   
                 match catch with
                 | (filterTy, Some(filterName), cx) ->
@@ -238,9 +235,11 @@ let emit optimize (il:SmartILGenerator) ilExpr =
                     emitWith loopLabel (Map.add filterName local lenv) cx
                 | (filterTy, None, cx) ->
                     il.ILGenerator.BeginCatchBlock(filterTy)
-                    il.Pop()
+                    il.Pop() //discard the exn on the stack, we don't want it
                     emit cx
-                retval |> Option.iter (fun retval -> il.Stloc(retval))
+                
+                let (_,_,cx) = catch    
+                maybe_stloc_retval cx.Type
             match fx with
             | Some(fx) ->
                 il.ILGenerator.BeginFinallyBlock()

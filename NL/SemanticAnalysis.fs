@@ -9,7 +9,7 @@ module EM = CompilerMessages
 let abort() = raise CompilerInterruptException
 
 let sprintSeqForDisplay xs f =
-    if xs = Seq.empty then "()" 
+    if Seq.isEmpty xs then "()" 
     else (xs |> Seq.map (fun x -> sprintf "'%s'" (f x)) |> String.concat ", ")
 
 let sprintTypes (tarr:Type seq) =
@@ -367,8 +367,8 @@ module PathResolution =
                 
         match attempt with
         | None ->
-            EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text //TODO: may not be accurate any more!
-            abort() //need error message too!
+            EM.Could_not_resolve_possible_method_call_or_contructor_type pos path.LeadingPartsText path.Text
+            abort()
         | Some(ilExpr) ->
             ilExpr
 
@@ -452,38 +452,29 @@ let rec semantWith env synTopLevel =
         let semantExpr = semantExprWith env
 
         match synExpr with
-        | SynExpr.Byte(x,pos)   -> NumericParsing.parseByte x pos
-        | SynExpr.SByte(x,pos)  -> NumericParsing.parseSByte x pos
-
-        | SynExpr.Int16(x,pos)  -> NumericParsing.parseInt16 x pos
-        | SynExpr.Int32(x,pos)  -> NumericParsing.parseInt32 x pos
-        | SynExpr.Int64(x,pos)  -> NumericParsing.parseInt64 x pos
-        
+        | SynExpr.Byte(x,pos) -> NumericParsing.parseByte x pos
+        | SynExpr.SByte(x,pos) -> NumericParsing.parseSByte x pos
+        | SynExpr.Int16(x,pos) -> NumericParsing.parseInt16 x pos
+        | SynExpr.Int32(x,pos) -> NumericParsing.parseInt32 x pos
+        | SynExpr.Int64(x,pos) -> NumericParsing.parseInt64 x pos
         | SynExpr.UInt16(x,pos) -> NumericParsing.parseUInt16 x pos
         | SynExpr.UInt32(x,pos) -> NumericParsing.parseUInt32 x pos
         | SynExpr.UInt64(x,pos) -> NumericParsing.parseUInt64 x pos
-        
         | SynExpr.Single(x,pos) -> NumericParsing.parseSingle x pos
         | SynExpr.Double(x,pos) -> NumericParsing.parseDouble x pos
-
-        | SynExpr.UMinus(SynExpr.Byte(x,xpos),upos)   -> NumericParsing.parseByte ("-"+x) (PositionRange(upos,xpos))
-        | SynExpr.UMinus(SynExpr.SByte(x,xpos),upos)  -> NumericParsing.parseSByte ("-"+x) (PositionRange(upos,xpos))
-
-        | SynExpr.UMinus(SynExpr.Int16(x,xpos),upos)  -> NumericParsing.parseInt16 ("-"+x) (PositionRange(upos,xpos))
-        | SynExpr.UMinus(SynExpr.Int32(x,xpos),upos)  -> NumericParsing.parseInt32 ("-"+x) (PositionRange(upos,xpos))
-        | SynExpr.UMinus(SynExpr.Int64(x,xpos),upos)  -> NumericParsing.parseInt64 ("-"+x) (PositionRange(upos,xpos))
-        
+        | SynExpr.UMinus(SynExpr.Byte(x,xpos),upos) -> NumericParsing.parseByte ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.SByte(x,xpos),upos) -> NumericParsing.parseSByte ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int16(x,xpos),upos) -> NumericParsing.parseInt16 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int32(x,xpos),upos) -> NumericParsing.parseInt32 ("-"+x) (PositionRange(upos,xpos))
+        | SynExpr.UMinus(SynExpr.Int64(x,xpos),upos) -> NumericParsing.parseInt64 ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.UInt16(x,xpos),upos) -> NumericParsing.parseUInt16 ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.UInt32(x,xpos),upos) -> NumericParsing.parseUInt32 ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.UInt64(x,xpos),upos) -> NumericParsing.parseUInt64 ("-"+x) (PositionRange(upos,xpos))
-        
         | SynExpr.UMinus(SynExpr.Single(x,xpos),upos) -> NumericParsing.parseSingle ("-"+x) (PositionRange(upos,xpos))
         | SynExpr.UMinus(SynExpr.Double(x,xpos),upos) -> NumericParsing.parseDouble ("-"+x) (PositionRange(upos,xpos))
-        
         | SynExpr.String(x) -> ILExpr.String(x)
-        | SynExpr.Char(x)   -> ILExpr.Char(x)
-        | SynExpr.Bool(x)   -> ILExpr.Bool(x)
-
+        | SynExpr.Char(x) -> ILExpr.Char(x)
+        | SynExpr.Bool(x) -> ILExpr.Bool(x)
         | SynExpr.Null(tySig) -> 
             let ty = resolveTySig env tySig
             if ty.IsValueType then
@@ -691,20 +682,19 @@ let rec semantWith env synTopLevel =
                 PR.resolveILExprInstancePathSet instance path assign assignPos
         | SynExpr.Let(name, (assign, assignPos), body) ->
             let assign = semantExpr assign
-            if assign.Type = typeof<Void> then
+            if isVoidOrEscapeTy assign.Type then
                 EM.Void_invalid_in_let_binding assignPos
         
             let body = semantExprWith (env.ConsVariable(name, assign.Type)) body
             ILExpr.Let(name, assign, body, body.Type)
-        | SynExpr.Sequential((SynExpr.Break(_)|SynExpr.Continue(_)|SynExpr.Throw(_)) as x, (y,pos)) ->
+        | SynExpr.Sequential(x,(y,pos)) ->
             let x = semantExpr x
             
-            EM.Unreachable_code_detected pos
-            
+            match x.Type with
+            | EscapeTy -> EM.Unreachable_code_detected pos
+            | _ -> ()
+
             let y = semantExpr y
-            ILExpr.Sequential(x,y,y.Type)
-        | SynExpr.Sequential(x,(y,_)) ->
-            let x, y = semantExpr x, semantExpr y
             ILExpr.Sequential(x,y,y.Type)
         | SynExpr.OpenNamespaceOrType(nsOrTy, x) ->
             match nsOrTy.GenericArgs with
@@ -727,11 +717,11 @@ let rec semantWith env synTopLevel =
             | Some(asm) -> semantExprWith {env with Assemblies=asm::env.Assemblies} x
         | SynExpr.LogicalNot(x,pos) ->
             let x = semantExpr x
-            if x.Type <> typeof<bool> then
-                EM.Expected_type_but_got_type pos "System.Boolean" x.Type.Name
+            match x.Type with
+            | BooleanTy -> ILExpr.LogicalNot(x)
+            | _ ->
+                EM.Expected_type_but_got_type pos typeof<bool>.Name x.Type.Name
                 ILExpr.Error(typeof<bool>)
-            else
-                ILExpr.LogicalNot(x)
         | SynExpr.Cast(x, tySig, pos) ->
             let x = semantExpr x
             let ty = resolveTySig env tySig
@@ -763,18 +753,20 @@ let rec semantWith env synTopLevel =
                     ILExpr.Error(ty)
         | SynExpr.LogicBinop(op,(x,xpos),(y,ypos)) ->
             let x =
-                match semantExpr x with
-                | x when x.Type <> typeof<bool> -> 
-                    EM.Expected_type_but_got_type xpos "System.Boolean" x.Type.Name
+                let x = semantExpr x
+                match x.Type with
+                | BooleanTy -> x
+                | _ ->
+                    EM.Expected_type_but_got_type xpos typeof<bool>.Name x.Type.Name
                     ILExpr.Error(typeof<bool>)
-                | x -> x
 
             let y = 
-                match semantExpr y with
-                | y when y.Type <> typeof<bool> ->
-                    EM.Expected_type_but_got_type ypos "System.Boolean" y.Type.Name
+                let y = semantExpr y
+                match y.Type with
+                | BooleanTy -> y
+                | _ ->
+                    EM.Expected_type_but_got_type ypos typeof<bool>.Name y.Type.Name
                     ILExpr.Error(typeof<bool>)
-                | y -> y
         
             match op with
             | SynLogicBinop.And -> ILExpr.IfThenElse(x, y, ILExpr.Bool(false), typeof<bool>)
@@ -782,50 +774,55 @@ let rec semantWith env synTopLevel =
         | SynExpr.IfThenElse((condition, conditionPos),thenBranch,elseBranch,pos) ->
             let condition = 
                 let condition = semantExpr condition
-                if condition.Type <> typeof<bool> then
-                    EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
+                match condition.Type with
+                | BooleanTy -> condition
+                | _ ->
+                    EM.Expected_type_but_got_type conditionPos typeof<bool>.Name condition.Type.Name
                     ILExpr.Error(typeof<bool>)
-                else
-                    condition
+
             let thenBranch = semantExpr thenBranch
             match elseBranch with
             | Some(elseBranch) ->
                 let elseBranch = semantExpr elseBranch
                 if thenBranch.Type <> elseBranch.Type then
-                    //maybe could use 
-                    EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
-                    ILExpr.IfThenElse(condition,thenBranch, ILExpr.Error(thenBranch.Type), thenBranch.Type)
+                    match thenBranch.Type, elseBranch.Type with
+                    | EscapeTy, retTy | retTy, EscapeTy -> 
+                        ILExpr.IfThenElse(condition,thenBranch,elseBranch,retTy)
+                    | _ ->
+                        EM.IfThenElse_branch_type_mismatch pos thenBranch.Type.Name elseBranch.Type.Name
+                        ILExpr.IfThenElse(condition,thenBranch, ILExpr.Error(thenBranch.Type), thenBranch.Type)
                 else
                     ILExpr.IfThenElse(condition,thenBranch,elseBranch,thenBranch.Type)
             | None ->
-                if thenBranch.Type = typeof<Void> then
-                    ILExpr.IfThen(condition,thenBranch)
-                else
+                match thenBranch.Type with
+                | VoidOrEscapeTy ->
+                    ILExpr.IfThen(condition, thenBranch)
+                | _ ->
                     ILExpr.IfThenElse(condition, thenBranch, ILExpr.Default(thenBranch.Type), thenBranch.Type)
         | SynExpr.Nop ->
             ILExpr.Nop
         | SynExpr.WhileLoop((condition, conditionPos), body) ->
             let condition = 
                 let condition = semantExpr condition
-                if condition.Type <> typeof<bool> then
-                    EM.Expected_type_but_got_type conditionPos "System.Boolean" condition.Type.Name
+                match condition.Type with
+                | BooleanTy -> condition
+                | _ ->
+                    EM.Expected_type_but_got_type conditionPos typeof<bool>.Name condition.Type.Name
                     ILExpr.Error(typeof<bool>)
-                else
-                    condition
             let body = semantExprWith {env with IsLoopBody=true} body
             ILExpr.WhileLoop(condition, body)
         | SynExpr.Break(pos) ->
-            if not env.IsLoopBody then
-                EM.Break_outside_of_loop pos
-                ILExpr.Error(typeof<Void>)
-            else
+            if env.IsLoopBody then 
                 ILExpr.Break
-        | SynExpr.Continue(pos) ->
-            if not env.IsLoopBody then
-                EM.Continue_outside_of_loop pos
-                ILExpr.Error(typeof<Void>)
             else
+                EM.Break_outside_of_loop pos
+                ILExpr.Error(typeof<Escape>)
+        | SynExpr.Continue(pos) ->
+            if env.IsLoopBody then
                 ILExpr.Continue
+            else
+                EM.Continue_outside_of_loop pos
+                ILExpr.Error(typeof<Escape>)
         | SynExpr.Checked(x) ->
             semantExprWith {env with Checked=true} x
         | SynExpr.Unchecked(x) ->
@@ -836,29 +833,27 @@ let rec semantWith env synTopLevel =
                 ILExpr.Throw(x)
             else
                 EM.Throw_type_does_not_extend_Exception pos x.Type.Name
-                ILExpr.Error(typeof<Void>)
+                ILExpr.Error(typeof<Escape>)
         | SynExpr.TryCatchFinally(tx, [], None, pos) ->
             let tx = semantExpr tx
             EM.Try_without_catch_or_finally pos
             ILExpr.Error(tx.Type)            
-        | SynExpr.TryCatchFinally(tx, catchList, fx, _) ->
+        | SynExpr.TryCatchFinally(tx, catchList, fx, txPos) ->
             let env = { env with IsFinallyBodyOfCurrentExceptionHandler=false }
             let semantExpr = semantExprWith env
             
             let tx = semantExpr tx
 
-            let validateCatch pos (catch:ILExpr) =
-                if catch.Type <> tx.Type then
-                    EM.Catch_type_does_not_match_Try_type pos catch.Type.Name tx.Type.Name
-                    ILExpr.Error(tx.Type)
-                else
-                    catch
+            let firstNonEscapeTy =
+                match tx.Type with
+                | EscapeTy -> None
+                | ty -> Some(ty)
 
-            let catchList =
-                let rec loop xl acc =
+            let catchList, firstNonEscapeTy =
+                let rec loop xl acc firstNonEscapeTy =
                     match xl with
-                    | [] -> acc
-                    | (filterTySig, name, catch, pos)::tl ->
+                    | [] -> acc, firstNonEscapeTy
+                    | (filterTySig, name, catch, catchPos)::tl ->
                         let filterTy = 
                             filterTySig
                             |> Option.map (resolveTySig env)
@@ -870,28 +865,42 @@ let rec semantWith env synTopLevel =
                             | Some(name) -> env.ConsVariable(name, filterTy)
                             | None -> env
                                
-                        let catch = semantExprWith env catch |> validateCatch pos
+                        let catch = semantExprWith env catch
+                        //insure consistent branch types w/ error correction in case of mismatch
+                        let catch, firstNonEscapeTy =
+                            match firstNonEscapeTy with
+                            | Some(prevTy)  when prevTy <> catch.Type && catch.Type <> typeof<Escape> ->
+                                EM.Inconsistent_try_catch_branch_types catchPos catch.Type.Name prevTy.Name
+                                ILExpr.Error(prevTy), firstNonEscapeTy
+                            | None when catch.Type <> typeof<Escape> -> catch, Some(catch.Type)
+                            | _ -> catch, firstNonEscapeTy
+
                         match acc with
                         | (prevFilterTy:Type,_,_)::_ when prevFilterTy.IsAssignableFrom(filterTy) ->
-                            EM.Unreachable_code_detected pos
+                            EM.Unreachable_code_detected catchPos
                         | _ -> ()
-                        loop tl ((filterTy, name, catch)::acc)
+                        loop tl ((filterTy, name, catch)::acc) firstNonEscapeTy
 
-                loop catchList []
-                |> List.rev
+                let catchList, firstNonEscapeTy = loop catchList [] firstNonEscapeTy
+                List.rev catchList, firstNonEscapeTy
 
             let fx = fx |> Option.map (semantExprWith {env with IsFinallyBodyOfCurrentExceptionHandler=true})
-            ILExpr.TryCatchFinally(tx, catchList, fx, tx.Type)
+            
+            let xty = match firstNonEscapeTy with
+                      | Some(ty) -> ty 
+                      | _ -> typeof<Escape>
+
+            ILExpr.TryCatchFinally(tx, catchList, fx, xty)
         | SynExpr.Rethrow pos ->
             match env with
             | {IsCatchBody=true; IsFinallyBodyOfCurrentExceptionHandler=false} ->
                 ILExpr.Rethrow
             | {IsCatchBody=true; IsFinallyBodyOfCurrentExceptionHandler=true} ->
                 EM.Rethrow_of_outer_catch_not_valid_inside_nested_finally_body pos
-                ILExpr.Error(typeof<System.Void>)
+                ILExpr.Error(typeof<Escape>)
             | {IsCatchBody=false} ->
                 EM.Rethrow_not_valid_outside_of_catch_body pos
-                ILExpr.Error(typeof<System.Void>)
+                ILExpr.Error(typeof<Escape>)
 
     match synTopLevel with
     | SynTopLevel.StmtList(xl) ->
@@ -905,7 +914,7 @@ let rec semantWith env synTopLevel =
                     loop env synStmts (ilStmt::ilStmts)                
                 | SynStmt.Let(name, (assign,assignPos)) ->
                     let assign = semantExprWith env assign
-                    if assign.Type = typeof<Void> then
+                    if isVoidOrEscapeTy assign.Type then
                         EM.Void_invalid_in_let_binding assignPos
 
                     let ilStmt = ILStmt.Let(name, assign)
