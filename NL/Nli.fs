@@ -23,7 +23,7 @@ type Nli(?options: CompilerOptions) =
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string) =
-        options.InstallMessageLogger()
+        options.MessageLoggerInstaller()
 
         let asmName = "NLI_" + asmCounter.ToString()
         asmCounter <- asmCounter + 1I
@@ -63,7 +63,7 @@ type Nli(?options: CompilerOptions) =
                     for stmt in stmts do
                         match stmt with
                         | ILStmt.Do(x) ->
-                            if x.Type <> typeof<Void> then
+                            if not <| isVoidOrEscapeTy x.Type then
                                 let fi = tyBuilder.DefineField("it" + itCounter.ToString(), x.Type, fieldAttrs)
                                 itCounter <- itCounter + 1I
                                 emit (ILExpr.StaticFieldSet(fi,x))

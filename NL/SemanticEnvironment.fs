@@ -56,8 +56,8 @@ type SemanticEnvironment with
         this.NVTs 
         |> Seq.choose (function NVT.Type(ty) -> Some(ty) | _ -> None) 
 
-    member this.ConsNamespace(ns)       = { this with NVTs= NVT.Namespace(ns)::this.NVTs }
-    member this.ConsVariable(name, ty)  = { this with NVTs= NVT.Variable(name,ty)::this.NVTs }
-    member this.ConsType(ty)            = { this with NVTs= NVT.Type(ty)::this.NVTs }
+    member this.ConsNamespace(ns) = { this with NVTs= NVT.Namespace(ns)::this.NVTs }
+    member this.ConsVariable(name, ty) = { this with NVTs= NVT.Variable(name,ty)::this.NVTs }
+    member this.ConsType(ty) = { this with NVTs= NVT.Type(ty)::this.NVTs }
 
-    member this.ConsAssembly(assm)      = { this with Assemblies= assm::this.Assemblies }
+    member this.ConsAssembly(assm) = { this with Assemblies= assm::this.Assemblies }

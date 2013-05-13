@@ -16,11 +16,12 @@ open Compilation
 ///Evaluate an NL code string using the default environment.
 ///If one or more compiler errors occur, then an EvaluationException is throw which contains the list of errors. Warnings are ignored.
 let tryEvalWith<'a> options code : 'a option = 
-    options.InstallMessageLogger()
+    options.MessageLoggerInstaller()
 
     ///Create a dynamic method from a typed expression using the default environment
     let mkDm (ilExpr:ILExpr) =
-        let dm = DynamicMethod("Eval", ilExpr.Type, null)
+        let retTy = if isVoidOrEscapeTy ilExpr.Type then typeof<Void> else ilExpr.Type
+        let dm = DynamicMethod("Eval", retTy, null)
         let il = dm.GetILGenerator() |> SmartILGenerator.fromILGenerator
         
         Emission.emit options.Optimize il ilExpr
@@ -39,8 +40,12 @@ let tryEvalWith<'a> options code : 'a option =
             None
         | Some(ilExpr) ->
             let dm = mkDm ilExpr
-            dm.Invoke(null,null) |> unbox |> Some
-
+            let value = dm.Invoke(null,null) 
+            let expectedResultType = typeof<'a>
+            if value = null && typeof<ValueType>.IsAssignableFrom(expectedResultType) then
+                raise (invalidArg "'a" (sprintf "null eval result cannot be cast to ValueType '%s'" expectedResultType.Name))
+            else 
+                value|> unbox |> Some
 
 let tryEval<'a> = tryEvalWith<'a> CompilerOptions.Default
 
