@@ -26,14 +26,6 @@ type public NliForm() as this =
         new Font("Consolas", 10.0f)
 
     //controls
-    let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
-    let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleRight)
-    do statusStrip.Items.Add(statusLabel) |> ignore
-
-    let updateStatus text = 
-        statusLabel.Text <- text
-        statusStrip.Update()
-
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
     
     let editor = new CodeEditor(editorFont, Dock=DockStyle.Fill)
@@ -44,18 +36,30 @@ type public NliForm() as this =
     let watchTab = new TabPage("Watch")
     let treeViewPanel = new Panel(Dock=DockStyle.Fill, BackColor=System.Drawing.SystemColors.Control)
     let treeView = new WatchTreeView(Dock=DockStyle.Fill)
-    do treeViewPanel.Controls.Add(treeView)
-    do watchTab.Controls.Add(treeViewPanel)
-    do tabControl.TabPages.Add(watchTab)
+    do
+        treeViewPanel.Controls.Add(treeView)
+        watchTab.Controls.Add(treeViewPanel)
+        tabControl.TabPages.Add(watchTab)
 
     let outputTab = new TabPage("Output")
     let outputScintilla = new OutputScintilla(editorFont, Dock=DockStyle.Fill)
-    do outputTab.Controls.Add(outputScintilla)
-    do tabControl.TabPages.Add(outputTab)
+    do 
+        outputTab.Controls.Add(outputScintilla)
+        tabControl.TabPages.Add(outputTab)
 
-    do splitc.Panel2.Controls.Add(tabControl)
-    do this.Controls.Add(splitc)
-    do this.Controls.Add(statusStrip)
+    do
+        splitc.Panel2.Controls.Add(tabControl)
+        this.Controls.Add(splitc)
+    
+    let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
+    let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleRight)
+    do
+        statusStrip.Items.Add(statusLabel) |> ignore
+        this.Controls.Add(statusStrip)
+
+    let updateStatus text = 
+        statusLabel.Text <- text
+        statusStrip.Update()
 
     do
         this.Menu <- 
