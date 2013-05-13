@@ -61,6 +61,39 @@ type public NliForm() as this =
         statusLabel.Text <- text
         statusStrip.Update()
 
+    let submit code =
+        updateStatus "Processing submission..."
+        outputScintilla.Text <- ""
+        outputScintilla.Update()
+            
+        outputScintilla.RedirectConsoleOutput <-true
+        let sw = System.Diagnostics.Stopwatch.StartNew()
+        let results = nli.Submit(code)
+        sw.Stop()
+        outputScintilla.RedirectConsoleOutput <-false
+            
+        Control.update treeView <| fun () ->
+            for name, value, ty in results do
+                treeView.Watch(name, value, ty)
+
+        if(results.Length > 0) then
+            treeView.Nodes.[treeView.Nodes.Count - 1].EnsureVisible()
+
+        let countMessages level = 
+            results
+            |> Seq.filter (fun (_,value,ty) -> 
+                match value with 
+                | :? CompilerMessage as value when value.Level = level -> true | _ -> false)
+            |> Seq.length 
+
+        let warningCount = countMessages MessageLevel.Warning
+        let errorCount = countMessages MessageLevel.Error
+        updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" sw.ElapsedMilliseconds warningCount errorCount)
+
+    //event handlers
+    do editor.Submit.Add submit
+
+    //main menu
     do
         this.Menu <- 
             new MainMenu(
@@ -91,6 +124,11 @@ type public NliForm() as this =
                     yield (
                         let sessionMi = new MenuItem("Session")
                         sessionMi.MenuItems.AddRange [|
+                            yield (
+                                let submitMi = new MenuItem("Submit")
+                                submitMi.Click.Add (fun _ -> editor.TriggerSubmit())
+                                submitMi
+                            )
                             yield (
                                 let resetMi = new MenuItem("Reset")
                                 resetMi.Click.Add <| fun _ ->
@@ -132,34 +170,3 @@ type public NliForm() as this =
                     )
                 |]
             )
-
-    //event handlers
-    do 
-        editor.Submit.Add <| fun code ->
-            updateStatus "Processing submission..."
-            outputScintilla.Text <- ""
-            outputScintilla.Update()
-            
-            outputScintilla.RedirectConsoleOutput <-true
-            let sw = System.Diagnostics.Stopwatch.StartNew()
-            let results = nli.Submit(code)
-            sw.Stop()
-            outputScintilla.RedirectConsoleOutput <-false
-            
-            Control.update treeView <| fun () ->
-                for name, value, ty in results do
-                    treeView.Watch(name, value, ty)
-
-            if(results.Length > 0) then
-                treeView.Nodes.[treeView.Nodes.Count - 1].EnsureVisible()
-
-            let countMessages level = 
-                results
-                |> Seq.filter (fun (_,value,ty) -> 
-                    match value with 
-                    | :? CompilerMessage as value when value.Level = level -> true | _ -> false)
-                |> Seq.length 
-
-            let warningCount = countMessages MessageLevel.Warning
-            let errorCount = countMessages MessageLevel.Error
-            updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" sw.ElapsedMilliseconds warningCount errorCount)
