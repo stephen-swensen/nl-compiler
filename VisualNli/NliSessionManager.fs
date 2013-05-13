@@ -2,6 +2,8 @@
 open System
 open Swensen.NL
 
+type SubmissionStats = { ErrorCount:int; WarningCount:int; Time:int64}
+
 //todo: move to maing NL namespace / assembly?
 type NliSessionManager() as this =
     //data
@@ -19,8 +21,24 @@ type NliSessionManager() as this =
         this.exnCount <- 0
 
 
-    member this.Submit(code:String) = 
-        let collectMessages() = [|  
+    member this.Submit(code:String) =
+        let sw = System.Diagnostics.Stopwatch.StartNew()
+        let results =
+            try
+                match this.nli.TrySubmit(code) with
+                | Some(results) -> [| yield! results |]
+                | None -> [||]
+            with e ->
+                Console.WriteLine(e.ToString())
+                let result = sprintf "exn%i" this.exnCount, e :> obj, e.GetType()
+                this.exnCount <- this.exnCount + 1
+                [| yield result |]
+        sw.Stop()
+        let time = sw.ElapsedMilliseconds
+
+        let errorCountOffset = this.errorCount
+        let warningCountOffset = this.warningCount
+        let messages = [|  
             let msgs = Swensen.NL.MessageLogger.ActiveLogger.GetMessages()
             for msg in msgs do
                 match msg.Level with
@@ -31,14 +49,5 @@ type NliSessionManager() as this =
                     yield (sprintf "warning%i" this.warningCount,  msg :> obj, msg.GetType())
                     this.warningCount <- this.warningCount + 1
         |]
-
-        try
-            match this.nli.TrySubmit(code) with
-            | Some(results) -> [| yield! collectMessages(); yield! results |]
-            | None -> collectMessages()
-        with e ->
-            Console.WriteLine(e.ToString())
-            let result = sprintf "exn%i" this.exnCount, e :> obj, e.GetType()
-            this.exnCount <- this.exnCount + 1
-            [| yield! collectMessages(); yield result |]
-
+        let stats = { ErrorCount=this.errorCount-errorCountOffset; WarningCount=this.warningCount-warningCountOffset; Time=time }
+        (stats, [|yield! messages; yield! results|])

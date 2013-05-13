@@ -67,9 +67,7 @@ type public NliForm() as this =
         outputScintilla.Update()
             
         outputScintilla.RedirectConsoleOutput <-true
-        let sw = System.Diagnostics.Stopwatch.StartNew()
-        let results = nli.Submit(code)
-        sw.Stop()
+        let stats, results = nli.Submit(code)
         outputScintilla.RedirectConsoleOutput <-false
             
         Control.update treeView <| fun () ->
@@ -79,16 +77,7 @@ type public NliForm() as this =
         if(results.Length > 0) then
             treeView.Nodes.[treeView.Nodes.Count - 1].EnsureVisible()
 
-        let countMessages level = 
-            results
-            |> Seq.filter (fun (_,value,ty) -> 
-                match value with 
-                | :? CompilerMessage as value when value.Level = level -> true | _ -> false)
-            |> Seq.length 
-
-        let warningCount = countMessages MessageLevel.Warning
-        let errorCount = countMessages MessageLevel.Error
-        updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" sw.ElapsedMilliseconds warningCount errorCount)
+        updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" stats.Time stats.WarningCount stats.ErrorCount)
 
     //event handlers
     do editor.Submit.Add submit
