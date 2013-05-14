@@ -99,22 +99,94 @@ type public NliForm() as this =
     do editor.Submit.Add submit
 
     //main menu
+    let fileDialogFilter = "NL files (*.nl)|*.nl|All files (*.*)|*.*"
+    let openFileDialog = new OpenFileDialog(Filter=fileDialogFilter)
+    let saveFileDialog = new SaveFileDialog(Filter=fileDialogFilter)
+
+    let saveAs() =
+        saveFileDialog.FileName <-
+            match editorFile.Name with
+            | Some(name) -> name | None -> ""
+
+        if saveFileDialog.ShowDialog() = DialogResult.OK then
+            let fileName = saveFileDialog.FileName
+            System.IO.File.WriteAllText(fileName, editor.Text)
+            updateEditorFile { Modified=false; Name=Some(fileName) }
+            updateStatus "File saved"
+        else
+            updateStatus "File save cancelled"
+
+    let saveOrSaveAs() =
+        match editorFile with
+        | { Modified=true; Name=Some(name) } -> 
+            System.IO.File.WriteAllText(name, editor.Text)
+            updateEditorFile { editorFile with Modified=false }
+            updateStatus ("File saved")
+        | { Modified=true; Name=None } -> saveAs()
+        | _ -> updateStatus ("No file changes to save")
+
+    let maybePromptForSaveChanges() =
+        if editorFile.Modified then
+            let fileName =
+                match editorFile.Name with
+                | Some(name) -> name | None -> "new file"
+            MessageBox.Show(sprintf "Save changes to %s?" fileName, "Save Changes", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)    
+        else
+            DialogResult.No
+
     do
         this.Menu <- 
             new MainMenu(
                 [|
                     yield (
-                        let fileMi = new MenuItem("File")
+                        let fileMi = new MenuItem("File") //shortcut
                         fileMi.MenuItems.AddRange [|
                             yield (
-                                let exitMi = new MenuItem("Open")
-                                exitMi.Click.Add <| fun _ ->
-                                    let dialog = new OpenFileDialog()
-                                    if dialog.ShowDialog() = DialogResult.OK then
-                                        editor.Text <- System.IO.File.ReadAllText(dialog.FileName)
-                                        updateEditorFile { Modified=false; Name=Some(dialog.FileName) }
-                                        updateStatus ("Filed opened: " + dialog.FileName)
-                                exitMi
+                                let mi = new MenuItem("New")
+                                mi.Shortcut <- Shortcut.CtrlN
+                                mi.Click.Add <| fun _ ->
+                                    let promptResult = maybePromptForSaveChanges()
+                                    if promptResult = DialogResult.Yes then
+                                        saveOrSaveAs()
+                                    
+                                    if promptResult <> DialogResult.Cancel then
+                                        editor.Text <- ""
+                                        updateEditorFile { Modified=false; Name=None }
+                                        updateStatus ("New file opened")
+                                    else
+                                        updateStatus ("New file open cancelled")
+                                mi
+                            )
+                            yield (
+                                let mi = new MenuItem("Open...")
+                                mi.Shortcut <- Shortcut.CtrlO
+                                mi.Click.Add <| fun _ ->
+                                    let promptResult = maybePromptForSaveChanges()
+                                    if promptResult = DialogResult.Yes then
+                                        saveOrSaveAs()
+                                    
+                                    openFileDialog.FileName <- ""
+                                    if promptResult <> DialogResult.Cancel && openFileDialog.ShowDialog() = DialogResult.OK then
+                                        let fileName = openFileDialog.FileName
+                                        editor.Text <- System.IO.File.ReadAllText(fileName)
+                                        updateEditorFile { Modified=false; Name=Some(fileName) }
+                                        updateStatus ("File opened")
+                                    else
+                                        updateStatus ("File open cancelled")
+                                mi
+                            )
+                            yield (
+                                let mi = new MenuItem("Save")
+                                mi.Shortcut <- Shortcut.CtrlS
+                                mi.Click.Add <| fun _ ->
+                                    saveOrSaveAs()
+                                mi
+                            )
+                            yield (
+                                let mi = new MenuItem("Save As...")
+                                mi.Click.Add <| fun _ ->
+                                    saveAs()
+                                mi
                             )
 
                             yield new MenuItem("-")
