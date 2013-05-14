@@ -10,6 +10,9 @@ open Swensen.NL
 
 open ScintillaNET
 
+///Info about a CodeEditor file (Name=None implies new file)
+type EditorFile = { Modified:bool; Name:string option }
+
 type public NliForm() as this =
     inherit Form(
         Icon = null,
@@ -22,8 +25,7 @@ type public NliForm() as this =
 
     let nli = NliSessionManager()
     //data
-    let editorFont = 
-        new Font("Consolas", 10.0f)
+    let editorFont = new Font("Consolas", 10.0f)
 
     //controls
     let splitc = new System.Windows.Forms.SplitContainer(Dock=DockStyle.Fill, Orientation=Orientation.Horizontal, BackColor=Color.LightGray)
@@ -56,6 +58,20 @@ type public NliForm() as this =
     do
         statusStrip.Items.Add(statusLabel) |> ignore
         this.Controls.Add(statusStrip)
+
+    ///Info about the file being edited in the CodeEditor  (currently we support only one open file at a time).
+    let mutable editorFile = { Modified=false; Name=None }
+    let updateEditorFile ef =
+        if editorFile <> ef then
+            editorFile <- ef
+            this.Text <- 
+                match editorFile with
+                | {Modified=false; Name=None} -> "VisualNli"
+                | {Modified=true; Name=None} -> "*VisualNli"
+                | {Modified=false; Name=Some(name)} -> sprintf "%s - VisualNli" name
+                | {Modified=true; Name=Some(name)} -> sprintf "*%s - VisualNli" name
+
+    do editor.TextInsertedOrDeleted.Add(fun _ -> updateEditorFile { editorFile with Modified=true })
 
     let updateStatus text = 
         statusLabel.Text <- text
@@ -96,6 +112,7 @@ type public NliForm() as this =
                                     let dialog = new OpenFileDialog()
                                     if dialog.ShowDialog() = DialogResult.OK then
                                         editor.Text <- System.IO.File.ReadAllText(dialog.FileName)
+                                        updateEditorFile { Modified=false; Name=Some(dialog.FileName) }
                                         updateStatus ("Filed opened: " + dialog.FileName)
                                 exitMi
                             )
