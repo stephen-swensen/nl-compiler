@@ -108,13 +108,16 @@ type public NliForm() as this =
             match editorFile.Name with
             | Some(name) -> name | None -> ""
 
-        if saveFileDialog.ShowDialog() = DialogResult.OK then
+        let dialogResult = saveFileDialog.ShowDialog()
+        if dialogResult = DialogResult.OK then
             let fileName = saveFileDialog.FileName
             System.IO.File.WriteAllText(fileName, editor.Text)
             updateEditorFile { Modified=false; Name=Some(fileName) }
             updateStatus "File saved"
         else
             updateStatus "File save cancelled"
+        
+        dialogResult
 
     let saveOrSaveAs() =
         match editorFile with
@@ -122,8 +125,12 @@ type public NliForm() as this =
             System.IO.File.WriteAllText(name, editor.Text)
             updateEditorFile { editorFile with Modified=false }
             updateStatus ("File saved")
-        | { Modified=true; Name=None } -> saveAs()
-        | _ -> updateStatus ("No file changes to save")
+            DialogResult.None
+        | { Modified=true; Name=None } -> 
+            saveAs()
+        | _ -> 
+            updateStatus ("No file changes to save")
+            DialogResult.None
 
     let maybePromptForSaveChanges() =
         if editorFile.Modified then
@@ -145,9 +152,9 @@ type public NliForm() as this =
                                 let mi = new MenuItem("New")
                                 mi.Shortcut <- Shortcut.CtrlN
                                 mi.Click.Add <| fun _ ->
-                                    let promptResult = maybePromptForSaveChanges()
+                                    let mutable promptResult = maybePromptForSaveChanges()
                                     if promptResult = DialogResult.Yes then
-                                        saveOrSaveAs()
+                                        promptResult <- saveOrSaveAs()
                                     
                                     if promptResult <> DialogResult.Cancel then
                                         editor.Text <- ""
@@ -161,9 +168,9 @@ type public NliForm() as this =
                                 let mi = new MenuItem("Open...")
                                 mi.Shortcut <- Shortcut.CtrlO
                                 mi.Click.Add <| fun _ ->
-                                    let promptResult = maybePromptForSaveChanges()
+                                    let mutable promptResult = maybePromptForSaveChanges()
                                     if promptResult = DialogResult.Yes then
-                                        saveOrSaveAs()
+                                        promptResult <- saveOrSaveAs()
                                     
                                     openFileDialog.FileName <- ""
                                     if promptResult <> DialogResult.Cancel && openFileDialog.ShowDialog() = DialogResult.OK then
@@ -179,13 +186,13 @@ type public NliForm() as this =
                                 let mi = new MenuItem("Save")
                                 mi.Shortcut <- Shortcut.CtrlS
                                 mi.Click.Add <| fun _ ->
-                                    saveOrSaveAs()
+                                    saveOrSaveAs() |> ignore
                                 mi
                             )
                             yield (
                                 let mi = new MenuItem("Save As...")
                                 mi.Click.Add <| fun _ ->
-                                    saveAs()
+                                    saveAs() |> ignore
                                 mi
                             )
 
@@ -248,3 +255,13 @@ type public NliForm() as this =
                     )
                 |]
             )
+    do
+        this.FormClosing.Add(fun e ->
+            let mutable promptResult = maybePromptForSaveChanges()
+            if promptResult = DialogResult.Yes then
+                promptResult <- saveOrSaveAs()
+
+            if promptResult = DialogResult.Cancel then
+                e.Cancel <- true
+                updateStatus "Exit cancelled"
+        )
