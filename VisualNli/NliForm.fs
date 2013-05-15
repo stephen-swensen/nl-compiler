@@ -77,19 +77,41 @@ type public NliForm() as this =
         statusLabel.Text <- text
         statusStrip.Update()
 
+    do
+        let errorIndicator = editor.Indicators.Item(0)
+        errorIndicator.Style <- IndicatorStyle.Squiggle
+        errorIndicator.Color <- Color.Red
+
+        let warningIndicator = editor.Indicators.Item(1)
+        warningIndicator.Style <- IndicatorStyle.Squiggle
+        warningIndicator.Color <- Color.Blue
+
     let submit code =
         updateStatus "Processing submission..."
         outputScintilla.Text <- ""
         outputScintilla.Update()
             
+        //submit results with console output (stdout and stderr, including errors and warnings) redirected to console tab
         outputScintilla.RedirectConsoleOutput <-true
         let stats, results = nli.Submit(code)
         outputScintilla.RedirectConsoleOutput <-false
             
+        //update watches
         Control.update treeView <| fun () ->
             for name, value, ty in results do
                 treeView.Watch(name, value, ty)
 
+        //draw squiggly indicators for errors and warnings
+        [0;1] |> Seq.iter (fun i -> editor.GetRange().ClearIndicator(i))
+        results 
+        |> Seq.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
+        |> Seq.sortBy (fun cm -> if cm.Level = Error then 1 else 0) //errors are more important than warnings, so highlight after warnings
+        |> Seq.iter (fun value ->
+            let range = editor.GetRange(value.Range.Start.AbsoluteOffset-1, value.Range.End.AbsoluteOffset-1)
+            range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)
+        )
+
+        //scroll to last line in console output
         if(results.Length > 0) then
             treeView.Nodes.[treeView.Nodes.Count - 1].EnsureVisible()
 
