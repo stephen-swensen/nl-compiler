@@ -87,13 +87,13 @@ type public NliForm() as this =
         warningIndicator.Color <- Color.Blue
 
     let submit (range:Range) =
-        let code = range.Text
         updateStatus "Processing submission..."
         outputScintilla.Text <- ""
         outputScintilla.Update()
             
         //submit results with console output (stdout and stderr, including errors and warnings) redirected to console tab
         outputScintilla.RedirectConsoleOutput <-true
+        let code = range.Text
         let stats, results = nli.Submit(code)
         outputScintilla.RedirectConsoleOutput <-false
             
@@ -111,6 +111,7 @@ type public NliForm() as this =
         |> Seq.iter (fun value ->
             let range = editor.GetRange(offset + value.Range.Start.AbsoluteOffset-1, offset + value.Range.End.AbsoluteOffset-1)
             range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)
+            
         )
 
         //scroll to last line in console output
