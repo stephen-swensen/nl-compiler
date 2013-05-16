@@ -2,6 +2,7 @@
 open System
 open System.Drawing
 open System.Windows.Forms
+open Swensen.NL
 
 open ScintillaNET
 
@@ -13,6 +14,14 @@ type CodeEditor(font:Font) as this =
 
     do
         this.Margins.[0].Width <- 22;
+
+        let errorIndicator = this.Indicators.Item(0)
+        errorIndicator.Style <- IndicatorStyle.Squiggle
+        errorIndicator.Color <- Color.Red
+
+        let warningIndicator = this.Indicators.Item(1)
+        warningIndicator.Style <- IndicatorStyle.Squiggle
+        warningIndicator.Color <- Color.Blue
 
         //http://scintillanet.codeplex.com/wikipage?title=FAQ
         this.Indentation.BackspaceUnindents <- true;
@@ -49,13 +58,27 @@ type CodeEditor(font:Font) as this =
         if this.Selection.Length > 0 then
             submitEvent.Trigger(this.Selection.Range)
         else
-            submitEvent.Trigger(this.GetRange())
+            submitEvent.Trigger(this.GetRange())        
 
-    ///Alt+Enter submits selection if any, otherwise all text
+    ///Ctrl+Enter submits selection if any, otherwise all text
     override this.OnKeyDown(e:KeyEventArgs) =
         base.OnKeyDown(e)
-        if e.Alt && e.KeyCode = Keys.Enter then
+        if e.Control && e.KeyCode = Keys.Enter then
             this.TriggerSubmit()
             e.SuppressKeyPress <- true //so doesn't make "ping" noise
         else 
             ()
+
+    ///Clears all indicators
+    member this.ClearIndicators() =
+        [0;1] |> Seq.iter (fun i -> this.GetRange().ClearIndicator(i))
+
+    ///Clear all indicators (for the entire document) and then draw indicators for the given compiler messages with the given position offset
+    member this.ResetIndicators(offset, compilerMessages:CompilerMessage seq) =
+        this.ClearIndicators()
+        compilerMessages
+        |> Seq.sortBy (fun cm -> if cm.Level = Error then 1 else 0) //errors are more important than warnings, so highlight after warnings
+        |> Seq.iter (fun value ->
+            let range = this.GetRange(offset + value.Range.Start.AbsoluteOffset, offset + value.Range.End.AbsoluteOffset)
+            range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)   
+        )
