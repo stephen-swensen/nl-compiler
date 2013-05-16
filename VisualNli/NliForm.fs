@@ -77,25 +77,6 @@ type public NliForm() as this =
         statusLabel.Text <- text
         statusStrip.Update()
 
-    do
-        let errorIndicator = editor.Indicators.Item(0)
-        errorIndicator.Style <- IndicatorStyle.Squiggle
-        errorIndicator.Color <- Color.Red
-
-        let warningIndicator = editor.Indicators.Item(1)
-        warningIndicator.Style <- IndicatorStyle.Squiggle
-        warningIndicator.Color <- Color.Blue
-
-    ///Clear ALL indicators and then draw indicators for the given compiler messages with the given position offset
-    let resetIndicators offset (compilerMessages:CompilerMessage seq) =
-        [0;1] |> Seq.iter (fun i -> editor.GetRange().ClearIndicator(i))
-        compilerMessages
-        |> Seq.sortBy (fun cm -> if cm.Level = Error then 1 else 0) //errors are more important than warnings, so highlight after warnings
-        |> Seq.iter (fun value ->
-            let range = editor.GetRange(offset + value.Range.Start.AbsoluteOffset, offset + value.Range.End.AbsoluteOffset)
-            range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)   
-        )
-
     let submit (range:Range) =
         updateStatus "Processing submission..."
         outputScintilla.Text <- ""
@@ -113,9 +94,10 @@ type public NliForm() as this =
                 treeView.Watch(name, value, ty)
 
         //draw squiggly indicators for errors and warnings
-        results 
-        |> Seq.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
-        |> resetIndicators range.Start
+        let compilerMessages = 
+            results 
+            |> Seq.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
+        editor.ResetIndicators(range.Start, compilerMessages)
 
         //scroll to last line in console output
         if(results.Length > 0) then
