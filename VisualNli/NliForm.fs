@@ -86,6 +86,16 @@ type public NliForm() as this =
         warningIndicator.Style <- IndicatorStyle.Squiggle
         warningIndicator.Color <- Color.Blue
 
+    ///Clear ALL indicators and then draw indicators for the given compiler messages with the given position offset
+    let resetIndicators offset (compilerMessages:CompilerMessage seq) =
+        [0;1] |> Seq.iter (fun i -> editor.GetRange().ClearIndicator(i))
+        compilerMessages
+        |> Seq.sortBy (fun cm -> if cm.Level = Error then 1 else 0) //errors are more important than warnings, so highlight after warnings
+        |> Seq.iter (fun value ->
+            let range = editor.GetRange(offset + value.Range.Start.AbsoluteOffset, offset + value.Range.End.AbsoluteOffset)
+            range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)   
+        )
+
     let submit (range:Range) =
         updateStatus "Processing submission..."
         outputScintilla.Text <- ""
@@ -103,16 +113,9 @@ type public NliForm() as this =
                 treeView.Watch(name, value, ty)
 
         //draw squiggly indicators for errors and warnings
-        let offset = range.Start
-        [0;1] |> Seq.iter (fun i -> editor.GetRange().ClearIndicator(i))
         results 
         |> Seq.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
-        |> Seq.sortBy (fun cm -> if cm.Level = Error then 1 else 0) //errors are more important than warnings, so highlight after warnings
-        |> Seq.iter (fun value ->
-            let range = editor.GetRange(offset + value.Range.Start.AbsoluteOffset-1, offset + value.Range.End.AbsoluteOffset-1)
-            range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)
-            
-        )
+        |> resetIndicators range.Start
 
         //scroll to last line in console output
         if(results.Length > 0) then

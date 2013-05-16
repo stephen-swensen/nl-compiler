@@ -20,7 +20,7 @@ let lexParseAndSemantWith env code =
         { 
             pos_bol = 0
             pos_fname=""
-            pos_cnum=1
+            pos_cnum=0
             pos_lnum=1 
         }
 

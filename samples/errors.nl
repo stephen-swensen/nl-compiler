@@ -1,3 +1,4 @@
+  3 * "asdf";
 x = 1 in 
 y = 2 in 
 while y < 2000 {
@@ -7,6 +8,6 @@ while y < 2000 {
   3 * "asdf";
   throw(exception());
   3;
-	x <- temp
+  x <- temp
 }
 
