@@ -105,6 +105,15 @@ type public NliForm() as this =
 
         updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" stats.Time stats.WarningCount stats.ErrorCount)
 
+    //real-time error indicators
+    do
+        editor.StyleNeeded.Add <| fun _ ->
+            EL.InstallInMemoryLogger()
+            let code = editor.Text
+            //async {
+            Compilation.lexParseAndSemant code |> ignore
+            editor.ResetIndicators(0, EL.ActiveLogger.GetMessages())
+
     //event handlers
     do editor.Submit.Add submit
 

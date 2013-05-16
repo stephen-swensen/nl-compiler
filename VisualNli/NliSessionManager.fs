@@ -20,7 +20,6 @@ type NliSessionManager() as this =
         this.warningCount <- 0
         this.exnCount <- 0
 
-
     member this.Submit(code:String) =
         let sw = System.Diagnostics.Stopwatch.StartNew()
         let results =
