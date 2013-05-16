@@ -7,8 +7,9 @@ type PositionRange(posStart:Position, posEnd:Position) =
     static member Empty = PositionRange(Position.Empty, Position.Empty)
     member __.StartLine = posStart.Line
     member __.EndLine = posEnd.Line
-    member __.StartColumn = posStart.Column
-    member __.EndColumn = posEnd.Column-1
+    //lexer positions start counting at 0, we start at 1
+    member __.StartColumn = posStart.Column+1
+    member __.EndColumn = posEnd.Column+1
     //assume error cannot span more than one file
     member __.FileName = posStart.FileName
     member __.Start = posStart
