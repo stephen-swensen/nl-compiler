@@ -107,12 +107,23 @@ type public NliForm() as this =
 
     //real-time error indicators
     do
-        editor.StyleNeeded.Add <| fun _ ->
-            EL.InstallInMemoryLogger()
-            let code = editor.Text
-            //async {
-            Compilation.lexParseAndSemant code |> ignore
-            editor.ResetIndicators(0, EL.ActiveLogger.GetMessages())
+        editor.TextInsertedOrDeleted.Add <| fun _ ->
+            Async.CancelDefaultToken()
+            let guiContext = System.Threading.SynchronizationContext.Current
+            async {
+                do! Async.Sleep(300)
+                if not Async.DefaultCancellationToken.IsCancellationRequested then
+                    let backgroundContext = System.Threading.SynchronizationContext.Current //always null - don't understand the point
+                    EL.InstallInMemoryLogger()    
+                    do! Async.SwitchToContext guiContext
+                    let code = editor.Text
+                    do! Async.SwitchToContext backgroundContext
+                    Compilation.lexParseAndSemant code |> ignore
+                    let messages = EL.ActiveLogger.GetMessages()
+                    do! Async.SwitchToContext guiContext
+                    editor.ResetIndicators(0, messages)
+                    do! Async.SwitchToContext backgroundContext
+            } |> Async.Start
 
     //event handlers
     do editor.Submit.Add submit
