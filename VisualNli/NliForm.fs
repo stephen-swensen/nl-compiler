@@ -119,10 +119,11 @@ type public NliForm() as this =
                     let code = editor.Text
                     do! Async.SwitchToContext backgroundContext
                     Compilation.lexParseAndSemant code |> ignore
-                    let messages = EL.ActiveLogger.GetMessages()
-                    do! Async.SwitchToContext guiContext
-                    editor.ResetIndicators(0, messages)
-                    do! Async.SwitchToContext backgroundContext
+                    if not Async.DefaultCancellationToken.IsCancellationRequested then
+                        let messages = EL.ActiveLogger.GetMessages()
+                        do! Async.SwitchToContext guiContext
+                        editor.ResetIndicators(0, messages)
+                        do! Async.SwitchToContext backgroundContext
             } |> Async.Start
 
     //event handlers
