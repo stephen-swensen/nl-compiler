@@ -13,6 +13,7 @@ type MessageType =
     | Semantic
     | Internal
 
+///note: leave stackTrace as null in ReleaseMode
 type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:MessageLevel, msgCode:int, msg:string, stackTrace:StackTrace) =
     member __.Type = msgType
     member __.Range = msgRange
@@ -34,7 +35,11 @@ type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:Messa
                 | 4 -> ""
                 | _ -> failwith "error code out of range: %i" msgCode
             sprintf "NL%s%i" leadingZeros msgCode
+    
+    #if DEBUG
     member __.StackTrace = stackTrace
+    #endif
+
     override this.ToString() =
         let posMsg = 
             if msgRange.StartLine = msgRange.EndLine && msgRange.StartColumn = msgRange.EndColumn then
