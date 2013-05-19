@@ -7,13 +7,14 @@ open Swensen.FsEye.Forms
 
 open System.Text.RegularExpressions
 open Swensen.NL
+open System.IO
 
 open ScintillaNET
 
 type CallTipInfo = { Messages:CompilerMessage[]; Offset:int }
 
 ///Info about a CodeEditor file (Name=None implies new file)
-type EditorFile = { Modified:bool; Name:string option }
+type EditorFile = { Modified:bool; Info:FileInfo option }
 
 type public NliForm() as this =
     inherit Form(
@@ -62,16 +63,16 @@ type public NliForm() as this =
         this.Controls.Add(statusStrip)
 
     ///Info about the file being edited in the CodeEditor  (currently we support only one open file at a time).
-    let mutable editorFile = { Modified=false; Name=None }
+    let mutable editorFile = { Modified=false; Info=None }
     let updateEditorFile ef =
         if editorFile <> ef then
             editorFile <- ef
             this.Text <- 
                 match editorFile with
-                | {Modified=false; Name=None} -> "VisualNli"
-                | {Modified=true; Name=None} -> "*VisualNli"
-                | {Modified=false; Name=Some(name)} -> sprintf "%s - VisualNli" name
-                | {Modified=true; Name=Some(name)} -> sprintf "*%s - VisualNli" name
+                | {Modified=false; Info=None} -> "VisualNli"
+                | {Modified=true; Info=None} -> "*VisualNli"
+                | {Modified=false; Info=Some(info)} -> sprintf "%s (%s) - VisualNli" info.Name info.FullName
+                | {Modified=true; Info=Some(info)} -> sprintf "*%s (%s) - VisualNli" info.Name info.FullName
 
     do editor.TextInsertedOrDeleted.Add(fun _ -> updateEditorFile { editorFile with Modified=true })
 
@@ -159,14 +160,14 @@ type public NliForm() as this =
 
     let saveAs() =
         saveFileDialog.FileName <-
-            match editorFile.Name with
-            | Some(name) -> name | None -> ""
+            match editorFile.Info with
+            | Some(fi) -> fi.Name | None -> ""
 
         let dialogResult = saveFileDialog.ShowDialog()
         if dialogResult = DialogResult.OK then
             let fileName = saveFileDialog.FileName
-            System.IO.File.WriteAllText(fileName, editor.Text)
-            updateEditorFile { Modified=false; Name=Some(fileName) }
+            File.WriteAllText(fileName, editor.Text)
+            updateEditorFile { Modified=false; Info=Some(FileInfo(fileName)) }
             updateStatus "File saved"
         else
             updateStatus "File save cancelled"
@@ -175,12 +176,12 @@ type public NliForm() as this =
 
     let saveOrSaveAs() =
         match editorFile with
-        | { Modified=true; Name=Some(name) } -> 
-            System.IO.File.WriteAllText(name, editor.Text)
+        | { Modified=true; Info=Some(fi) } -> 
+            File.WriteAllText(fi.FullName, editor.Text)
             updateEditorFile { editorFile with Modified=false }
             updateStatus ("File saved")
             DialogResult.None
-        | { Modified=true; Name=None } -> 
+        | { Modified=true; Info=None } -> 
             saveAs()
         | _ -> 
             updateStatus ("No file changes to save")
@@ -189,8 +190,8 @@ type public NliForm() as this =
     let maybePromptForSaveChanges() =
         if editorFile.Modified then
             let fileName =
-                match editorFile.Name with
-                | Some(name) -> name | None -> "new file"
+                match editorFile.Info with
+                | Some(fi) -> fi.Name | None -> "new file"
             MessageBox.Show(sprintf "Save changes to %s?" fileName, "Save Changes", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)    
         else
             DialogResult.No
@@ -212,7 +213,7 @@ type public NliForm() as this =
                                     
                                     if promptResult <> DialogResult.Cancel then
                                         editor.Text <- ""
-                                        updateEditorFile { Modified=false; Name=None }
+                                        updateEditorFile { Modified=false; Info=None }
                                         updateStatus ("New file opened")
                                     else
                                         updateStatus ("New file open cancelled")
@@ -229,8 +230,8 @@ type public NliForm() as this =
                                     openFileDialog.FileName <- ""
                                     if promptResult <> DialogResult.Cancel && openFileDialog.ShowDialog() = DialogResult.OK then
                                         let fileName = openFileDialog.FileName
-                                        editor.Text <- System.IO.File.ReadAllText(fileName)
-                                        updateEditorFile { Modified=false; Name=Some(fileName) }
+                                        editor.Text <- File.ReadAllText(fileName)
+                                        updateEditorFile { Modified=false; Info=Some(FileInfo(fileName)) }
                                         updateStatus ("File opened")
                                     else
                                         updateStatus ("File open cancelled")
