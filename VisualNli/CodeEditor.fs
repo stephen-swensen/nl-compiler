@@ -13,7 +13,7 @@ type CodeEditor(font:Font) as this =
     let submitEvent = new Event<_>()
 
     do
-        this.Margins.[0].Width <- 22;
+        this.Margins.[0].Width <- 44;
 
         let errorIndicator = this.Indicators.Item(0)
         errorIndicator.Style <- IndicatorStyle.Squiggle
