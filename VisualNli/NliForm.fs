@@ -119,20 +119,18 @@ type public NliForm() as this =
             Async.CancelDefaultToken()
             let guiContext = System.Threading.SynchronizationContext.Current
             async {
+                let backgroundContext = System.Threading.SynchronizationContext.Current //always null - don't understand the point
                 do! Async.Sleep(300)
-                if not Async.DefaultCancellationToken.IsCancellationRequested then
-                    let backgroundContext = System.Threading.SynchronizationContext.Current //always null - don't understand the point
-                    EL.InstallInMemoryLogger()    
-                    do! Async.SwitchToContext guiContext
-                    let code = editor.Text
-                    do! Async.SwitchToContext backgroundContext
-                    Compilation.lexParseAndSemant code |> ignore
-                    if not Async.DefaultCancellationToken.IsCancellationRequested then
-                        let messages = EL.ActiveLogger.GetMessages()
-                        do! Async.SwitchToContext guiContext
-                        callTipInfo <- {Messages=messages; Offset=0}
-                        editor.ResetIndicators  (0, messages)
-                        do! Async.SwitchToContext backgroundContext
+                do! Async.SwitchToContext guiContext
+                let code = editor.Text
+                do! Async.SwitchToContext backgroundContext
+                EL.InstallInMemoryLogger()
+                Compilation.lexParseAndSemant code |> ignore
+                let messages = EL.ActiveLogger.GetMessages()
+                do! Async.SwitchToContext guiContext
+                callTipInfo <- {Messages=messages; Offset=0}
+                editor.ResetIndicators  (0, messages)
+                do! Async.SwitchToContext backgroundContext
             } |> Async.Start
 
     do
