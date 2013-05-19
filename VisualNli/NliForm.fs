@@ -10,6 +10,8 @@ open Swensen.NL
 
 open ScintillaNET
 
+type CallTipInfo = { Messages:CompilerMessage[]; Offset:int }
+
 ///Info about a CodeEditor file (Name=None implies new file)
 type EditorFile = { Modified:bool; Name:string option }
 
@@ -77,6 +79,9 @@ type public NliForm() as this =
         statusLabel.Text <- text
         statusStrip.Update()
 
+    //Be careful to only set this on the gui thread to avoid race conditions
+    let mutable callTipInfo = {Messages=[||]; Offset=0}
+
     let submit (range:Range) =
         updateStatus "Processing submission..."
         outputScintilla.Text <- ""
@@ -94,10 +99,13 @@ type public NliForm() as this =
                 treeView.Watch(name, value, ty)
 
         //draw squiggly indicators for errors and warnings
-        let compilerMessages = 
+        let messages = 
             results 
-            |> Seq.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
-        editor.ResetIndicators(range.Start, compilerMessages)
+            |> Array.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
+
+        let offset = range.Start
+        callTipInfo <- {Messages=messages; Offset=offset}
+        editor.ResetIndicators(offset, messages)
 
         //scroll to last line in console output
         if(results.Length > 0) then
@@ -122,9 +130,26 @@ type public NliForm() as this =
                     if not Async.DefaultCancellationToken.IsCancellationRequested then
                         let messages = EL.ActiveLogger.GetMessages()
                         do! Async.SwitchToContext guiContext
-                        editor.ResetIndicators(0, messages)
+                        callTipInfo <- {Messages=messages; Offset=0}
+                        editor.ResetIndicators  (0, messages)
                         do! Async.SwitchToContext backgroundContext
             } |> Async.Start
+
+    do
+        editor.NativeInterface.SetMouseDwellTime(400)
+        editor.DwellStart.Add <| fun e -> 
+            let dwellMessages = 
+                callTipInfo.Messages
+                |> Array.filter (fun msg -> (msg.Range.Start.AbsoluteOffset+callTipInfo.Offset) <= e.Position && (msg.Range.End.AbsoluteOffset+callTipInfo.Offset) >= e.Position)
+
+            if dwellMessages |> Array.isEmpty |> not then
+                let tip = 
+                    dwellMessages 
+                    |> Seq.map (fun msg -> sprintf "%s: %s" msg.CodeName msg.Message)
+                    |> String.concat "\n"
+                editor.CallTip.Show(tip, e.Position)
+        
+        editor.DwellEnd.Add <| fun e -> editor.CallTip.Hide()
 
     //event handlers
     do editor.Submit.Add submit

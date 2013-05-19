@@ -77,8 +77,7 @@ type CodeEditor(font:Font) as this =
     member this.ResetIndicators(offset, compilerMessages:CompilerMessage seq) =
         this.ClearIndicators()
         compilerMessages
-        |> Seq.sortBy (fun cm -> if cm.Level = Error then 1 else 0) //errors are more important than warnings, so highlight after warnings
         |> Seq.iter (fun value ->
             let range = this.GetRange(offset + value.Range.Start.AbsoluteOffset, offset + value.Range.End.AbsoluteOffset)
-            range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)   
+            range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)
         )

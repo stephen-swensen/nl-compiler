@@ -21,7 +21,9 @@ type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:Messa
     member __.Message = msg
     ///The filename corresponding to Range.Start
     member __.Filename = msgRange.FileName
+    ///The unique message coe identifier
     member __.Code = msgCode
+    ///The unique message code identifier in as a searchable string
     member __.CodeName =
         match msgCode with
         | -1 -> "-1"
