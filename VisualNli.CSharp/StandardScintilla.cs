@@ -1,8 +1,21 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Windows.Forms;
+using ScintillaNET;
 
 namespace Swensen.NL.VisualNli {
+    public class CaretChangedEventArgs : EventArgs {
+        public CaretChangedEventArgs(int position, int line, int column) {
+            this.Position = position;
+            this.Line = line;
+            this.Column = column;
+        }
+
+        public int Position { get; private set; }
+        public int Line { get; private set; }
+        public int Column { get; private set; }
+    }
+
     public class StandardScintilla : ScintillaNET.Scintilla {
         MenuItem miUndo;
         MenuItem miRedo;
@@ -16,28 +29,40 @@ namespace Swensen.NL.VisualNli {
         /// </summary>
         [Category("Standard Scintilla")]
         [Description("Occurs when text has been inserted into or removed from the document.")]
-        public event EventHandler TextInsertedOrDeleted;
+        public event EventHandler<TextModifiedEventArgs> TextInsertedOrDeleted;
 
-        protected virtual void OnTextInsertedOrDeleted(ScintillaNET.TextModifiedEventArgs e) {
-            EventHandler handler = TextInsertedOrDeleted;
+        /// <summary>
+        /// Listens for several ScintillaNET events to determine when the caret has changed, providing details on its position, including line and column.
+        /// </summary>
+        [Category("Standard Scintilla")]                        
+        [Description("Occurs when the caret has changed position.")]
+        public event EventHandler<CaretChangedEventArgs> CaretChanged;
+
+        protected virtual void OnCaretChanged(CaretChangedEventArgs e) {
+            var handler = CaretChanged;
             if (handler != null) handler(this, e);
+        }
+
+        private CaretChangedEventArgs getCurrentCaretChangedEventArgs() {
+            var pos = Caret.Position;
+            var ln = Caret.LineNumber;
+            var col = GetColumn(pos);
+            return new CaretChangedEventArgs(pos, ln, col);
+        }
+
+        protected virtual void OnTextInsertedOrDeleted(TextModifiedEventArgs e) {
+            var handler = TextInsertedOrDeleted;
+            if (handler != null) handler(this, e);
+            OnCaretChanged(getCurrentCaretChangedEventArgs());
         }
 
         public StandardScintilla()
             : base() {
             initContextMenu();
-
             this.Indentation.IndentWidth = 2;
             this.Indentation.TabWidth = 2;
             this.Indentation.UseTabs = false;
-            //this.Indentation.ShowGuides = true;
-            //this.Indentation.BackspaceUnindents = true;
-            //this.Indentation.SmartIndentType = ScintillaNET.SmartIndent.
-
             this.FindReplace.Window.FormBorderStyle = FormBorderStyle.FixedDialog; //so we can actually see the text title
-
-            //this.ConfigurationManager.Language = "js"; //not a bad default language
-            //this.ConfigurationManager.Configure();
         }
 
         protected override void OnTextDeleted(ScintillaNET.TextModifiedEventArgs e) {
@@ -48,6 +73,16 @@ namespace Swensen.NL.VisualNli {
         protected override void OnTextInserted(ScintillaNET.TextModifiedEventArgs e) {
             base.OnTextInserted(e);
             OnTextInsertedOrDeleted(e);
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e) {
+            base.OnKeyDown(e);
+            OnCaretChanged(getCurrentCaretChangedEventArgs());
+        }
+
+        protected override void OnClick(EventArgs e) {
+            base.OnClick(e);
+            OnCaretChanged(getCurrentCaretChangedEventArgs());
         }
 
         private void initContextMenu() {
