@@ -57,10 +57,15 @@ type public NliForm() as this =
         this.Controls.Add(splitc)
     
     let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
-    let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleRight)
+    let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleLeft)
+    let statusPositionLabel = new ToolStripStatusLabel(Text="Pos: 0,0", Spring=true, TextAlign=ContentAlignment.MiddleRight)
+
     do
         statusStrip.Items.Add(statusLabel) |> ignore
+        statusStrip.Items.Add(statusPositionLabel) |> ignore
         this.Controls.Add(statusStrip)
+        
+        editor.CaretChanged.Add(fun e -> statusPositionLabel.Text <- sprintf "Pos: %i,%i" e.Line e.Column)
 
     ///Info about the file being edited in the CodeEditor  (currently we support only one open file at a time).
     let mutable editorFile = { Modified=false; Info=None }
