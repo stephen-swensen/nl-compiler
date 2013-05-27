@@ -9,11 +9,11 @@ open System.Collections.Generic
 ///like correct statically type Emit overloads and opcode trace.
 type SmartILGenerator(ilgen:ILGenerator) =
     let opcodes = List<OpCode * (obj option)>()
-    let debug = 
+    let add (opcode,value) = 
         #if DEBUG 
-            true
+            opcodes.Add(opcode, value)
         #else
-            false
+            ()
         #endif
 
     ///Access to the underlying ILGenerator. n.b. that if Emit is used directly then the OpCodes trace will have holes.
@@ -24,46 +24,46 @@ type SmartILGenerator(ilgen:ILGenerator) =
     member this.OpCodes = opcodes |> Seq.readonly
 
     member this.Emit(oc:OpCode) =
-        if debug then opcodes.Add(oc,None)
+        add (oc,None)
         ilgen.Emit(oc)
     member this.Emit(oc:OpCode, x:FieldInfo) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:LocalBuilder) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:Type) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:ConstructorInfo) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:MethodInfo) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:Label) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:Byte) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:SByte) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:Int32) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:Int64) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:Single) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:Double) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
     member this.Emit(oc:OpCode, x:String) =
-        if debug then opcodes.Add(oc,Some(x:>obj))
+        add (oc,Some(x:>obj))
         ilgen.Emit(oc,x)
 
     member this.Ldsfld(fi:FieldInfo) =
