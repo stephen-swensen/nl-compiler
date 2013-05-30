@@ -21,3 +21,7 @@ let expectedWarnings codes =
     let errors = MessageLogger.ActiveLogger.GetMessages((=)MessageLevel.Warning)
     <@ errors |> Array.map (fun err -> err.Code) = codes @>
 
+//let expectedMessages codes = 
+//    let messages = MessageLogger.ActiveLogger.GetMessages()
+//    <@ messages |> Array.map (fun msg -> msg.Code) = codes @>
+

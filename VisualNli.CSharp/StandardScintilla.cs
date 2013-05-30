@@ -11,8 +11,17 @@ namespace Swensen.NL.VisualNli {
             this.Column = column;
         }
 
+        /// <summary>
+        /// The absolute position, starting at 0
+        /// </summary>
         public int Position { get; private set; }
+        /// <summary>
+        /// The line number, starting at 0
+        /// </summary>
         public int Line { get; private set; }
+        /// <summary>
+        /// The column number for the line, starting at 0
+        /// </summary>
         public int Column { get; private set; }
     }
 
