@@ -15,7 +15,7 @@ type NliSessionManager() as this =
     do this.Reset()
 
     member this.Reset() =
-        this.nli <- Swensen.NL.Nli({ CompilerOptions.Default with MessageLoggerInstaller=MessageLogger.InstallConsoleLogger })
+        this.nli <- Swensen.NL.Nli({ CompilerOptions.Default with InstallMessageLogger=MessageLogger.InstallConsoleLogger })
         this.errorCount <- 0
         this.warningCount <- 0
         this.exnCount <- 0

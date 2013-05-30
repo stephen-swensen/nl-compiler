@@ -23,7 +23,7 @@ type Nli(?options: CompilerOptions) =
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string) =
-        options.MessageLoggerInstaller()
+        options.InstallMessageLogger()
 
         let asmName = "NLI_" + asmCounter.ToString()
         asmCounter <- asmCounter + 1I
