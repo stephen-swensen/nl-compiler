@@ -16,13 +16,14 @@ module C = Compilation
 ///The NL interactive
 type Nli(?options: CompilerOptions) = 
     let options = defaultArg options CompilerOptions.Default
-
+    
     let mutable asmCounter = 0I
     let mutable env = options.SemanticEnvironment
     let mutable itCounter = 0I
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
-    member this.TrySubmit(code:string) =
+    member this.TrySubmit(code:string, ?offset) =
+        let offset = defaultArg offset Compilation.DefaultOffset
         options.InstallMessageLogger()
 
         let asmName = "NLI_" + asmCounter.ToString()
@@ -38,7 +39,7 @@ type Nli(?options: CompilerOptions) =
         
         let tyInitBuilder = tyBuilder.DefineTypeInitializer()
 
-        let ilTopLevel = C.lexParseAndSemantWith env code
+        let ilTopLevel = C.lexParseAndSemantWith env offset code
 
         if EL.ActiveLogger.HasErrors then
             None

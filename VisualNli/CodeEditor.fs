@@ -74,10 +74,10 @@ type CodeEditor(font:Font) as this =
         [0;1] |> Seq.iter (fun i -> this.GetRange().ClearIndicator(i))
 
     ///Clear all indicators (for the entire document) and then draw indicators for the given compiler messages with the given position offset
-    member this.ResetIndicators(offset, compilerMessages:CompilerMessage seq) =
+    member this.ResetIndicators(compilerMessages:CompilerMessage seq) =
         this.ClearIndicators()
         compilerMessages
         |> Seq.iter (fun value ->
-            let range = this.GetRange(offset + value.Range.Start.AbsoluteOffset, offset + value.Range.End.AbsoluteOffset)
+            let range = this.GetRange(value.Range.Start.AbsoluteOffset, value.Range.End.AbsoluteOffset)
             range.SetIndicator(if value.Level = MessageLevel.Error then 0 else 1)
         )

@@ -11,8 +11,6 @@ open System.IO
 
 open ScintillaNET
 
-type CallTipInfo = { Messages:CompilerMessage[]; Offset:int }
-
 ///Info about a CodeEditor file (Name=None implies new file)
 type EditorFile = { Modified:bool; Info:FileInfo option }
 
@@ -58,14 +56,15 @@ type public NliForm() as this =
     
     let statusStrip = new StatusStrip(Dock=DockStyle.Bottom)
     let statusLabel = new ToolStripStatusLabel(Text="Welcome to VisualNli!", Spring=true, TextAlign=ContentAlignment.MiddleLeft)
-    let statusPositionLabel = new ToolStripStatusLabel(Text="Pos: 1,1", Spring=true, TextAlign=ContentAlignment.MiddleRight)
+    let statusf = sprintf "Ln: %i, Col: %i, Abs: %i"
+    let statusPositionLabel = new ToolStripStatusLabel(Text=statusf 1 1 0, Spring=true, TextAlign=ContentAlignment.MiddleRight)
 
     do
         statusStrip.Items.Add(statusLabel) |> ignore
         statusStrip.Items.Add(statusPositionLabel) |> ignore
         this.Controls.Add(statusStrip)
         
-        editor.CaretChanged.Add(fun e -> statusPositionLabel.Text <- sprintf "Pos: %i,%i" (e.Line+1) (e.Column+1))
+        editor.CaretChanged.Add(fun e -> statusPositionLabel.Text <- statusf (e.Line+1) (e.Column+1) (e.Position))
 
     ///Info about the file being edited in the CodeEditor  (currently we support only one open file at a time).
     let mutable editorFile = { Modified=false; Info=None }
@@ -86,7 +85,7 @@ type public NliForm() as this =
         statusStrip.Update()
 
     //Be careful to only set this on the gui thread to avoid race conditions
-    let mutable callTipInfo = {Messages=[||]; Offset=0}
+    let mutable callTipInfo = [||]
 
     let submit (range:Range) =
         updateStatus "Processing submission..."
@@ -96,7 +95,8 @@ type public NliForm() as this =
         //submit results with console output (stdout and stderr, including errors and warnings) redirected to console tab
         outputScintilla.RedirectConsoleOutput <-true
         let code = range.Text
-        let stats, results = nli.Submit(code)
+        let offset = (range.Start, range.StartingLine.Number+1, editor.GetColumn(range.Start)+1)
+        let stats, results = nli.Submit(code, offset)
         outputScintilla.RedirectConsoleOutput <-false
             
         //update watches
@@ -109,11 +109,10 @@ type public NliForm() as this =
             results 
             |> Array.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
 
-        let offset = range.Start
-        callTipInfo <- {Messages=messages; Offset=offset}
-        editor.ResetIndicators(offset, messages)
+        callTipInfo <- messages
+        editor.ResetIndicators(messages)
 
-        //scroll to last line in console output
+        //scroll to last line in treeview
         if(results.Length > 0) then
             treeView.Nodes.[treeView.Nodes.Count - 1].EnsureVisible()
 
@@ -134,8 +133,8 @@ type public NliForm() as this =
                 Compilation.lexParseAndSemant code |> ignore
                 let messages = EL.ActiveLogger.GetMessages()
                 do! Async.SwitchToContext guiContext
-                callTipInfo <- {Messages=messages; Offset=0}
-                editor.ResetIndicators  (0, messages)
+                callTipInfo <- messages
+                editor.ResetIndicators(messages)
                 do! Async.SwitchToContext backgroundContext
             } |> Async.Start
 
@@ -143,8 +142,8 @@ type public NliForm() as this =
         editor.NativeInterface.SetMouseDwellTime(400)
         editor.DwellStart.Add <| fun e -> 
             let dwellMessages = 
-                callTipInfo.Messages
-                |> Array.filter (fun msg -> (msg.Range.Start.AbsoluteOffset+callTipInfo.Offset) <= e.Position && (msg.Range.End.AbsoluteOffset+callTipInfo.Offset) >= e.Position)
+                callTipInfo
+                |> Array.filter (fun msg -> msg.Range.Start.AbsoluteOffset <= e.Position && msg.Range.End.AbsoluteOffset >= e.Position)
 
             if dwellMessages |> Array.isEmpty |> not then
                 let tip = 
