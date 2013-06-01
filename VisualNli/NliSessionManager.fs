@@ -20,11 +20,11 @@ type NliSessionManager() as this =
         this.warningCount <- 0
         this.exnCount <- 0
 
-    member this.Submit(code:String) =
+    member this.Submit(code:String, offset:int*int*int) =
         let sw = System.Diagnostics.Stopwatch.StartNew()
         let results =
             try
-                match this.nli.TrySubmit(code) with
+                match this.nli.TrySubmit(code, offset) with
                 | Some(results) -> [| yield! results |]
                 | None -> [||]
             with e ->

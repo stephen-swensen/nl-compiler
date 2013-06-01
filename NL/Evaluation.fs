@@ -28,7 +28,7 @@ let tryEvalWith<'a> options code : 'a option =
         il.Emit(OpCodes.Ret)
         dm
 
-    let ilTopLevel = lexParseAndSemantWith options.SemanticEnvironment code 
+    let ilTopLevel = lexParseAndSemantWith options.SemanticEnvironment Compilation.DefaultOffset code 
     if EL.ActiveLogger.HasErrors then
         None
     else
