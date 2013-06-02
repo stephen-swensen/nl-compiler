@@ -37,17 +37,20 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
 type OutputScintilla(font:Font) as this =
     inherit StandardScintilla()
 
-    let outWriter = new ScintillaTextWriter(this, 0, Console.OutputEncoding)
-    let errWriter = new ScintillaTextWriter(this, 1, Console.OutputEncoding)
+    let StdoutStyle = 0
+    let StderrStyle = 1
+
+    let outWriter = new ScintillaTextWriter(this, StdoutStyle, Console.OutputEncoding)
+    let errWriter = new ScintillaTextWriter(this, StderrStyle, Console.OutputEncoding)
 
     do 
         this.IsReadOnly <- true
 
-        let stdoutStyle = this.Styles.[0]
+        let stdoutStyle = this.Styles.[StdoutStyle]
         stdoutStyle.Font <- font
         stdoutStyle.ForeColor <- System.Drawing.Color.Black
 
-        let stdoutStyle = this.Styles.[1]
+        let stdoutStyle = this.Styles.[StderrStyle]
         stdoutStyle.Font <- font
         stdoutStyle.ForeColor <- System.Drawing.Color.DarkRed
         
