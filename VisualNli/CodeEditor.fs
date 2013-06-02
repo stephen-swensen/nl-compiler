@@ -31,10 +31,10 @@ type CodeEditor(font:Font) as this =
         this.Lexing.Lexer <- Lexer.Container;
 
         let stylesConfig = [
-            (0, Color.Black)
-            (1, Color.Blue)
-            (2, Color.DarkRed)
-            (3, Color.Teal)
+            (SyntaxStyle.Default, Color.Black)
+            (SyntaxStyle.Keyword, Color.Blue)
+            (SyntaxStyle.TextLiteral, Color.DarkRed)
+            (SyntaxStyle.NumericLiteral, Color.Teal)
         ]
 
         for (index, color) in stylesConfig do
