@@ -45,9 +45,9 @@ type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:Messa
     override this.ToString() =
         let posMsg = 
             if msgRange.StartLine = msgRange.EndLine && msgRange.StartColumn = msgRange.EndColumn then
-                sprintf "at Line %i, Column %i" msgRange.StartLine msgRange.StartColumn
+                sprintf "at (%i,%i)" msgRange.StartLine msgRange.StartColumn
             else
-                sprintf "from Line %i, Column %i to Line %i, Column %i"  msgRange.StartLine msgRange.StartColumn  msgRange.EndLine msgRange.EndColumn
+                sprintf "from (%i,%i) to (%i,%i)"  msgRange.StartLine msgRange.StartColumn  msgRange.EndLine msgRange.EndColumn
 
 
         sprintf "%A %s (%s) %s%s%s"
