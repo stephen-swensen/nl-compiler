@@ -8,6 +8,14 @@ open System
 ///raise is not inlined in Core.Operators, so shows up in stack traces.  We inline it here for clean stacktraces.
 let inline raise (e: System.Exception) = (# "throw" e : 'U #)
 
+let time f =
+    let sp = System.Diagnostics.Stopwatch.StartNew()
+    let r = f()
+    sp.Stop()
+    Console.WriteLine("time: {0} ", sp.ElapsedMilliseconds)
+    Console.Out.Flush()
+    r
+
 let (|StringTy|_|) ty =
     if ty = typeof<String> then Some() else None
 
