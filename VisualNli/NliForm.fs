@@ -126,15 +126,19 @@ type public NliForm() as this =
             async {
                 let backgroundContext = System.Threading.SynchronizationContext.Current //always null - don't understand the point
                 do! Async.Sleep(300)
+                
                 do! Async.SwitchToContext guiContext
                 let code = editor.Text
+                
                 do! Async.SwitchToContext backgroundContext
                 EL.InstallInMemoryLogger()
                 Compilation.lexParseAndSemant code |> ignore
                 let messages = EL.ActiveLogger.GetMessages()
+                
                 do! Async.SwitchToContext guiContext
                 callTipInfo <- messages
                 editor.ResetIndicators(messages)
+                
                 do! Async.SwitchToContext backgroundContext
             } |> Async.Start
 
