@@ -24,7 +24,8 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
                         scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
                         scintilla.Update())
             
-            scintilla.BeginInvoke(Action(writeOutputWin)) |> ignore
+            if not scintilla.InvokeRequired then 
+                writeOutputWin()
 
     //no point in overriding WriteLine since only Write is used by stdout and stderr
 
