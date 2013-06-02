@@ -33,24 +33,25 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
     ///false by default
     member val Enabled = true with get, set
 
+module OutputScintillaStyle =
+    let [<Literal>] Stdout = 0
+    let [<Literal>] Stderr = 1
+
 ///A readonly scintilla control which redirects stdout and stderr to itself (hence there should only ever be one instance of this control)
 type OutputScintilla(font:Font) as this =
     inherit StandardScintilla()
 
-    let StdoutStyle = 0
-    let StderrStyle = 1
-
-    let outWriter = new ScintillaTextWriter(this, StdoutStyle, Console.OutputEncoding)
-    let errWriter = new ScintillaTextWriter(this, StderrStyle, Console.OutputEncoding)
+    let outWriter = new ScintillaTextWriter(this, OutputScintillaStyle.Stdout, Console.OutputEncoding)
+    let errWriter = new ScintillaTextWriter(this, OutputScintillaStyle.Stderr, Console.OutputEncoding)
 
     do 
         this.IsReadOnly <- true
 
-        let stdoutStyle = this.Styles.[StdoutStyle]
+        let stdoutStyle = this.Styles.[OutputScintillaStyle.Stdout]
         stdoutStyle.Font <- font
         stdoutStyle.ForeColor <- System.Drawing.Color.Black
 
-        let stdoutStyle = this.Styles.[StderrStyle]
+        let stdoutStyle = this.Styles.[OutputScintillaStyle.Stderr]
         stdoutStyle.Font <- font
         stdoutStyle.ForeColor <- System.Drawing.Color.DarkRed
         
