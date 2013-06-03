@@ -3,15 +3,25 @@
 open System
 open Microsoft.FSharp.Text.Lexing
 open System.Diagnostics
+open IntelliFactory.Printf
 
 type MessageLevel =
     | Error
     | Warning
+    override this.ToString() =
+        match this with
+        | Error -> "Error"
+        | Warning -> "Warning"
 
 type MessageType =
     | Syntactic
     | Semantic
     | Internal
+    override this.ToString() =
+        match this with
+        | Syntactic -> "Syntactic"
+        | Semantic -> "Semantic"
+        | Internal -> "Internal"
 
 ///note: leave stackTrace as null in ReleaseMode
 type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:MessageLevel, msgCode:int, msg:string, stackTrace:StackTrace) =
@@ -50,9 +60,9 @@ type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:Messa
                 sprintf "from (%i,%i) to (%i,%i)"  msgRange.StartLine msgRange.StartColumn  msgRange.EndLine msgRange.EndColumn
 
 
-        sprintf "%A %s (%s) %s%s%s"
+        sprintf "%O %s (%s) %s%s%s"
             msgType
-            ((sprintf "%A" msgLevel).ToLower())
+            (msgLevel.ToString().ToLower())
             this.CodeName
             posMsg
             (if String.IsNullOrWhiteSpace this.Filename then "" else " in " + this.Filename)
