@@ -5,7 +5,7 @@ using ScintillaNET;
 
 namespace Swensen.NL.VisualNli {
     public class CaretChangedEventArgs : EventArgs {
-        public CaretChangedEventArgs(int position, int line, int column) {
+        public CaretChangedEventArgs(int line, int column, int position) {
             this.Position = position;
             this.Line = line;
             this.Column = column;
@@ -56,7 +56,7 @@ namespace Swensen.NL.VisualNli {
             var pos = Caret.Position;
             var ln = Caret.LineNumber;
             var col = GetColumn(pos);
-            return new CaretChangedEventArgs(pos, ln, col);
+            return new CaretChangedEventArgs(ln, col, pos);
         }
 
         protected virtual void OnTextInsertedOrDeleted(TextModifiedEventArgs e) {
