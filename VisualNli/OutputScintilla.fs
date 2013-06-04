@@ -36,6 +36,24 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
 
 type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
     inherit System.IO.TextReader()
+    //buff, pos and next() are used exclusively for this.Read()
+    let mutable buff : int[] = [||]
+    let mutable pos : int = 0
+    let next() = 
+        if pos < buff.Length then
+            pos <- pos+1
+            Some(buff.[pos-1])
+        else
+            None
+
+    let eol = scintilla.EndOfLine.EolString
+
+    let echo out = //echo
+        scintilla.SuspendReadonly(fun () -> 
+            let range = scintilla.AppendText(out)
+            range.SetStyle(style))
+
+    ///http://msdn.microsoft.com/en-us/library/system.console.readline.aspx using modal dialog for blocking
     override this.ReadLine() = 
         let line : string ref = ref null
         use frm = new Form(Text="Console.Readline()", StartPosition = FormStartPosition.CenterParent)
@@ -43,35 +61,42 @@ type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
         let tb = new TextBox(AcceptsTab=true, Dock=DockStyle.Fill)
         tb.KeyDown.Add(fun args -> 
             if args.KeyCode = Keys.Enter then 
-                line := tb.Text; frm.Close()
+                echo (tb.Text + eol)
+                line := tb.Text
+                frm.Close()
             elif args.KeyData = (Keys.Control ||| Keys.Z) then 
+                echo ("^Z" + eol)
                 frm.Close()) //leave line null
         frm.Controls.Add(tb)
 
         frm.Load.Add(fun args -> frm.ClientSize <- Size(frm.ClientSize.Width, tb.Height))
         ignore <| frm.ShowDialog()
         
-        let line = !line
-        //echo
-        scintilla.SuspendReadonly(fun () -> 
-            let range = scintilla.AppendText((if line = null then "^Z" else line) + scintilla.EndOfLine.EolString)
-            range.SetStyle(style))
-        line
+        !line
 
+    ///http://msdn.microsoft.com/en-us/library/system.console.read.aspx using modal dialog for blocking when needed (buff empty)
     override this.Read() = 
-        let keyChar = ref 0
-        use frm = new Form(Text="Console.Read()", StartPosition = FormStartPosition.CenterParent)
-        let tb = new TextBox(AcceptsTab=true, Dock=DockStyle.Fill)
-        tb.KeyPress.Add(fun args -> keyChar := int args.KeyChar; frm.Close())
-        frm.Controls.Add(tb)
-        frm.Load.Add(fun args -> frm.ClientSize <- Size(frm.ClientSize.Width, tb.Height))
-        ignore <| frm.ShowDialog()
-        
-        //echo
-        scintilla.SuspendReadonly(fun () -> 
-            let range = scintilla.AppendText(!keyChar |> char |> string)
-            range.SetStyle(style))
-        !keyChar
+        match next() with
+        | Some(cint) -> cint
+        | None ->
+            use frm = new Form(Text="Console.Read()", StartPosition = FormStartPosition.CenterParent)
+            let tb = new TextBox(AcceptsTab=true, Dock=DockStyle.Fill)
+            tb.KeyDown.Add(fun args -> 
+                if args.KeyCode = Keys.Enter then 
+                    echo (tb.Text + eol)
+                    buff <- (tb.Text + eol).ToCharArray() |> Array.map (fun c -> int c)
+                    pos <- 0
+                    frm.Close()
+                elif args.KeyData = (Keys.Control ||| Keys.Z) then 
+                    echo ("^Z" + eol)
+                    buff <- [|-1|]
+                    pos <- 0
+                    frm.Close())
+            frm.Controls.Add(tb)
+            frm.Load.Add(fun args -> frm.ClientSize <- Size(frm.ClientSize.Width, tb.Height))
+            ignore <| frm.ShowDialog()
+            assert (buff.Length > 0)
+            this.Read()
 
 
 module OutputScintillaStyle =
