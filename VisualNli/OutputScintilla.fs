@@ -34,10 +34,9 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
     ///false by default
     member val Enabled = true with get, set
 
-type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
-    inherit System.IO.TextReader()
-    //buff, pos and next() are used exclusively for this.Read()
-    let mutable buff : int[] = [||]
+type internal ReadBuffer(?buff: int[]) =
+    let buff = defaultArg buff [||]
+
     let mutable pos : int = 0
     let next() = 
         if pos < buff.Length then
@@ -45,7 +44,14 @@ type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
             Some(buff.[pos-1])
         else
             None
+    member __.Next() = next()
+    member __.Length = buff.Length
 
+type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
+    inherit System.IO.TextReader()
+
+    ///used by Read()
+    let mutable rbuff = ReadBuffer()
     let eol = scintilla.EndOfLine.EolString
 
     let echo out = //echo
@@ -76,7 +82,7 @@ type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
 
     ///http://msdn.microsoft.com/en-us/library/system.console.read.aspx using modal dialog for blocking when needed (buff empty)
     override this.Read() = 
-        match next() with
+        match rbuff.Next() with
         | Some(cint) -> cint
         | None ->
             use frm = new Form(Text="Console.Read()", StartPosition = FormStartPosition.CenterParent)
@@ -84,18 +90,16 @@ type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
             tb.KeyDown.Add(fun args -> 
                 if args.KeyCode = Keys.Enter then 
                     echo (tb.Text + eol)
-                    buff <- (tb.Text + eol).ToCharArray() |> Array.map (fun c -> int c)
-                    pos <- 0
+                    rbuff <- ReadBuffer((tb.Text + eol).ToCharArray() |> Array.map (fun c -> int c))
                     frm.Close()
                 elif args.KeyData = (Keys.Control ||| Keys.Z) then 
                     echo ("^Z" + eol)
-                    buff <- [|-1|]
-                    pos <- 0
+                    rbuff <- ReadBuffer([|-1|])
                     frm.Close())
             frm.Controls.Add(tb)
             frm.Load.Add(fun args -> frm.ClientSize <- Size(frm.ClientSize.Width, tb.Height))
             ignore <| frm.ShowDialog()
-            assert (buff.Length > 0)
+            assert (rbuff.Length > 0)
             this.Read()
 
 
