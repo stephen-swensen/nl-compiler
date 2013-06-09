@@ -31,7 +31,7 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
 
     override __.Encoding = encoding
 
-    ///false by default
+    ///true by default
     member val Enabled = true with get, set
 
 type internal ReadBuffer(?buff: int[]) =
@@ -117,7 +117,7 @@ type OutputScintilla(font:Font) as this =
     let inReader = new ScintillaTextReader(this, OutputScintillaStyle.Stdin, Console.InputEncoding)
 
     do 
-        //this.IsReadOnly <- true
+        this.IsReadOnly <- true
 
         let stdoutStyle = this.Styles.[OutputScintillaStyle.Stdout]
         stdoutStyle.Font <- font
@@ -135,9 +135,14 @@ type OutputScintilla(font:Font) as this =
         System.Console.SetError(errWriter)
         System.Console.SetIn(inReader)
 
-    member __.RedirectConsoleOutput 
+    member __.ConsoleOutEnabled
         with get() = 
-            outWriter.Enabled && errWriter.Enabled
+            outWriter.Enabled
         and set(value) = 
             outWriter.Enabled <- value
+
+    member __.ConsoleErrorEnabled
+        with get() = 
+            errWriter.Enabled
+        and set(value) = 
             errWriter.Enabled <- value
