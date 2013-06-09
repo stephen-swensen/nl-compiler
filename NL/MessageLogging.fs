@@ -41,7 +41,7 @@ type BasicMessageSink(?consoleLogging:bool) =
             | MessageLevel.Error -> stderr
             | MessageLevel.Warning -> stdout
         
-        writer.WriteLine(sprintf "|%s|" (msg.ToString()))
+        writer.WriteLine(sprintf "|%O|" msg)
 
     let messages = System.Collections.Generic.List<CompilerMessage>()
     let mutable errorCount = 0
@@ -72,3 +72,8 @@ type BasicMessageSink(?consoleLogging:bool) =
     member __.ErrorCount = errorCount
     ///The count of the number of compiler messages which have "Warning" severity level
     member __.WarningCount = warningCount
+
+///A message sink that delegates to the given lambda.
+type LambdaMessageSink(sink:CompilerMessage->unit) =
+    inherit AbstractMessageSink()
+    override __.Sink(msg:CompilerMessage) = sink msg
