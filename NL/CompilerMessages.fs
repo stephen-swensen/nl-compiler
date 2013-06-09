@@ -13,7 +13,7 @@ open IntelliFactory.Printf
 //error messages may be inspired and or copied entirely from C# and F#
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module CompilerMessages = 
+module CompilerMessages =
     let inline stacktrace () = 
         #if DEBUG
         StackTrace()
@@ -23,7 +23,7 @@ module CompilerMessages =
 
     ///this function allows us to build a function which produces a CompilerMessages from the format string parameters
     let private mk msgLevel msgType code  (pos:PositionRange) (f:Printf.StringFormat<_,unit>) =
-        Printf.ksprintf (fun s -> MessageLogger.ActiveLogger.Log (CompilerMessage(pos, msgType, msgLevel, code, s, stacktrace()))) f
+        Printf.ksprintf (fun s -> MessageLogger.Log (CompilerMessage(pos, msgType, msgLevel, code, s, stacktrace()))) f
     
     //error code -1 stands for unspecified error
     
@@ -180,3 +180,5 @@ module CompilerMessages =
 
     let Rethrow_of_outer_catch_not_valid_inside_nested_finally_body pos = 
         mk MessageLevel.Error MessageType.Semantic 52 pos "'rethrow' of an outer exception is not valid inside a 'finally' body"
+
+    let Log msg = MessageLogger.Log(msg)

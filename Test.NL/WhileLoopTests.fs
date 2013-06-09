@@ -50,13 +50,13 @@ let ``nested continue`` options =
 
 [<Theory;EvalData>]
 let ``unreachable break error`` options =
-    evalWith options "while false { break(); () }"
-    test (expectedWarnings [|17|])
+    let _, msgs = tryEvalWith  options "while false { break(); () }"
+    test <| expectedWarnings [|17|] (msgs |> CompilerMessage.warnings)
 
 [<Theory;EvalData>]
 let ``unreachable continue error`` options =
-    evalWith options "while false { continue(); (); break() }"
-    test <| expectedWarnings [|17|]
+    let _, msgs = tryEvalWith options "while false { continue(); (); break() }"
+    test <| expectedWarnings [|17|] (msgs |> CompilerMessage.warnings)
 
 [<Theory;EvalData>]
 let ``condition is not boolean error`` options =

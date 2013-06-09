@@ -1,9 +1,44 @@
 ﻿namespace Swensen.NL
 
 open System
-///The base, in-memory message logger. Not thread-safe.
-[<AllowNullLiteral>]
-type MessageLogger() =
+
+type MessageLogger =
+    //based on https://github.com/fsharp/fsharp/blob/master/src/fsharp/ErrorLogger.fs
+    [<System.ThreadStatic; DefaultValue>]
+    static val mutable private messageLogged : Event<CompilerMessage>
+
+    ///The thread static event triggered by calls to static CompilerMessage.Log
+    static member MessageLogged
+        with get() = 
+            if obj.ReferenceEquals(MessageLogger.messageLogged, null) then
+               MessageLogger.messageLogged <- new Event<CompilerMessage>()
+            MessageLogger.messageLogged.Publish
+
+    static member Log(msg) =
+        MessageLogger.messageLogged.Trigger(msg)
+
+///Abstract message sink which subscribes to MessageLogger.MessageLogged on initialization and unsubscribes when disposed.
+[<AbstractClass>]
+type AbstractMessageSink() as this =
+    let logHandler = MessageLogger.MessageLogged.Subscribe(this.Log)
+    abstract Log : CompilerMessage -> unit
+    interface IDisposable with
+        override __.Dispose() = logHandler.Dispose()
+
+///A basic stateful message sink (messages are accumulated in an internal list, which can be queried / retrieved at any time)
+///with optional console logging (default is false). This message sink is typically used for internal log orchestration.
+type BasicMessageSink(?consoleLogging:bool) =
+    inherit AbstractMessageSink()
+
+    let consoleLogging = defaultArg consoleLogging false
+    let logToConsole (msg:CompilerMessage) = 
+        let writer =
+            match msg.Level with
+            | MessageLevel.Error -> stderr
+            | MessageLevel.Warning -> stdout
+        
+        writer.WriteLine(sprintf "|%s|" (msg.ToString()))
+
     let messages = System.Collections.Generic.List<CompilerMessage>()
     let mutable errorCount = 0
     let mutable warningCount = 0
@@ -13,14 +48,15 @@ type MessageLogger() =
     ///Get a snapshot of all the logged errors with the given level
     member __.GetMessages(levelFilter) = messages |> Seq.filter (fun msg -> msg.Level |> levelFilter) |> Seq.toArray
 
-    abstract Log : CompilerMessage -> unit
     ///Log the compiler error
-    default __.Log(ce:CompilerMessage) =
-        match ce.Level with
+    override __.Log(msg:CompilerMessage) =
+        match msg.Level with
         | MessageLevel.Error -> errorCount <- errorCount + 1
         | MessageLevel.Warning -> warningCount <- warningCount + 1
 
-        messages.Add(ce)
+        messages.Add(msg)
+        if consoleLogging then
+            logToConsole msg
 
     ///Indicates whether there are any errors ("Error" severity level) that have been logged
     member __.HasErrors = errorCount > 0
@@ -32,36 +68,3 @@ type MessageLogger() =
     member __.ErrorCount = errorCount
     ///The count of the number of compiler messages which have "Warning" severity level
     member __.WarningCount = warningCount
-    
-    //based on https://github.com/fsharp/fsharp/blob/master/src/fsharp/ErrorLogger.fs
-    [<System.ThreadStatic; DefaultValue>]
-    static val mutable private activeLogger : MessageLogger
-
-    ///The thread static active error logger; if not set, the default error logger is installed
-    static member ActiveLogger
-        with get() = 
-            if MessageLogger.activeLogger = null then
-               MessageLogger.activeLogger <- MessageLogger()
-            MessageLogger.activeLogger
-        and set(v) = 
-            MessageLogger.activeLogger <- v
-
-    static member InstallInMemoryLogger = fun () ->
-        MessageLogger.activeLogger <- new MessageLogger()
-
-    static member InstallConsoleLogger = fun () ->
-        MessageLogger.activeLogger <- new ConsoleMessageLogger()
-    
-///Maybe make MessageLogger event driven instead of inheritence driven (i.e.
-///have a "ErrorLogged" event which can have a "ConsoleListener" event attached
-///if desired).
-and ConsoleMessageLogger() = 
-    inherit MessageLogger()
-    override  __.Log(ce:CompilerMessage) =
-        base.Log(ce)
-        let writer =
-            match ce.Level with
-            | MessageLevel.Error -> stderr
-            | MessageLevel.Warning -> stdout
-        
-        writer.WriteLine(sprintf "|%s|" (ce.ToString()))

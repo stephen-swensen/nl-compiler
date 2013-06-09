@@ -9,7 +9,7 @@ open Microsoft.FSharp.Text.Lexing
 open Lexer
 open Parser
 
-type EL = MessageLogger
+module CM = CompilerMessages
 module SA = SemanticAnalysis
 
 let DefaultOffset = (1,1,0)
@@ -35,12 +35,10 @@ let lexParseAndSemantWith env (lineNum, colNum, absOffset) code =
         ILTopLevel.Error
     //fslex/yacc do not use specific exception types
     | e when e.Message = "parse error" -> //we handle lex errors explicitly now (this error message should not be possible): || e.Message = "unrecognized input" ->
-        EL.ActiveLogger.Log
-            (CompilerMessage(PositionRange(lexbuf.StartPos,lexbuf.EndPos), MessageType.Syntactic, MessageLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
+        CM.Log (CompilerMessage(PositionRange(lexbuf.StartPos,lexbuf.EndPos), MessageType.Syntactic, MessageLevel.Error, -1, e.Message, null)) //todo: we want the real StackTrace
         ILTopLevel.Error
     | e ->
-        EL.ActiveLogger.Log
-            (CompilerMessage(PositionRange(lexbuf.StartPos,lexbuf.EndPos), MessageType.Internal, MessageLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
+        CM.Log (CompilerMessage(PositionRange(lexbuf.StartPos,lexbuf.EndPos), MessageType.Internal, MessageLevel.Error, -1, e.ToString(), null))  //todo: we want the real StackTrace
         ILTopLevel.Error
 
 let lexParseAndSemant = lexParseAndSemantWith SemanticEnvironment.Default DefaultOffset

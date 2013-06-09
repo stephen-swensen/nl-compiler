@@ -15,30 +15,29 @@ type NliSessionManager() as this =
     do this.Reset()
 
     member this.Reset() =
-        this.nli <- Swensen.NL.Nli({ CompilerOptions.Default with InstallMessageLogger=MessageLogger.InstallConsoleLogger })
+        this.nli <- Swensen.NL.Nli({ CompilerOptions.Default with ConsoleLogging=true })
         this.errorCount <- 0
         this.warningCount <- 0
         this.exnCount <- 0
 
     member this.Submit(code:String, offset:int*int*int) =
         let sw = System.Diagnostics.Stopwatch.StartNew()
-        let results =
+        let results, msgs =
             try
                 match this.nli.TrySubmit(code, offset) with
-                | Some(results) -> [| yield! results |]
-                | None -> [||]
+                | Some(results), msgs -> [| yield! results |], msgs
+                | None, msgs -> [||], msgs
             with e ->
                 Console.WriteLine(e.ToString())
                 let result = sprintf "exn%i" this.exnCount, e :> obj, e.GetType()
                 this.exnCount <- this.exnCount + 1
-                [| yield result |]
+                [| yield result |], [||]
         sw.Stop()
         let time = sw.ElapsedMilliseconds
 
         let errorCountOffset = this.errorCount
         let warningCountOffset = this.warningCount
         let messages = [|  
-            let msgs = Swensen.NL.MessageLogger.ActiveLogger.GetMessages()
             for msg in msgs do
                 match msg.Level with
                 | MessageLevel.Error ->

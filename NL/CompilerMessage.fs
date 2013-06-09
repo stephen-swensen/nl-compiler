@@ -67,3 +67,12 @@ type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:Messa
             posMsg
             (if String.IsNullOrWhiteSpace this.Filename then "" else " in " + this.Filename)
             (if String.IsNullOrWhiteSpace msg then "" else ": " + msg)
+
+[<RequireQualifiedAccess>]
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CompilerMessage =
+    let errors msgs = msgs |> Seq.filter (fun (msg:CompilerMessage) -> msg.Level = MessageLevel.Error)
+    let warnings msgs = msgs |> Seq.filter (fun (msg:CompilerMessage) -> msg.Level = MessageLevel.Warning)
+
+    let hasErrors msgs = msgs |> Seq.exists (fun (msg:CompilerMessage) -> msg.Level = MessageLevel.Error)
+    let hasWarnings msgs = msgs |> Seq.exists (fun (msg:CompilerMessage) -> msg.Level = MessageLevel.Warning)

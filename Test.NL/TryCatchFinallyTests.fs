@@ -56,8 +56,9 @@ let ``try catch finally - two catch blocks, first catches exn`` options =
 
 [<Theory;EvalData>]
 let ``try catch finally - final catch unreachable `` options =
+    use sink = new BasicMessageSink()
     test <@ evalWith options "try { throw(argumentexception()) } catch { 1 } catch[argumentexception] x { 2 }" = 1 @>;
-    test <| expectedWarnings [|17|]
+    test <| expectedWarnings [|17|] (sink.GetMessages((=)MessageLevel.Warning))
 
 [<Theory;EvalData>]
 let ``try catch finally - finally is called`` options =

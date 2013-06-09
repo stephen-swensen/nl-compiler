@@ -32,7 +32,8 @@ let ``throw with non default overload and compound expression`` options =
 
 [<Theory;EvalData>]
 let ``unreachable throw warning`` options =
+    use sink = new BasicMessageSink()
     try 
         evalWith options "throw(exception()); ()"
     with _ -> ()
-    test <| expectedWarnings [|17|]
+    test <| expectedWarnings [|17|] (sink.GetMessages((=)MessageLevel.Warning))
