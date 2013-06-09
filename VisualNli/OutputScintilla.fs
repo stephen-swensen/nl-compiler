@@ -108,6 +108,9 @@ module OutputScintillaStyle =
     let [<Literal>] Stderr = 1
     let [<Literal>] Stdin = 3
 
+    let [<Literal>] CompilerWarning = 4
+    let [<Literal>] CompilerError = 5
+
 ///A readonly scintilla control which redirects stdout and stderr to itself (hence there should only ever be one instance of this control)
 type OutputScintilla(font:Font) as this =
     inherit StandardScintilla()
@@ -119,17 +122,18 @@ type OutputScintilla(font:Font) as this =
     do 
         this.IsReadOnly <- true
 
-        let stdoutStyle = this.Styles.[OutputScintillaStyle.Stdout]
-        stdoutStyle.Font <- font
-        stdoutStyle.ForeColor <- System.Drawing.Color.Black
+        let configureStyle (styleIndex:int, color:System.Drawing.Color) =
+            let style = this.Styles.[styleIndex]
+            style.Font <- font
+            style.ForeColor <- color
 
-        let stdoutStyle = this.Styles.[OutputScintillaStyle.Stderr]
-        stdoutStyle.Font <- font
-        stdoutStyle.ForeColor <- System.Drawing.Color.DarkRed
+        let styleConfig = [
+            OutputScintillaStyle.Stdout, Color.Black
+            OutputScintillaStyle.Stderr, Color.DarkRed
+            OutputScintillaStyle.Stdin, Color.DarkGreen
+        ]
 
-        let stdoutStyle = this.Styles.[OutputScintillaStyle.Stdin]
-        stdoutStyle.Font <- font
-        stdoutStyle.ForeColor <- System.Drawing.Color.DarkGreen
+        do styleConfig |> Seq.iter configureStyle
         
         System.Console.SetOut(outWriter)
         System.Console.SetError(errWriter)
