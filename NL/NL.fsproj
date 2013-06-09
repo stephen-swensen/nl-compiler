@@ -58,7 +58,7 @@
     <Compile Include="Utils.fs" />
     <Compile Include="PositionRange.fs" />
     <Compile Include="CompilerMessage.fs" />
-    <Compile Include="MessageLoggers.fs" />
+    <Compile Include="MessageLogging.fs" />
     <Compile Include="CompilerMessages.fs" />
     <Compile Include="CompilerInterruptException.fs" />
     <Compile Include="CompilerServiceExceptions.fs" />
