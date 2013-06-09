@@ -4,7 +4,7 @@ open System
 open Parser
 open Microsoft.FSharp.Text.Lexing
 
-module EM = CompilerMessages
+module CM = CompilerMessages
 
 let lexeme lexbuf =
     LexBuffer<char>.LexemeString lexbuf
@@ -91,7 +91,7 @@ rule tokenize = parse
         try
             STRING(System.Text.RegularExpressions.Regex.Unescape(s.Substring(1, s.Length - 2)))
         with e ->
-            EM.Could_not_unescape_string_literal (range lexbuf) e.Message
+            CM.Could_not_unescape_string_literal (range lexbuf) e.Message
             STRING("") //error recovery
     } 
 
@@ -104,12 +104,12 @@ rule tokenize = parse
         try //will throw if a) could not escape, or b) was more than one character
             let unescaped = System.Text.RegularExpressions.Regex.Unescape(s.Substring(1, s.Length - 2))
             if unescaped.Length <> 1 then
-                EM.Char_literal_must_be_exactly_one_character (range lexbuf) unescaped
+                CM.Char_literal_must_be_exactly_one_character (range lexbuf) unescaped
                 CHAR(' ')
             else
                 CHAR(s.[1]) 
         with e ->
-            EM.Could_not_unescape_char_literal (range lexbuf) e.Message
+            CM.Could_not_unescape_char_literal (range lexbuf) e.Message
             CHAR(' ') //error recovery
     } 
 
@@ -198,6 +198,6 @@ rule tokenize = parse
 | _ 
     { 
         let input = lexeme lexbuf
-        EM.Unrecognized_input (range lexbuf) input
+        CM.Unrecognized_input (range lexbuf) input
         tokenize lexbuf 
     }

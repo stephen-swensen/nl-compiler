@@ -4,7 +4,7 @@ open Microsoft.FSharp.Text.Parsing
 open Swensen.NL
 open Swensen.NL.Ast
 open System
-module EM = CompilerMessages
+module CM = CompilerMessages
 //let parse_error msg =
 //    failwithf "%A" msg
 
@@ -333,7 +333,7 @@ stmt:
     | path EQ expr DOUBLE_SEMICOLON
         { 
             if $1.Length > 1 then
-                EM.Invalid_pathifier (range parseState 1 1) ($1.Text) "."
+                CM.Invalid_pathifier (range parseState 1 1) ($1.Text) "."
 
             SynStmt.Let($1.Text, ($3, range parseState 3 3))
         }
