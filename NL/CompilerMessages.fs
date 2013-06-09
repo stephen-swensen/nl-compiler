@@ -11,6 +11,8 @@ open IntelliFactory.Printf
 //and pass StackTrace into CompilerMessage when not in DEBUG mode (about 40%).
 
 //error messages may be inspired and or copied entirely from C# and F#
+///Entry point for all message logging (compiler warnings and errors). Includes canned compiler messages as well as a general
+///Log : CompilerMessage -> () function (which should be used sparingly - most compiler messages should be formalized here instead).
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CompilerMessages =
