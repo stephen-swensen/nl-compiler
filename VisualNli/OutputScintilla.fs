@@ -2,8 +2,8 @@
 open System
 open System.Drawing
 open System.Windows.Forms
-
 open ScintillaNET
+open Swensen.NL
 
 ///A TextWritter sufficient for redirecting stdout and stderr to a Scintilla control
 ///including output following (scrolling control to the end of the document) 
@@ -106,10 +106,10 @@ type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
 module OutputScintillaStyle =
     let [<Literal>] Stdout = 0
     let [<Literal>] Stderr = 1
-    let [<Literal>] Stdin = 3
+    let [<Literal>] Stdin = 2
 
-    let [<Literal>] CompilerWarning = 4
-    let [<Literal>] CompilerError = 5
+    let [<Literal>] CompilerWarning = 3
+    let [<Literal>] CompilerError = 4
 
 ///A readonly scintilla control which redirects stdout and stderr to itself (hence there should only ever be one instance of this control)
 type OutputScintilla(font:Font) as this =
@@ -130,7 +130,9 @@ type OutputScintilla(font:Font) as this =
         let styleConfig = [
             OutputScintillaStyle.Stdout, Color.Black
             OutputScintillaStyle.Stderr, Color.DarkRed
-            OutputScintillaStyle.Stdin, Color.DarkGreen
+            OutputScintillaStyle.Stdin, Color.Green
+            OutputScintillaStyle.CompilerWarning, Color.Orange
+            OutputScintillaStyle.CompilerError, Color.Red
         ]
 
         do styleConfig |> Seq.iter configureStyle
@@ -150,3 +152,16 @@ type OutputScintilla(font:Font) as this =
             errWriter.Enabled
         and set(value) = 
             errWriter.Enabled <- value
+
+    member __.Sink(msg:CompilerMessage) =
+        let msgText = sprintf "|%O|" msg
+        this.SuspendReadonly(fun() ->
+            let range = this.AppendText(msgText + this.EndOfLine.EolString)
+            let styleIndex = 
+                match msg.Level with 
+                | Error -> OutputScintillaStyle.CompilerError 
+                | Warning -> OutputScintillaStyle.CompilerWarning
+            range.SetStyle(styleIndex)
+            this.Scrolling.ScrollBy(0, this.Lines.Count)
+            this.Update()
+        )

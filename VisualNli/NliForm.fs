@@ -95,6 +95,8 @@ type public NliForm() as this =
         //submit results with console output (stdout and stderr, including errors and warnings) redirected to console tab
         let code = range.Text
         let offset = (range.StartingLine.Number+1, editor.GetColumn(range.Start)+1, range.Start)
+
+        use outputScintillaSink = new LambdaMessageSink(outputScintilla.Sink)
         let stats, results = nli.Submit(code, offset)
             
         //update watches
