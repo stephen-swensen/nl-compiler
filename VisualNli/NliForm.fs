@@ -93,11 +93,9 @@ type public NliForm() as this =
         outputScintilla.Update()
             
         //submit results with console output (stdout and stderr, including errors and warnings) redirected to console tab
-        outputScintilla.RedirectConsoleOutput <-true
         let code = range.Text
         let offset = (range.StartingLine.Number+1, editor.GetColumn(range.Start)+1, range.Start)
         let stats, results = nli.Submit(code, offset)
-        outputScintilla.RedirectConsoleOutput <-false
             
         //update watches
         Control.update treeView <| fun () ->
@@ -107,7 +105,7 @@ type public NliForm() as this =
         //draw squiggly indicators for errors and warnings
         let messages = 
             results 
-            |> Array.choose (fun (_,value,_) -> match value with | :? CompilerMessage as value -> Some(value) | _ -> None)
+            |> Array.choose (function (_, (:? CompilerMessage as value), _) -> Some(value) | _ -> None)
 
         callTipInfo <- messages
         editor.ResetIndicators(messages)
