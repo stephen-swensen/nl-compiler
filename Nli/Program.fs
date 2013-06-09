@@ -10,10 +10,10 @@ let rec loop(nli:Nli) =
     | code ->
         try
             match nli.TrySubmit(code) with
-            | Some(results) ->
+            | Some(results), _ ->
                 for fName,fValue,fTy in results do
                     printfn "[%s] %s = %A" fTy.Name fName fValue
-            | None ->
+            | None, _ ->
                 ()
         with
         | e -> printfn "%A" e
@@ -27,6 +27,6 @@ let main(args:string[]) =
     Console.OutputEncoding <- System.Text.Encoding.UTF8 
 
     printfn "NL Interactive"
-    let nli = new Nli({ CompilerOptions.Default with InstallMessageLogger=MessageLogger.InstallConsoleLogger })
+    let nli = new Nli({ CompilerOptions.Default with ConsoleLogging=true })
     loop(nli)
     0

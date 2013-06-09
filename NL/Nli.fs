@@ -24,7 +24,7 @@ type Nli(?options: CompilerOptions) =
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string, ?offset) =
         let offset = defaultArg offset Compilation.DefaultOffset
-        options.InstallMessageLogger()
+        use sink = new BasicMessageSink(options.ConsoleLogging)
 
         let asmName = "NLI_" + asmCounter.ToString()
         asmCounter <- asmCounter + 1I
@@ -41,8 +41,8 @@ type Nli(?options: CompilerOptions) =
 
         let ilTopLevel = C.lexParseAndSemantWith env offset code
 
-        if EL.ActiveLogger.HasErrors then
-            None
+        if sink.HasErrors then
+            None, sink.GetMessages()
         else
             let ilTopLevel =
                 if options.Optimize then 
@@ -53,7 +53,7 @@ type Nli(?options: CompilerOptions) =
             match ilTopLevel.NormalizedStmts with
             | None ->
                 CompilerMessages.Could_not_normalize_nli_fragment (sprintf "%A" ilTopLevel)
-                None
+                None, sink.GetMessages()
             | Some(stmts) ->
                 ///Define the fields to bind to the tyBuilder and define the tyBuilder static constructor which initializes the fields.
                 do
@@ -87,13 +87,16 @@ type Nli(?options: CompilerOptions) =
                     | :? TypeInitializationException as ex when Regex.IsMatch(ex.Message, @"^The type initializer for 'NLI_(\d+).TOP_LEVEL' threw an exception.$") && ex.InnerException <> null ->
                         raise ex.InnerException
                     
-                ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
-                |> Seq.map (fun fi -> fi.Name, fi.GetValue(null), fi.FieldType)
-                |> Seq.toArray
-                |> Some
+                let retval =
+                    ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
+                    |> Seq.map (fun fi -> fi.Name, fi.GetValue(null), fi.FieldType)
+                    |> Seq.toArray
+                    |> Some
+
+                retval, sink.GetMessages()
 
     member this.Submit(code:string) =
         match this.TrySubmit(code) with
-        | Some(xl) -> xl
-        | None ->
-            raise <| NliException()
+        | Some(xl), _ -> xl
+        | None, msgs ->
+            raise <| NliException(msgs)

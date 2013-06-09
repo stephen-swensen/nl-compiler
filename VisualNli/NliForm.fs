@@ -131,9 +131,12 @@ type public NliForm() as this =
                 let code = editor.Text
                 
                 do! Async.SwitchToContext backgroundContext
-                EL.InstallInMemoryLogger()
-                Compilation.lexParseAndSemant code |> ignore
-                let messages = EL.ActiveLogger.GetMessages()
+                let analyize () =
+                    use sink = new BasicMessageSink()
+                    Compilation.lexParseAndSemant code |> ignore
+                    sink.GetMessages()
+
+                let messages = analyize()
                 
                 do! Async.SwitchToContext guiContext
                 callTipInfo <- messages
