@@ -117,6 +117,7 @@ type public NliForm() as this =
             treeView.Nodes.[treeView.Nodes.Count - 1].EnsureVisible()
 
         updateStatus (sprintf "Submission processed in %ims with %i warning(s) and %i error(s)" stats.Time stats.WarningCount stats.ErrorCount)
+    do editor.Submit.Add submit
 
     //real-time error indicators
     do
@@ -161,9 +162,12 @@ type public NliForm() as this =
         
         editor.DwellEnd.Add <| fun e -> editor.CallTip.Hide()
 
-    //event handlers
-    do editor.Submit.Add submit
-
+    do 
+        outputScintilla.CompilerMessageDoubleClick.Add <| fun (linePos,colPos) ->
+            let absPos = editor.FindColumn(linePos, colPos)
+            editor.GoTo.Position(absPos)
+            editor.Focus() |> ignore
+            
     //main menu
     let fileDialogFilter = "NL files (*.nl)|*.nl|All files (*.*)|*.*"
     let openFileDialog = new OpenFileDialog(Filter=fileDialogFilter)
