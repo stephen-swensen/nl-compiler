@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module internal Swensen.NL.Prelude
+module Swensen.NL.Prelude
 
 open System
 
@@ -80,3 +80,8 @@ let isVoidOrEscapeTy = function
 let (|ObjEq|ObjNotEq|) (x,y) = 
     if x = y then ObjEq
     else ObjNotEq
+
+let (|Int32|_|) x =
+    match Int32.TryParse(x) with
+    | true, value -> Some(value)
+    | false, _ -> None

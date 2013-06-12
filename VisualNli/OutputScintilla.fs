@@ -4,6 +4,7 @@ open System.Drawing
 open System.Windows.Forms
 open ScintillaNET
 open Swensen.NL
+open System.Text.RegularExpressions
 
 ///A TextWritter sufficient for redirecting stdout and stderr to a Scintilla control
 ///including output following (scrolling control to the end of the document) 
@@ -115,6 +116,20 @@ module OutputScintillaStyle =
 type OutputScintilla(font:Font) as this =
     inherit StandardScintilla()
 
+    let compilerMessageDoubleClick = new Event<int * int>()
+    
+    do this.DoubleClick.Add <| fun _ ->
+        let pos = this.CurrentPos
+        let line = this.Lines.FromPosition(pos)
+        
+        let text = line.Text
+        match text with
+        | Regex.Compiled.Match @"^\|(Semantic|Syntactic) (error|warning) \(NL[0-9]+\) from \(([0-9]+),([0-9]+)\).*" {GroupValues=[_;_;Int32(linePos);Int32(colPos)]} ->
+            this.Selection.Clear() |> ignore
+            //scintilla starts counting at 0 for both line and pos, adjust for our scintilla-interested event listeners
+            compilerMessageDoubleClick.Trigger(linePos-1,colPos-1)
+        | _ -> ()
+
     let outWriter = new ScintillaTextWriter(this, OutputScintillaStyle.Stdout, Console.OutputEncoding)
     let errWriter = new ScintillaTextWriter(this, OutputScintillaStyle.Stderr, Console.OutputEncoding)
     let inReader = new ScintillaTextReader(this, OutputScintillaStyle.Stdin, Console.InputEncoding)
@@ -129,7 +144,7 @@ type OutputScintilla(font:Font) as this =
 
         let styleConfig = [
             OutputScintillaStyle.Stdout, Color.Black
-            OutputScintillaStyle.Stderr, Color.DarkRed
+            OutputScintillaStyle.Stderr, Color.Red
             OutputScintillaStyle.Stdin, Color.Green
             OutputScintillaStyle.CompilerWarning, Color.Orange
             OutputScintillaStyle.CompilerError, Color.Red
@@ -140,6 +155,8 @@ type OutputScintilla(font:Font) as this =
         System.Console.SetOut(outWriter)
         System.Console.SetError(errWriter)
         System.Console.SetIn(inReader)
+
+    member __.CompilerMessageDoubleClick = compilerMessageDoubleClick.Publish
 
     member __.ConsoleOutEnabled
         with get() = 
