@@ -117,18 +117,6 @@ type OutputScintilla(font:Font) as this =
     inherit StandardScintilla()
 
     let compilerMessageDoubleClick = new Event<int * int>()
-    
-    do this.DoubleClick.Add <| fun _ ->
-        let pos = this.CurrentPos
-        let line = this.Lines.FromPosition(pos)
-        
-        let text = line.Text
-        match text with
-        | Regex.Compiled.Match @"^\|(Semantic|Syntactic) (error|warning) \(NL[0-9]+\) from \(([0-9]+),([0-9]+)\).*" {GroupValues=[_;_;Int32(linePos);Int32(colPos)]} ->
-            this.Selection.Clear() |> ignore
-            //scintilla starts counting at 0 for both line and pos, adjust for our scintilla-interested event listeners
-            compilerMessageDoubleClick.Trigger(linePos-1,colPos-1)
-        | _ -> ()
 
     let outWriter = new ScintillaTextWriter(this, OutputScintillaStyle.Stdout, Console.OutputEncoding)
     let errWriter = new ScintillaTextWriter(this, OutputScintillaStyle.Stderr, Console.OutputEncoding)
@@ -182,3 +170,15 @@ type OutputScintilla(font:Font) as this =
             this.Scrolling.ScrollBy(0, this.Lines.Count)
             this.Update()
         )
+    
+    override __.OnDoubleClick(args) =
+        let pos = this.CurrentPos
+        let line = this.Lines.FromPosition(pos)
+        
+        let text = line.Text
+        match text with
+        | Regex.Compiled.Match @"^\|(Semantic|Syntactic) (error|warning) \(.+\) from \(([0-9]+),([0-9]+)\).*" {GroupValues=[_;_;Int32(linePos);Int32(colPos)]} ->
+            line.Select()
+            //scintilla starts counting at 0 for both line and pos, adjust for our scintilla-interested event listeners
+            compilerMessageDoubleClick.Trigger(linePos-1,colPos-1)
+        | _ -> ()
