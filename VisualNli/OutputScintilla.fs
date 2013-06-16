@@ -46,14 +46,15 @@ type internal ReadBuffer(?buff: int[]) =
         | buff -> buff
 
     let mutable pos : int = 0
+    let hasNext() = pos < buff.Length
     let next() = 
-        if pos < buff.Length then
+        if hasNext() then
             pos <- pos+1
             Some(buff.[pos-1])
         else
             None
     member __.Next() = next()
-    member __.Length = buff.Length
+    member __.HasNext = hasNext()
 
 ///A TextReader sufficient redirecting stdout to a Scintilla control. Includes dialog
 ///prompting for input required by calls to Read() and ReadLine(), closely following the 
@@ -112,7 +113,7 @@ type internal ScintillaTextReader(scintilla:StandardScintilla, style:int, encodi
             frm.Controls.Add(tb)
             frm.Load.Add(fun args -> frm.ClientSize <- Size(frm.ClientSize.Width, tb.Height))
             ignore <| frm.ShowDialog()
-            assert (rbuff.Length > 0) //buffer should be filled with -1 or eol at a minimum
+            assert (rbuff.HasNext) //buffer should be filled with -1 or eol at a minimum
             this.Read() //we've filled the buffer with a line of input (or -1), yield the first char
 
 
