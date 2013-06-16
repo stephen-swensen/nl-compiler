@@ -16,17 +16,16 @@ type internal ScintillaTextWriter(scintilla:StandardScintilla, style:int, encodi
         if not this.Enabled then ()
         else
             base.Write(c)
-            let writeOutputWin = fun () ->
-                scintilla.SuspendReadonly(fun () -> 
-                    let range = scintilla.AppendText(c |> string)
-                    range.SetStyle(style)
+            let writeOutputWin () = 
+                let range = scintilla.AppendText(c |> string)
+                range.SetStyle(style)
             
-                    if c = '\n' then 
-                        scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
-                        scintilla.Update())
+                if c = '\n' then 
+                    scintilla.Scrolling.ScrollBy(0, scintilla.Lines.Count)
+                    scintilla.Update()
             
             if not scintilla.InvokeRequired then 
-                writeOutputWin()
+                scintilla.SuspendReadonly(Action(writeOutputWin))
 
     //no point in overriding WriteLine since only Write is used by stdout and stderr
 
