@@ -6,10 +6,10 @@ open ScintillaNET
 open Swensen.NL
 open System.Text.RegularExpressions
 
-///A TextWritter sufficient for redirecting stdout and stderr to a Scintilla control
+///A TextWriter sufficient for redirecting stdout and stderr to a Scintilla control
 ///including output following (scrolling control to the end of the document) 
 ///and updating on signficant content change.
-type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
+type internal ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
     inherit System.IO.TextWriter()
 
     override this.Write(c:char) =
@@ -35,8 +35,15 @@ type ScintillaTextWriter(scintilla:StandardScintilla, style:int, encoding) =
     ///true by default
     member val Enabled = true with get, set
 
+///Buffer used for stdout calls to Read() (used by the ScintillaTextReader)
+///If buff constructor argument is omitted or null, then the buffer is initialized with 0 length (every call
+///to Next() will be None). This buffer cannot be reset, instead replace an exausted instance with a new instance
+///(i.e. with a mutable variable).
 type internal ReadBuffer(?buff: int[]) =
-    let buff = defaultArg buff [||]
+    let buff = 
+        match defaultArg buff [||] with
+        | null -> [||]
+        | buff -> buff
 
     let mutable pos : int = 0
     let next() = 
@@ -48,7 +55,10 @@ type internal ReadBuffer(?buff: int[]) =
     member __.Next() = next()
     member __.Length = buff.Length
 
-type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
+///A TextReader sufficient redirecting stdout to a Scintilla control. Includes dialog
+///prompting for input required by calls to Read() and ReadLine(), closely following the 
+///semantics of a standard console behavior.
+type internal ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
     inherit System.IO.TextReader()
 
     ///used by Read()
@@ -81,11 +91,13 @@ type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
         
         !line
 
-    ///http://msdn.microsoft.com/en-us/library/system.console.read.aspx using modal dialog for blocking when needed (buff empty)
+    ///Yield the next char in the read buffer if there is any, otherwise prompt for a line of input (-1) from the user with a 
+    ///blocking dialog to fill the buffer and then yield the first char in the buffer.
+    ///See http://msdn.microsoft.com/en-us/library/system.console.read.aspx.
     override this.Read() = 
         match rbuff.Next() with
-        | Some(cint) -> cint
-        | None ->
+        | Some(cint) -> cint //yield the next char in the buffer if there is any
+        | None -> //no chars in buffer: prompt for line of input (or -1) from user with a blocking dialog
             use frm = new Form(Text="Console.Read()", StartPosition = FormStartPosition.CenterParent)
             let tb = new TextBox(AcceptsTab=true, Dock=DockStyle.Fill)
             tb.KeyDown.Add(fun args -> 
@@ -100,8 +112,8 @@ type ScintillaTextReader(scintilla:StandardScintilla, style:int, encoding) =
             frm.Controls.Add(tb)
             frm.Load.Add(fun args -> frm.ClientSize <- Size(frm.ClientSize.Width, tb.Height))
             ignore <| frm.ShowDialog()
-            assert (rbuff.Length > 0)
-            this.Read()
+            assert (rbuff.Length > 0) //buffer should be filled with -1 or eol at a minimum
+            this.Read() //we've filled the buffer with a line of input (or -1), yield the first char
 
 
 module OutputScintillaStyle =
