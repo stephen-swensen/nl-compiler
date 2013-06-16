@@ -50,9 +50,9 @@ type internal ReadBuffer(?buff: int[]) =
     let next() = 
         if hasNext() then
             pos <- pos+1
-            Some(buff.[pos-1])
+            buff.[pos-1]
         else
-            None
+            raise <| System.InvalidOperationException("buffer is exhausted")
     member __.Next() = next()
     member __.HasNext = hasNext()
 
@@ -92,13 +92,11 @@ type internal ScintillaTextReader(scintilla:StandardScintilla, style:int, encodi
         
         !line
 
-    ///Yield the next char in the read buffer if there is any, otherwise prompt for a line of input (-1) from the user with a 
+    ///Yield the next char in the read buffer if there is any, otherwise prompt for a line of input (or -1) from the user with a 
     ///blocking dialog to fill the buffer and then yield the first char in the buffer.
     ///See http://msdn.microsoft.com/en-us/library/system.console.read.aspx.
     override this.Read() = 
-        match rbuff.Next() with
-        | Some(cint) -> cint //yield the next char in the buffer if there is any
-        | None -> //no chars in buffer: prompt for line of input (or -1) from user with a blocking dialog
+        if not rbuff.HasNext then
             use frm = new Form(Text="Console.Read()", StartPosition = FormStartPosition.CenterParent)
             let tb = new TextBox(AcceptsTab=true, Dock=DockStyle.Fill)
             tb.KeyDown.Add(fun args -> 
@@ -113,9 +111,8 @@ type internal ScintillaTextReader(scintilla:StandardScintilla, style:int, encodi
             frm.Controls.Add(tb)
             frm.Load.Add(fun args -> frm.ClientSize <- Size(frm.ClientSize.Width, tb.Height))
             ignore <| frm.ShowDialog()
-            assert (rbuff.HasNext) //buffer should be filled with -1 or eol at a minimum
-            this.Read() //we've filled the buffer with a line of input (or -1), yield the first char
 
+        rbuff.Next()
 
 module OutputScintillaStyle =
     let [<Literal>] Stdout = 0
