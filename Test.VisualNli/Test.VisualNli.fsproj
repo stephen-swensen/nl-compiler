@@ -46,9 +46,14 @@
   <ItemGroup>
     <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="mscorlib" />
+    <Reference Include="ScintillaNET">
+      <HintPath>..\lib\scintilla\ScintillaNET.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="Unquote">
       <HintPath>..\packages\Unquote.2.2.2\lib\net40\Unquote.dll</HintPath>
       <Private>True</Private>
@@ -59,6 +64,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NL\NL.fsproj">
+      <Name>NL</Name>
+      <Project>{e25f2830-8e94-4680-882b-39e30ce3d586}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\VisualNli.CSharp\VisualNli.CSharp.csproj">
+      <Name>VisualNli.CSharp</Name>
+      <Project>{4ccf11bb-5c7d-45f5-b602-40b7644e232c}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\VisualNli\VisualNli.fsproj">
       <Name>VisualNli</Name>
       <Project>{eedcb6d1-6c2e-4ac7-afec-862e8beb1806}</Project>
