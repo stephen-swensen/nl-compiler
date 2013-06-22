@@ -1,5 +1,6 @@
 ﻿module Swensen.NL.Evaluation
 open Swensen.NL.Ail
+open Swensen.NL
 
 open System
 open System.Reflection
@@ -27,18 +28,17 @@ let tryEvalWith<'a> options code : 'a option * CompilerMessage[] =
         il.Emit(OpCodes.Ret)
         dm
 
-    let ilTopLevel = lexParseAndSemantWith options.SemanticEnvironment Compilation.DefaultOffset code 
+    let il = FrontEnd.lexParseAndSemantExprWith FrontEnd.DefaultOffset options.SemanticEnvironment code
+
     if sink.HasErrors then
         None, sink.GetMessages()
     else
-        let ilTopLevel = if options.Optimize then Optimization.optimize ilTopLevel else ilTopLevel
+        let il = if options.Optimize then Optimization.optimizeExpr il else il
     
-        match ilTopLevel.NormalizedExpr with
-        | None -> 
-            CompilerMessages.Could_not_normalize_eval_fragment (sprintf "%A" ilTopLevel)
+        if sink.HasErrors then
             None, sink.GetMessages()
-        | Some(ilExpr) ->
-            let dm = mkDm ilExpr
+        else
+            let dm = mkDm il
             let value = dm.Invoke(null,null) 
             let expectedResultType = typeof<'a>
             if value = null && typeof<ValueType>.IsAssignableFrom(expectedResultType) then

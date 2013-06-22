@@ -5,8 +5,6 @@ open Swensen.NL
 open Swensen.NL.Ast
 open System
 module CM = CompilerMessages
-//let parse_error msg =
-//    failwithf "%A" msg
 
 let range (parseState:IParseState) rangeStart rangeEnd =
     let posStart,_ = parseState.InputRange rangeStart
@@ -68,11 +66,14 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %nonassoc BANG
 //%nonassoc NOT
 
-%start start
-%type <SynTopLevel> start
+%start parseExpr
+%type <SynExpr> parseExpr
 
 %type <SynExpr> expr
 %type <SynExpr list> exprList
+
+%start parseStmts
+%type <SynStmt list> parseStmts
 
 %type <SynStmt> stmt
 %type <SynStmt list> stmtList
@@ -86,8 +87,11 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 
 %%
 
-start:
-    | topLevel EOF { $1 }
+parseExpr:
+    | expr EOF { $1 }
+
+parseStmts:
+    | stmtList EOF { $1 }
 
 ifThenElse:
     //if then else expressions
@@ -316,21 +320,23 @@ expr:
     | UNCHECKED LBRACE expr RBRACE
         { SynExpr.Unchecked($3) }
 
+//last ;; is optional (e.g. 1;;2;;3 and 1;;2;;3;; are equivalent)
 stmtList:
     | stmt { [$1] }
-    | stmt stmtList { $1::$2 }
+    | stmt DOUBLE_SEMICOLON { [$1] }
+    | stmt DOUBLE_SEMICOLON stmtList { $1::$3 }
 
 stmt:
     //open namespace
-    | OPEN tySig DOUBLE_SEMICOLON
+    | OPEN tySig
         { SynStmt.OpenNamespaceOrType($2) }
     
     //open assembly reference (by assembly name or file name)
-    | OPEN STRING DOUBLE_SEMICOLON
+    | OPEN STRING
         { SynStmt.OpenAssembly($2, range parseState 2 2) }
         
     //let statement (these can not be paths, since they are compiled as fields -- unless we want to compile them with '$' seperators)
-    | path EQ expr DOUBLE_SEMICOLON
+    | path EQ expr
         { 
             if $1.Length > 1 then
                 CM.Invalid_pathifier (range parseState 1 1) ($1.Text) "."
@@ -338,11 +344,5 @@ stmt:
             SynStmt.Let($1.Text, ($3, range parseState 3 3))
         }
 
-    | expr DOUBLE_SEMICOLON
-        { SynStmt.Do($1) }
-
-topLevel:
-    | stmtList
-        { SynTopLevel.StmtList($1) }
     | expr
-        { SynTopLevel.Expr($1) }
+        { SynStmt.Do($1) }

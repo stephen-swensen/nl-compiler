@@ -51,7 +51,7 @@ let ``cast var - does not needs to be surrounded with parens`` options =
 let ``cast var has more than one generic ty arg`` options =
     raisesWith 
         <@ evalWith options "x = 3 in x[object,int32]" @>
-        (expectedErrors [|-1|])
+        (expectedErrors [|53|])
 
 [<Theory;EvalData>]
 let ``cannot cast value to its own type`` options =

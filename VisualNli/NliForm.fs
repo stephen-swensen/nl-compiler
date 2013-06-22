@@ -134,7 +134,7 @@ type public NliForm() as this =
                 do! Async.SwitchToContext backgroundContext
                 let analyize () =
                     use sink = new BasicMessageSink()
-                    Compilation.lexParseAndSemant code |> ignore
+                    FrontEnd.lexParseAndSemantStmts code |> ignore
                     sink.GetMessages()
 
                 let messages = analyize()

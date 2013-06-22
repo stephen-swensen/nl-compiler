@@ -9,7 +9,7 @@ let ``correct pos info spanning lines with default offset`` () =
 (); 4 * "asdf";;
 (); 4 * "asdf";;"""
     use sink = new BasicMessageSink()
-    Compilation.lexParseAndSemant code |> ignore
+    FrontEnd.lexParseAndSemantStmts code |> ignore
     let msgs = sink.GetMessages()
     let actualMsgs = msgs |> Array.map (fun msg -> msg.ToString())
     //the important part we are looking for is that the reported line and column numbers in the ranges are correct.
@@ -24,7 +24,7 @@ let ``correct pos info spanning lines with non-default offset`` () =
     let code = """4 * "asdf";;
 (); 4 * "asdf";;"""
     use sink = new BasicMessageSink()
-    Compilation.lexParseAndSemantWith SemanticEnvironment.Default (2,5,22) code |> ignore
+    FrontEnd.lexParseAndSemantStmtsWith (2,5,22) SemanticEnvironment.Default code |> ignore
     let msgs = sink.GetMessages()
     let actualMsgs = msgs |> Array.map (fun msg -> msg.ToString())
     //the important part we are looking for is that the reported line and column numbers in the ranges are correct.

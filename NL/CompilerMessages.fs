@@ -28,6 +28,8 @@ module CompilerMessages =
         Printf.ksprintf (fun s -> MessageLogger.Log (CompilerMessage(pos, msgType, msgLevel, code, s, stacktrace()))) f
     
     //error code -1 stands for unspecified error
+
+    //let Log msg = MessageLogger.Log(msg)
     
     let Could_not_resolve_type pos = 
         mk MessageLevel.Error MessageType.Semantic 1 pos "Could not resolve type '%s'"
@@ -129,12 +131,6 @@ module CompilerMessages =
     let Could_not_unescape_string_literal pos =
         mk MessageLevel.Error MessageType.Syntactic 34 pos "Error %s"
 
-    let Could_not_normalize_nli_fragment =
-        mk MessageLevel.Error MessageType.Syntactic 35 PositionRange.Empty "NL fragment could not be normalized for interactive submission: %s"
-
-    let Could_not_normalize_eval_fragment =
-        mk MessageLevel.Error MessageType.Syntactic 36 PositionRange.Empty "NL fragment could not be normalized for evaluation: %s"
-
     let Could_not_unescape_char_literal pos =
         mk MessageLevel.Error MessageType.Syntactic 37 pos "Error %s"
 
@@ -183,4 +179,5 @@ module CompilerMessages =
     let Rethrow_of_outer_catch_not_valid_inside_nested_finally_body pos = 
         mk MessageLevel.Error MessageType.Semantic 52 pos "'rethrow' of an outer exception is not valid inside a 'finally' body"
 
-    let Log msg = MessageLogger.Log(msg)
+    let Parse_error pos =
+        mk MessageLevel.Error MessageType.Syntactic 53 pos "Parse error: possible missing or extra syntactic element such as ',' or ';;'"

@@ -85,6 +85,7 @@
     <Compile Include="SmartILGenerator.fs" />
     <Compile Include="Emission.fs" />
     <Compile Include="CompilerOptions.fs" />
+    <Compile Include="FrontEnd.fs" />
     <Compile Include="Compilation.fs" />
     <Compile Include="Nli.fs" />
     <Compile Include="Evaluation.fs" />
