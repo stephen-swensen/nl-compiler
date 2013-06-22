@@ -9,7 +9,6 @@ open Swensen.NL
 open System.Collections.Generic
 
 module O = Optimization
-module C = Compilation
 open System
 
 //so that we see error details in console output while doing parse operations which don't install their own error loggers
@@ -53,279 +52,279 @@ let numericDefaultTypeNamesAndSuffixes =
 
 [<Fact>]
 let ``if/then/else unreachable else branch`` () =
-    test <@ C.lexParseAndSemant "if true { 1 } else { 0 }" |> O.optimize = C.lexParseAndSemant "1" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if true { 1 } else { 0 }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "1" @>
 
 [<Fact>]
 let ``if/then/else unreachable then branch`` () =
-    test <@ C.lexParseAndSemant "if false { 1 } else { 0 }" |> O.optimize = C.lexParseAndSemant "0" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if false { 1 } else { 0 }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "0" @>
 
 [<Fact>]
 let ``if/then/else unreachable else branch condition recursively optimized`` () =
-    test <@ C.lexParseAndSemant "if if true { true } else { false } { 1 } else { 0 }" |> O.optimize = C.lexParseAndSemant "1" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if if true { true } else { false } { 1 } else { 0 }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "1" @>
 
 [<Fact>]
 let ``if/then/else unreachable then branch condition recursively optimized`` () =
-    test <@ C.lexParseAndSemant "if if false { true } else { false } { 1 } else { 0 }" |> O.optimize = C.lexParseAndSemant "0" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if if false { true } else { false } { 1 } else { 0 }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "0" @>
 
 [<Fact>]
 let ``if/then unreachable else branch`` () = //note the expectation of the implicit default[int] in the else branch
-    test <@ C.lexParseAndSemant "if true { 1;() }" |> O.optimize = C.lexParseAndSemant "1;()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if true { 1;() }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "1;()" @>
 
 [<Fact>]
 let ``if/then unreachable then branch`` () =
-    test <@ C.lexParseAndSemant "if false { 1;() }" |> O.optimize = C.lexParseAndSemant "()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if false { 1;() }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "()" @>
 
 [<Fact>]
 let ``if/then unreachable else branch condition recursively optimized`` () =
-    test <@ C.lexParseAndSemant "if (1+1)==2 { () }" |> O.optimize = C.lexParseAndSemant "()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if (1+1)==2 { () }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "()" @>
 
 [<Fact>]
 let ``if/then unreachable then branch condition recursively optimized`` () =
-    test <@ C.lexParseAndSemant "if (1+1)==3 { () }" |> O.optimize = C.lexParseAndSemant "()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if (1+1)==3 { () }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "()" @>
 
 [<Fact>]
 let ``if/then thenBranch is reduced to nop so just give condition`` () =
-    test <@ C.lexParseAndSemant "if datetime.isLeapYear(1) { () }" |> O.optimize = C.lexParseAndSemant "datetime.isLeapYear(1)" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { () }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "datetime.isLeapYear(1)" @>
 
 //-----do not need to test && and || optimization since they are implemented in terms of if / then / else
 
 [<Fact>]
 let ``String concat folding`` () =
-    test <@ C.lexParseAndSemant "\"str\" + \"str\"" |> O.optimize = C.lexParseAndSemant "\"strstr\"" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "\"str\" + \"str\"" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "\"strstr\"" @>
 
 [<Fact>]
 let ``instance call sub expressions optimized`` () =
-    test <@ C.lexParseAndSemant "(\"str\" + \"str\").EndsWith(\"str\" + \"str\")" |> O.optimize = C.lexParseAndSemant "(\"strstr\").EndsWith(\"strstr\")" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "(\"str\" + \"str\").EndsWith(\"str\" + \"str\")" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "(\"strstr\").EndsWith(\"strstr\")" @>
 
 [<Fact>]
 let ``static call sub expressions optimized`` () =
-    test <@ C.lexParseAndSemant "String.Compare(\"str\" + \"str\", \"str\" + \"str\")" |> O.optimize = C.lexParseAndSemant "String.Compare(\"strstr\", \"strstr\")" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "String.Compare(\"str\" + \"str\", \"str\" + \"str\")" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "String.Compare(\"strstr\", \"strstr\")" @>
 
 [<Fact>]
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
-    test <@ C.lexParseAndSemant "if (true || true).getType() == type[boolean] { true } else { false }" |> O.optimize = C.lexParseAndSemant "if true.getType() == type[boolean] { true } else { false }" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if (true || true).getType() == type[boolean] { true } else { false }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "if true.getType() == type[boolean] { true } else { false }" @>
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal constants folding`` (suffix:string) =
     let input = System.String.Format("((2{0} * 3{0}) + 45{0}) - (24{0} / 2{0})", suffix)
     let outcome = sprintf "39%s" suffix
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant outcome @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr outcome @>
 
 [<Fact>]
 let ``coersion of literal int to double is optimized away`` () =
-    test <@ C.lexParseAndSemant "2[double]" |> O.optimize = C.lexParseAndSemant "2.0" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "2[double]" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "2.0" @>
 
 [<Fact>]
 let ``coersion of literal double to int is optimized away`` () =
-    test <@ C.lexParseAndSemant "2.3[int32]" |> O.optimize = C.lexParseAndSemant "2" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "2.3[int32]" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "2" @>
 
 [<Fact>]
 let ``coersion subexpression folds`` () =
-    test <@ C.lexParseAndSemant "(2 + 2)[double]" |> O.optimize = C.lexParseAndSemant "4.0" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "(2 + 2)[double]" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "4.0" @>
 
 [<Fact>]
 let ``coersion subexpression doesn't fold but is optimized`` () =
-    test <@ C.lexParseAndSemant "x = 1 in (x + (2 + 3))[double]" |> O.optimize = C.lexParseAndSemant "x = 1 in (x + 5)[double]" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = 1 in (x + (2 + 3))[double]" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = 1 in (x + 5)[double]" @>
 
 [<Fact>]
 let ``constants folding with optimized implicit int to double coersion`` () =
-    test <@ C.lexParseAndSemant "2 + 3.0" |> O.optimize = C.lexParseAndSemant "5.0" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "2 + 3.0" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "5.0" @>
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal equals comparison constants folding true`` (suffix:string) =
     let input = String.Format("2{0} == 2{0}", suffix)
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "true" @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal equals comparison constants folding false`` (suffix:string) =
     let input = String.Format("2{0} == 3{0}", suffix)
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 //don't need to do != this cases since they are logical not (!) optimization
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal less than comparison constants folding true`` (suffix:string) =
     let input = String.Format("2{0} < 3{0}", suffix)
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "true" @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal less than comparison constants folding false`` (suffix:string) =
     let input = String.Format("3{0} < 2{0}", suffix)
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal greater than comparison constants folding true`` (suffix:string) =
     let input = String.Format("2{0} > 1{0}", suffix)
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "true" @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
 [<Theory;PropertyData("numericConstantFoldingSuffixes")>]
 let ``numeric literal greater than comparison constants folding false`` (suffix:string) =
     let input = String.Format("1{0} > 2{0}", suffix)
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 [<Fact>]
 let ``logical not of false`` () =
-    test <@ C.lexParseAndSemant "!false" |> O.optimize = C.lexParseAndSemant "true" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "!false" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
 [<Fact>]
 let ``logical not of true`` () =
-    test <@ C.lexParseAndSemant "!true" |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "!true" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 [<Fact>]
 let ``logical not sub expression folds`` () =
-    test <@ C.lexParseAndSemant "!(true && true)" |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "!(true && true)" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 [<Fact>]
 let ``logical not sub expression doesn't fold but is optimized`` () =
-    test <@ C.lexParseAndSemant "x = true in !(x && (true && true))" |> O.optimize = C.lexParseAndSemant "x = true in !(x && true)" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = true in !(x && (true && true))" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = true in !(x && true)" @>
 
 [<Fact>]
 let ``comparison op sub expression reduction`` () =
-    test <@ C.lexParseAndSemant "2 > (1 + 1)" |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "2 > (1 + 1)" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 [<Fact>]
 let ``numeric binop does not fold but one subexpression does`` () =
-    test <@ C.lexParseAndSemant "(2 + 1) + (\"asdf\".get_Length())" |> O.optimize = C.lexParseAndSemant "3 + (\"asdf\".get_Length())" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "(2 + 1) + (\"asdf\".get_Length())" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "3 + (\"asdf\".get_Length())" @>
 
 [<Fact>]
 let ``Boolean equals comparison constants folding true`` () =
-    test <@ C.lexParseAndSemant "true == true" |> O.optimize = C.lexParseAndSemant "true" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "true == true" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
 [<Fact>]
 let ``Boolean equals comparison constants folding false`` () =
-    test <@ C.lexParseAndSemant "false == true" |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "false == true" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 [<Fact>]
 let ``comparison doesn't fold but does optimze subexpression`` () =
-    test <@ C.lexParseAndSemant "x = 1 in x > (1 + 2)" |> O.optimize = C.lexParseAndSemant "x = 1 in x > 3" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = 1 in x > (1 + 2)" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = 1 in x > 3" @>
 
 [<Fact>]
 let ``sequence of noops is reduced`` () =
-    test <@ C.lexParseAndSemant "();();();()" |> O.optimize = C.lexParseAndSemant "()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "();();();()" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "()" @>
 
 [<Fact>]
 let ``sequence of noops and ints ending in int is reduced`` () =
-    test <@ C.lexParseAndSemant "();1;();1" |> O.optimize = C.lexParseAndSemant "1;1" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "();1;();1" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "1;1" @>
 
 [<Fact>]
 let ``sequence of noops and ints ending in noop is reduced`` () =
-    test <@ C.lexParseAndSemant "();1;();1;()" |> O.optimize = C.lexParseAndSemant "1;1;()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "();1;();1;()" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "1;1;()" @>
 
 [<Fact>]
 let ``reduce sequence sub expressions`` () =
-    test <@ C.lexParseAndSemant "1+2;2+3" |> O.optimize = C.lexParseAndSemant "3;5" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "1+2;2+3" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "3;5" @>
 
 [<Fact>]
 let ``trim explicit noop if then else branch`` () =
-    test <@ C.lexParseAndSemant "if datetime.isLeapYear(1) { () } else { () }" |> O.optimize = C.lexParseAndSemant "if datetime.isLeapYear(1) { () }" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { () } else { () }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { () }" @>
 
 [<Fact>]
 let ``trim explicit sequence of noop if then else branch`` () =
-    test <@ C.lexParseAndSemant "if datetime.isLeapYear(1) { () } else { (();();()) }" |> O.optimize = C.lexParseAndSemant "if datetime.isLeapYear(1) { () }" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { () } else { (();();()) }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { () }" @>
 
 [<Fact>]
 let ``optimize if/then/else then and else branches`` () =
-    test <@ C.lexParseAndSemant "if datetime.isLeapYear(1) { 1 + 2 } else { 3 + 4 }" |> O.optimize = C.lexParseAndSemant "if datetime.isLeapYear(1) { 3 } else { 7 }" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { 1 + 2 } else { 3 + 4 }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { 3 } else { 7 }" @>
 
 [<Fact>]
 let ``optimize if/then then branch`` () =
-    test <@ C.lexParseAndSemant "if datetime.isLeapYear(1) { 1 + 2; () }" |> O.optimize = C.lexParseAndSemant "if datetime.isLeapYear(1) { 3; () }" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { 1 + 2; () }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "if datetime.isLeapYear(1) { 3; () }" @>
 
 [<Fact>]
 let ``optimize cast subexpression`` () =
-    test <@ C.lexParseAndSemant "(1 + 1)[object]" |> O.optimize = C.lexParseAndSemant "2[object]" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "(1 + 1)[object]" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "2[object]" @>
 
 [<Fact>]
 let ``optimize ctor args`` () =
-    test <@ C.lexParseAndSemant "biginteger(2 + 1)" |> O.optimize = C.lexParseAndSemant "biginteger(3)" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "biginteger(2 + 1)" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "biginteger(3)" @>
 
 [<Fact>]
 let ``optimize assignment of var binding`` () =
-    test <@ C.lexParseAndSemant "x = 1 + 2 in ()" |> O.optimize = C.lexParseAndSemant "x = 3 in ()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = 1 + 2 in ()" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = 3 in ()" @>
 
 [<Fact>]
 let ``optimize body of var binding`` () =
-    test <@ C.lexParseAndSemant "x = 1 in 1 + 2" |> O.optimize = C.lexParseAndSemant "x = 1 in 3" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = 1 in 1 + 2" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = 1 in 3" @>
 
 ///todo: constants folding for other uminus numeric literals
 [<Fact>]
 let ``constant fold uminus of sbyte`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.SByte(1y), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.SByte(-1y)) @>
+    test <@ ILExpr.UMinus(false, ILExpr.SByte(1y), typeof<int32>) |> O.optimizeExpr = ILExpr.SByte(-1y) @>
 
 [<Fact>]
 let ``constant fold uminus of int16`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int16(1s), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int16(-1s)) @>
+    test <@ (ILExpr.UMinus(false, ILExpr.Int16(1s), typeof<int32>)) |> O.optimizeExpr = (ILExpr.Int16(-1s)) @>
 
 [<Fact>]
 let ``constant fold uminus of int32`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int32(1), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int32(-1)) @>
+    test <@ (ILExpr.UMinus(false, ILExpr.Int32(1), typeof<int32>)) |> O.optimizeExpr = (ILExpr.Int32(-1)) @>
 
 [<Fact>]
 let ``constant fold uminus of int64`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Int64(1L), typeof<int32>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Int64(-1L)) @>
+    test <@ (ILExpr.UMinus(false, ILExpr.Int64(1L), typeof<int32>)) |> O.optimizeExpr = (ILExpr.Int64(-1L)) @>
 
 [<Fact>]
 let ``constant fold uminus of single`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Single(1.f), typeof<single>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Single(-1.f)) @>
+    test <@ (ILExpr.UMinus(false, ILExpr.Single(1.f), typeof<single>)) |> O.optimizeExpr = (ILExpr.Single(-1.f)) @>
 
 [<Fact>]
 let ``constant fold uminus of double`` () =
-    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Double(1.), typeof<double>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Double(-1.)) @>
+    test <@ (ILExpr.UMinus(false, ILExpr.Double(1.), typeof<double>)) |> O.optimizeExpr = (ILExpr.Double(-1.)) @>
 
 //[<Fact>]
 //let ``constant fold uminus of char`` () =
-//    test <@ ILTopLevel.Expr(ILExpr.UMinus(false, ILExpr.Char('a'), typeof<char>)) |> O.optimize = ILTopLevel.Expr(ILExpr.Char(-('a'|>int)|>char)) @>
+//    test <@ (ILExpr.UMinus(false, ILExpr.Char('a'), typeof<char>)) |> O.optimizeExpr = (ILExpr.Char(-('a'|>int)|>char)) @>
 
 [<Fact>]
 let ``uminus no constant fold but sub optimization`` () =
     //need to parenthisize 2 + 3 since addition is left associative and will not fold otheriwise
-    test <@ C.lexParseAndSemant "x = 1 in -(x + (2 + 3))" |> O.optimize = C.lexParseAndSemant "x = 1 in -(x + 5)" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = 1 in -(x + (2 + 3))" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = 1 in -(x + 5)" @>
 
 [<Fact>]
 let ``trim while loop dead code`` () =
-    test <@ C.lexParseAndSemant "while false { () } " |> O.optimize = C.lexParseAndSemant "()" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "while false { () } " |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "()" @>
 
 [<Fact>]
 let ``while loop condition is optimized`` () =
-    test <@ C.lexParseAndSemant "x = true in while x && (true && true) { break() }" |> O.optimize = C.lexParseAndSemant "x = true in while x && true { break() }" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = true in while x && (true && true) { break() }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = true in while x && true { break() }" @>
 
 [<Fact>]
 let ``while loop body is optimized`` () =
-    test <@ C.lexParseAndSemant "while true { (true && true); break() }" |> O.optimize = C.lexParseAndSemant "while true { true; break() }" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "while true { (true && true); break() }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "while true { true; break() }" @>
 
 [<Fact>]
 let ``varset assign is optimized`` () =
-    test <@ C.lexParseAndSemant "x = 1 in x <- 1 + 1; x" |> O.optimize = C.lexParseAndSemant "x = 1 in x <- 2; x" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "x = 1 in x <- 1 + 1; x" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "x = 1 in x <- 2; x" @>
 
 [<Fact>]
 let ``can't optimize Error case`` () =
-    raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> ILTopLevel.Expr |> O.optimize @>
+    raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> O.optimizeExpr @>
 
 [<Theory;PropertyData("numericDefaultTypeNamesAndSuffixes")>]
 let ``default numeric primitive is optimized to its constant`` (tyName:string) (suffix:string) =
     let input = sprintf "default[%s]" tyName
     let expected = sprintf "0%s" suffix
-    test <@ C.lexParseAndSemant input |> O.optimize = C.lexParseAndSemant expected @>
+    test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr expected @>
 
 [<Fact>]
 let ``default char is optimized to its constant`` () =
-    test <@ C.lexParseAndSemant "default[char]" |> O.optimize = C.lexParseAndSemant "'\000'" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "default[char]" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "'\000'" @>
 
 [<Fact>]
 let ``default bool is optimized to its constant`` () =
-    test <@ C.lexParseAndSemant "default[boolean]" |> O.optimize = C.lexParseAndSemant "false" @>
+    test <@ FrontEnd.lexParseAndSemantExpr "default[boolean]" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 [<Fact>]
 let ``default non primitive is not optimized`` () =
-    test <@ let x = C.lexParseAndSemant "default[object]" in x |> O.optimize = x @>
+    test <@ let x = FrontEnd.lexParseAndSemantExpr "default[object]" in x |> O.optimizeExpr = x @>
 
 [<Fact>]
 let ``static field set assign is optimized`` () =
-    test <@ C.lexParseAndSemant (openPrefix + "NonGenericClass1.static_field_int <- 1 + 1") |> O.optimize = C.lexParseAndSemant (openPrefix + "NonGenericClass1.static_field_int <- 2") @>
+    test <@ FrontEnd.lexParseAndSemantExpr (openPrefix + "NonGenericClass1.static_field_int <- 1 + 1") |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr (openPrefix + "NonGenericClass1.static_field_int <- 2") @>
 
 [<Fact>]
 let ``assign of instance field set is optimized`` () =
-    test <@ C.lexParseAndSemant (openPrefix + "x = NonGenericClass1() in x.instance_field_int <- 1 + 1") |> O.optimize = C.lexParseAndSemant (openPrefix + "x = NonGenericClass1() in x.instance_field_int <- 2") @>
+    test <@ FrontEnd.lexParseAndSemantExpr (openPrefix + "x = NonGenericClass1() in x.instance_field_int <- 1 + 1") |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr (openPrefix + "x = NonGenericClass1() in x.instance_field_int <- 2") @>
 
 [<Fact(Skip="not sure how to find an example to show this")>]
 let ``instance of instance field set is optimized`` () =
@@ -337,16 +336,16 @@ let ``instance of instance field get is optimized`` () =
 
 [<Fact>] //to at least test path of instance field get even though we can't test the instance actually being optimized
 let ``instance of instance field get is valid`` () =
-    test <@ C.lexParseAndSemant (openPrefix + "x = NonGenericClass1() in x.instance_field_int") |> O.optimize = C.lexParseAndSemant (openPrefix + "x = NonGenericClass1() in x.instance_field_int") @>
+    test <@ FrontEnd.lexParseAndSemantExpr (openPrefix + "x = NonGenericClass1() in x.instance_field_int") |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr (openPrefix + "x = NonGenericClass1() in x.instance_field_int") @>
 
 [<Fact>]
 let ``optimize throw expression`` () =
-    test <@ C.lexParseAndSemant "throw(exception((1 + 1).tostring()))" |> O.optimize = C.lexParseAndSemant ("throw(exception(2.tostring()))") @>
+    test <@ FrontEnd.lexParseAndSemantExpr "throw(exception((1 + 1).tostring()))" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr ("throw(exception(2.tostring()))") @>
 
 [<Fact>]
 let ``catches following filterless catch are trimmed`` () =
-    test <@ C.lexParseAndSemant "try { 1 } catch { 2 } catch[exception] x { 3 }" |> O.optimize = C.lexParseAndSemant ("try { 1 } catch { 2 }") @>
+    test <@ FrontEnd.lexParseAndSemantExpr "try { 1 } catch { 2 } catch[exception] x { 3 }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr ("try { 1 } catch { 2 }") @>
 
 [<Fact>]
 let ``unit finally is trimmed`` () =
-    test <@ C.lexParseAndSemant "try { 1 } catch { 2 } finally { ();() }" |> O.optimize = C.lexParseAndSemant ("try { 1 } catch { 2 }") @>
+    test <@ FrontEnd.lexParseAndSemantExpr "try { 1 } catch { 2 } finally { ();() }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr ("try { 1 } catch { 2 }") @>

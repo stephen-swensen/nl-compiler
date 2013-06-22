@@ -243,9 +243,3 @@ type SynStmt =
     | OpenNamespaceOrType of TySig
     | OpenAssembly of string * PositionRange
     | Do of SynExpr
-
-//represents a "raw" top level language element
-type SynTopLevel =
-    | Expr of SynExpr
-    | StmtList of SynStmt list
-

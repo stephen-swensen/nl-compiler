@@ -11,7 +11,6 @@ open Parser
 open System.Text.RegularExpressions
 
 type EL = MessageLogger
-module C = Compilation
 
 ///The NL interactive
 type Nli(?options: CompilerOptions) = 
@@ -23,7 +22,7 @@ type Nli(?options: CompilerOptions) =
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string, ?offset) =
-        let offset = defaultArg offset Compilation.DefaultOffset
+        let offset = defaultArg offset FrontEnd.DefaultOffset
         use sink = new BasicMessageSink(options.ConsoleLogging)
 
         let asmName = "NLI_" + asmCounter.ToString()
@@ -39,22 +38,15 @@ type Nli(?options: CompilerOptions) =
         
         let tyInitBuilder = tyBuilder.DefineTypeInitializer()
 
-        let ilTopLevel = C.lexParseAndSemantWith env offset code
+        let il = FrontEnd.lexParseAndSemantStmtsWith offset env code
 
         if sink.HasErrors then
             None, sink.GetMessages()
         else
-            let ilTopLevel =
-                if options.Optimize then 
-                    ilTopLevel |> Optimization.optimize 
-                else 
-                    ilTopLevel
-
-            match ilTopLevel.NormalizedStmts with
-            | None ->
-                CompilerMessages.Could_not_normalize_nli_fragment (sprintf "%A" ilTopLevel)
+            let stmts = if options.Optimize then Optimization.optimizeStmts il else il
+            if sink.HasErrors then
                 None, sink.GetMessages()
-            | Some(stmts) ->
+            else
                 ///Define the fields to bind to the tyBuilder and define the tyBuilder static constructor which initializes the fields.
                 do
                     let fieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
