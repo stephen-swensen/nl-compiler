@@ -134,10 +134,6 @@
       <HintPath>..\packages\FSPowerPack.Core.Community.2.0.0.0\Lib\Net40\FSharp.PowerPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="IntelliFactory.Printf">
-      <HintPath>..\packages\IntelliFactory.Printf.0.0.2\lib\net40-full\IntelliFactory.Printf.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
