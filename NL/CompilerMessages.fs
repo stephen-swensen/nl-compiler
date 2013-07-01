@@ -2,8 +2,6 @@
 
 open System
 open System.Diagnostics
-open IntelliFactory
-open IntelliFactory.Printf
 
 //note performance metrics: semantic analysis on a file with about 8k lines is pretty fast when no errors (~200ms),
 //but increases several times when many errors / warnings (about 2k). We were able to cut time by about 50% total with
