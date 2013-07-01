@@ -132,12 +132,12 @@ type public NliForm() as this =
                 let code = editor.Text
                 
                 do! Async.SwitchToContext backgroundContext
-                let analyize () =
+                let analyze () =
                     use sink = new BasicMessageSink()
                     FrontEnd.lexParseAndSemantStmts code |> ignore
                     sink.GetMessages()
 
-                let messages = analyize()
+                let messages = analyze()
                 
                 do! Async.SwitchToContext guiContext
                 callTipInfo <- messages
