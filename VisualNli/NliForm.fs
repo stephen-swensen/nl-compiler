@@ -289,6 +289,7 @@ type public NliForm() as this =
                                 resetMi.Click.Add <| fun _ ->
                                     nli.Reset()
                                     treeView.ClearAll()
+                                    System.GC.Collect()
                                     outputScintilla.Text <- ""
                                     updateStatus "Session reset"
                                 resetMi
