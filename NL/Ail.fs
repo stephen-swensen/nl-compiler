@@ -47,7 +47,7 @@ type ILExpr =
     | Bool of bool
     | Null of Type
     | Typeof of Type
-    | VarGet of string * Type
+    | VarGet of string * ty:Type
     //Default value of ValueType ("zero") or Ref type (null)
     | Default of Type
     | Nop
@@ -55,22 +55,22 @@ type ILExpr =
     | Continue
     | Error of Type
     //bool indicates whether checked
-    | NumericBinop of bool * ILNumericBinop * ILExpr * ILExpr * Type
+    | NumericBinop of bool * ILNumericBinop * ILExpr * ILExpr * ty:Type
     //bool indicates whether checked
-    | UMinus of bool * ILExpr * Type
-    | Let of string * ILExpr * ILExpr * Type
+    | UMinus of bool * ILExpr * ty:Type
+    | Let of string * ILExpr * ILExpr * ty:Type
     //primitive coersion
     //bool indicates whether checked
-    | Coerce of bool * ILExpr * Type
+    | Coerce of bool * ILExpr * targetTy:Type
     ///box / box value type or down / up cast ref type
-    | Cast of ILExpr * Type
+    | Cast of ILExpr * targetTy:Type
     | StaticCall of System.Reflection.MethodInfo * ILExpr list
     | InstanceCall of ILExpr * System.Reflection.MethodInfo * ILExpr list
-    | Sequential of ILExpr * ILExpr * Type
-    | Ctor of System.Reflection.ConstructorInfo * ILExpr list * Type
+    | Sequential of ILExpr * ILExpr * ty:Type
+    | Ctor of System.Reflection.ConstructorInfo * ILExpr list * ty:Type
     | LogicalNot of ILExpr
     | IfThen of ILExpr * ILExpr
-    | IfThenElse of ILExpr * ILExpr * ILExpr * Type
+    | IfThenElse of ILExpr * ILExpr * ILExpr * ty:Type
     | ComparisonBinop of ILComparisonBinop * ILExpr * ILExpr
     | VarSet of string * ILExpr
     | WhileLoop of ILExpr * ILExpr
@@ -80,7 +80,7 @@ type ILExpr =
     | InstanceFieldSet of ILExpr * FieldInfo * ILExpr
     | Throw of ILExpr
     | Rethrow
-    | TryCatchFinally of ILExpr * ((Type * string option * ILExpr) list) * (ILExpr option) * Type
+    | TryCatchFinally of ILExpr * ((Type * string option * ILExpr) list) * (ILExpr option) * ty:Type
     with 
         member this.Type =
             match this with
@@ -118,18 +118,18 @@ type ILExpr =
             | Throw _
             | Rethrow -> typeof<Escape>
             //Explicitly constructed with types
-            | NumericBinop(_,_,_,_,ty)
-            | UMinus(_,_,ty)
-            | Let(_,_,_,ty)
-            | VarGet(_,ty) 
-            | Coerce(_,_,ty)
-            | Cast(_,ty)
-            | Sequential(_,_,ty)
-            | Ctor(_,_,ty)
+            | NumericBinop(ty=ty)
+            | UMinus(ty=ty)
+            | Let(ty=ty)
+            | VarGet(ty=ty)
+            | Coerce(targetTy=ty)
+            | Cast(targetTy=ty)
+            | Sequential(ty=ty)
+            | Ctor(ty=ty)
             | Default(ty)
             | Null(ty)
-            | IfThenElse(_,_,_,ty)
-            | TryCatchFinally(_,_,_,ty)
+            | IfThenElse(ty=ty)
+            | TryCatchFinally(ty=ty)
             | Error(ty) //ty is the recovery typeof the expression. (maybe add optional first parameter with the specific branch which was type checked but in error?)
                 -> ty
 

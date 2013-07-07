@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xunit>
+  <assemblies>
+    <assembly filename="Test.NL\bin\Debug\Test.NL.dll" shadow-copy="true" />
+    <assembly filename="Test.VisualNli\bin\Debug\Test.VisualNli.dll" shadow-copy="true" />
+  </assemblies>
+</xunit>

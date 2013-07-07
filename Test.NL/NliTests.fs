@@ -51,3 +51,13 @@ let ``can reference variables from previous submits`` options =
             nli.Submit("x = 3;;") |> ignore 
             nli.Submit("y = x + 2;;") = [|("y", 5 :> obj, typeof<int32>)|]
          @>
+
+[<Fact(Skip="it seems that the vs test runner holds on to the NLI-ASSEMBLY thus foiling this test")>]
+let ``Reset frees dynamic assembly for collection`` () =
+    let mutable nli = Nli()
+    nli.Submit("x = 3;;") |> ignore
+    nli <- Nli()    
+    nli.Submit("x = 4;;") |> ignore
+    System.GC.Collect()
+    let asmNames = System.AppDomain.CurrentDomain.GetAssemblies() |> Array.map (fun asm -> asm.FullName)
+    test <@ asmNames |> Seq.filter (fun name -> name.Contains("NLI-ASSEMBLY")) |> Seq.length = 1 @>
