@@ -16,24 +16,21 @@ type EL = MessageLogger
 type Nli(?options: CompilerOptions) = 
     let options = defaultArg options CompilerOptions.Default
     
-    let mutable asmCounter = 0I
+    let mutable tyCounter = 0I
     let mutable env = options.SemanticEnvironment
     let mutable itCounter = 0I
+
+    let asmName = "NLI-ASSEMBLY"
+    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
+    let modBuilder = asmBuilder.DefineDynamicModule(asmName)
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string, ?offset) =
         let offset = defaultArg offset FrontEnd.DefaultOffset
         use sink = new BasicMessageSink(options.ConsoleLogging)
-
-        let asmName = "NLI_" + asmCounter.ToString()
-        asmCounter <- asmCounter + 1I
         
-        let asmFileName = asmName + ".dll"
-
-        let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndSave)
-        let modBuilder = asmBuilder.DefineDynamicModule(asmName + ".module", asmFileName, false) //need to specify asmFileName here!
-        
-        let tyName = asmName + ".TOP_LEVEL"
+        tyCounter <- tyCounter + 1I 
+        let tyName = "NLI_" + tyCounter.ToString()
         let tyBuilder = modBuilder.DefineType(tyName, TypeAttributes.Public)
         
         let tyInitBuilder = tyBuilder.DefineTypeInitializer()
@@ -76,7 +73,7 @@ type Nli(?options: CompilerOptions) =
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
                 with 
-                    | :? TypeInitializationException as ex when Regex.IsMatch(ex.Message, @"^The type initializer for 'NLI_(\d+).TOP_LEVEL' threw an exception.$") && ex.InnerException <> null ->
+                    | :? TypeInitializationException as ex when Regex.IsMatch(ex.Message, @"^The type initializer for 'NLI_(\d+)' threw an exception.$") && ex.InnerException <> null ->
                         raise ex.InnerException
                     
                 let retval =

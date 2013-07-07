@@ -4,7 +4,6 @@ open System
 open System.Reflection
 open Swensen.NL.Ast
 open Swensen.NL.Ail
-open IntelliFactory.Printf
 
 module CM = CompilerMessages
 let abort() = raise CompilerInterruptException

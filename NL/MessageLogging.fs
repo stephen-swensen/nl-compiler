@@ -18,7 +18,10 @@ type internal MessageLogger =
 
     ///Triggers the MessageLogged event.
     static member Log(msg) =
-        MessageLogger.messageLogged.Trigger(msg)
+        if obj.ReferenceEquals(MessageLogger.messageLogged, null) then //no one is listening
+            ()
+        else
+            MessageLogger.messageLogged.Trigger(msg)
 
 ///Abstract message sink which subscribes to MessageLogger.MessageLogged on initialization and unsubscribes when disposed.
 [<AbstractClass>]

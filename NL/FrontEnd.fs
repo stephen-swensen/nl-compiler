@@ -29,9 +29,9 @@ let lexWith (lineNum, colNum, absOffset) code =
 
 let lex = lexWith DefaultOffset
 
-let parseExpr (tokenize:LexBuffer<char>->token) lexbuf = 
+let parseEval (tokenize:LexBuffer<char>->token) lexbuf = 
     try
-        Parser.parseExpr tokenize lexbuf
+        Parser.parseEval tokenize lexbuf
     with
     | e when e.Message = "parse error" -> 
         CM.Parse_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos))
@@ -40,9 +40,9 @@ let parseExpr (tokenize:LexBuffer<char>->token) lexbuf =
         CM.Internal_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos)) (e.ToString())
         SynExpr.Nop
 
-let parseStmts (tokenize:LexBuffer<char>->token) lexbuf = 
+let parseNli (tokenize:LexBuffer<char>->token) lexbuf = 
     try
-        Parser.parseStmts tokenize lexbuf
+        Parser.parseNli tokenize lexbuf
     with
     | e when e.Message = "parse error" -> 
         CM.Parse_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos))
@@ -71,14 +71,14 @@ let semantStmts = semantStmtsWith SemanticEnvironment.Default
 
 let lexParseAndSemantExprWith offset env code =
     lexWith offset code
-    ||> parseExpr
+    ||> parseEval
     |> semantExprWith env
 
 let lexParseAndSemantExpr code = lexParseAndSemantExprWith DefaultOffset SemanticEnvironment.Default code
 
 let lexParseAndSemantStmtsWith offset env code =
     lexWith offset code
-    ||> parseStmts
+    ||> parseNli
     |> semantStmtsWith env
 
 let lexParseAndSemantStmts code = lexParseAndSemantStmtsWith DefaultOffset SemanticEnvironment.Default code

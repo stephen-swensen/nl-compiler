@@ -3,7 +3,6 @@
 open System
 open Microsoft.FSharp.Text.Lexing
 open System.Diagnostics
-open IntelliFactory.Printf
 
 type MessageLevel =
     | Error
