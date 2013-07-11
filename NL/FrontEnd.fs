@@ -1,4 +1,4 @@
-﻿module Swensen.NL.FrontEnd
+﻿namespace Swensen.NL
 
 open System
 open Swensen.NL
@@ -12,73 +12,68 @@ open Parser
 module CM = CompilerMessages
 module SA = SemanticAnalysis
 
-///Default code position offset used for calculating error position info: line number, column number, and absolute offset 
-//where line number and column number start counting at 1, and absolute offset starts counting at 0.
-let DefaultOffset = (1,1,0)
+module FrontEnd =
+    ///Default code position offset used for calculating error position info: line number, column number, and absolute offset 
+    //where line number and column number start counting at 1, and absolute offset starts counting at 0.
+    let DefaultOffset = (1,1,0)
+    let initLexBufferWith (lineNum, colNum, absOffset) code = 
+        let lexbuf = LexBuffer<char>.FromString(code)
+        lexbuf.EndPos <- 
+            { 
+                pos_bol = absOffset-(colNum-1)
+                pos_fname=""
+                pos_cnum=absOffset
+                pos_lnum=lineNum 
+            }
+        lexbuf
 
-let lexWith (lineNum, colNum, absOffset) code =
-    let lexbuf = LexBuffer<char>.FromString(code)
-    lexbuf.EndPos <- 
-        { 
-            pos_bol = absOffset-(colNum-1)
-            pos_fname=""
-            pos_cnum=absOffset
-            pos_lnum=lineNum 
-        }
-    Lexer.tokenize, lexbuf
+    let initLexBuffer code =
+        initLexBufferWith DefaultOffset
 
-let lex = lexWith DefaultOffset
-
-let parseEval (tokenize:LexBuffer<char>->token) lexbuf = 
-    try
-        Parser.parseEval tokenize lexbuf
-    with
-    | e when e.Message = "parse error" -> 
-        CM.Parse_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos))
-        SynExpr.Nop
-    | e ->
-        CM.Internal_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos)) (e.ToString())
-        SynExpr.Nop
-
-let parseNli (tokenize:LexBuffer<char>->token) lexbuf = 
-    try
-        Parser.parseNli tokenize lexbuf
-    with
-    | e when e.Message = "parse error" -> 
-        CM.Parse_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos))
-        [SynStmt.Do(SynExpr.Nop)]
-    | e ->
-        CM.Internal_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos)) (e.ToString())
-        [SynStmt.Do(SynExpr.Nop)]
-
-let semantExprWith env expr = 
-    try 
-        SA.semantExprWith env expr
-    with
-    | CompilerInterruptException ->
-        ILExpr.Error(typeof<obj>)
+    let private parse parser (lexbuf:LexBuffer<char>) r =
+        try
+            parser Lexer.tokenize lexbuf
+        with
+        | e when e.Message = "parse error" -> 
+            CM.Parse_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos))
+            r
+        | e ->
+            CM.Internal_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos)) (e.ToString())
+            r
     
-let semantExpr = semantExprWith SemanticEnvironment.Default
+    let private semant semantf r =
+        try 
+            semantf()
+        with
+        | CompilerInterruptException ->
+            r        
 
-let semantStmtsWith env expr = 
-    try 
-        SA.semantStmtsWith env expr
-    with
-    | CompilerInterruptException ->
-        [ILStmt.Do(ILExpr.Error(typeof<obj>))]
-    
-let semantStmts = semantStmtsWith SemanticEnvironment.Default
+    let parseEval lexbuf = 
+        parse Parser.parseEval lexbuf SynExpr.Nop
 
-let lexParseAndSemantExprWith offset env code =
-    lexWith offset code
-    ||> parseEval
-    |> semantExprWith env
+    let parseNli lexbuf = 
+        parse Parser.parseNli lexbuf [SynStmt.Do(SynExpr.Nop)]
 
-let lexParseAndSemantExpr code = lexParseAndSemantExprWith DefaultOffset SemanticEnvironment.Default code
+    let semantExprWith env expr = 
+        semant (fun () -> SA.semantExprWith env expr) (ILExpr.Error(typeof<obj>))
+        
+    let semantExpr = semantExprWith SemanticEnvironment.Default
 
-let lexParseAndSemantStmtsWith offset env code =
-    lexWith offset code
-    ||> parseNli
-    |> semantStmtsWith env
+    let semantStmtsWith env expr = 
+        semant (fun () -> SA.semantStmtsWith env expr) [ILStmt.Do(ILExpr.Error(typeof<obj>))]
+        
+    let semantStmts = semantStmtsWith SemanticEnvironment.Default
 
-let lexParseAndSemantStmts code = lexParseAndSemantStmtsWith DefaultOffset SemanticEnvironment.Default code
+    let lexParseAndSemantExprWith offset env code =
+        initLexBuffer offset code
+        |> parseEval
+        |> semantExprWith env
+
+    let lexParseAndSemantExpr code = lexParseAndSemantExprWith DefaultOffset SemanticEnvironment.Default code
+
+    let lexParseAndSemantStmtsWith offset env code =
+        initLexBufferWith offset code
+        |> parseNli
+        |> semantStmtsWith env
+
+    let lexParseAndSemantStmts code = lexParseAndSemantStmtsWith DefaultOffset SemanticEnvironment.Default code
