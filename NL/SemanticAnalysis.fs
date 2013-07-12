@@ -6,6 +6,7 @@ open Swensen.NL.Ast
 open Swensen.NL.Ail
 
 module CM = CompilerMessages
+exception CompilerInterruptException
 let abort() = raise CompilerInterruptException
 
 let sprintSeqForDisplay xs f =
@@ -603,7 +604,7 @@ let rec semantExprWith env synExpr =
             resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys
         | None ->
             PR.resolveFullPathCall env path methodGenericTyArgs args argTys pos
-    | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) -> //DONE
+    | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) ->
         let instance, methodName =
             match path.LeadingPartsPath with
             | Some(leadingPath) ->
@@ -617,7 +618,7 @@ let rec semantExprWith env synExpr =
 
         resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys
     ///variable, static field, or static (non-parameterized) property
-    | SynExpr.PathGet(path) -> //DONE
+    | SynExpr.PathGet(path) ->
         match PR.tryResolveLeadingPathGet env path with
         | None ->
             CM.Variable_field_or_property_not_found path.Pos path.Text
@@ -626,7 +627,7 @@ let rec semantExprWith env synExpr =
             PR.resolveILExprInstancePathGet ilExpr rest
         | Some(ilExpr, None) ->
             ilExpr
-    | SynExpr.ExprPathGet(x, path) -> //DONE
+    | SynExpr.ExprPathGet(x, path) ->
         let x = semantExpr x
         PR.resolveILExprInstancePathGet x path
     | SynExpr.PathSet(path, (assign, assignPos)) ->
@@ -900,6 +901,7 @@ let rec semantExprWith env synExpr =
         | {IsCatchBody=false} ->
             CM.Rethrow_not_valid_outside_of_catch_body pos
             ILExpr.Error(typeof<Escape>)
+            
         
 let semantStmtsWith env stmts =
     let xl = stmts
