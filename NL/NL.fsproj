@@ -95,7 +95,6 @@
     <Compile Include="CompilerMessage.fs" />
     <Compile Include="MessageLogging.fs" />
     <Compile Include="CompilerMessages.fs" />
-    <Compile Include="CompilerInterruptException.fs" />
     <Compile Include="Ast.fs" />
     <Compile Include="$(IntermediateOutputPath)\Parser.fs">
       <Visible>false</Visible>
