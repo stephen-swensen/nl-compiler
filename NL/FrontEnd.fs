@@ -41,39 +41,22 @@ module FrontEnd =
             CM.Internal_error (PositionRange(lexbuf.StartPos,lexbuf.EndPos)) (e.ToString())
             r
     
-    let private semant semantf r =
-        try 
-            semantf()
-        with
-        | CompilerInterruptException ->
-            r        
-
     let parseExpr lexbuf = 
         parse Parser.parseExpr lexbuf SynExpr.Nop
 
     let parseStmts lexbuf = 
         parse Parser.parseStmts lexbuf [SynStmt.Do(SynExpr.Nop)]
 
-    let semantExprWith env expr = 
-        semant (fun () -> SA.semantExprWith env expr) (ILExpr.Error(typeof<obj>))
-        
-    let semantExpr = semantExprWith SemanticEnvironment.Default
-
-    let semantStmtsWith env expr = 
-        semant (fun () -> SA.semantStmtsWith env expr) [ILStmt.Do(ILExpr.Error(typeof<obj>))]
-        
-    let semantStmts = semantStmtsWith SemanticEnvironment.Default
-
     let lexParseAndSemantExprWith offset env code =
         initLexBuffer offset code
         |> parseExpr
-        |> semantExprWith env
+        |> SA.semantExprWith env
 
     let lexParseAndSemantExpr code = lexParseAndSemantExprWith DefaultOffset SemanticEnvironment.Default code
 
     let lexParseAndSemantStmtsWith offset env code =
         initLexBufferWith offset code
         |> parseStmts
-        |> semantStmtsWith env
+        |> SA.semantStmtsWith env
 
     let lexParseAndSemantStmts code = lexParseAndSemantStmtsWith DefaultOffset SemanticEnvironment.Default code
