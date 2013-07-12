@@ -96,7 +96,6 @@
     <Compile Include="MessageLogging.fs" />
     <Compile Include="CompilerMessages.fs" />
     <Compile Include="CompilerInterruptException.fs" />
-    <Compile Include="CompilerServiceExceptions.fs" />
     <Compile Include="Ast.fs" />
     <Compile Include="$(IntermediateOutputPath)\Parser.fs">
       <Visible>false</Visible>
@@ -121,6 +120,7 @@
     <Compile Include="Emission.fs" />
     <Compile Include="CompilerOptions.fs" />
     <Compile Include="FrontEnd.fs" />
+    <Compile Include="CompilerServiceExceptions.fs" />
     <Compile Include="Compilation.fs" />
     <Compile Include="Nli.fs" />
     <Compile Include="Evaluation.fs" />
