@@ -48,11 +48,11 @@ module FrontEnd =
         | CompilerInterruptException ->
             r        
 
-    let parseEval lexbuf = 
-        parse Parser.parseEval lexbuf SynExpr.Nop
+    let parseExpr lexbuf = 
+        parse Parser.parseExpr lexbuf SynExpr.Nop
 
-    let parseNli lexbuf = 
-        parse Parser.parseNli lexbuf [SynStmt.Do(SynExpr.Nop)]
+    let parseStmts lexbuf = 
+        parse Parser.parseStmts lexbuf [SynStmt.Do(SynExpr.Nop)]
 
     let semantExprWith env expr = 
         semant (fun () -> SA.semantExprWith env expr) (ILExpr.Error(typeof<obj>))
@@ -66,14 +66,14 @@ module FrontEnd =
 
     let lexParseAndSemantExprWith offset env code =
         initLexBuffer offset code
-        |> parseEval
+        |> parseExpr
         |> semantExprWith env
 
     let lexParseAndSemantExpr code = lexParseAndSemantExprWith DefaultOffset SemanticEnvironment.Default code
 
     let lexParseAndSemantStmtsWith offset env code =
         initLexBufferWith offset code
-        |> parseNli
+        |> parseStmts
         |> semantStmtsWith env
 
     let lexParseAndSemantStmts code = lexParseAndSemantStmtsWith DefaultOffset SemanticEnvironment.Default code

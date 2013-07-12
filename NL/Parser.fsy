@@ -66,14 +66,14 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %nonassoc BANG
 //%nonassoc NOT
 
-%start parseEval
-%type <SynExpr> parseEval
+%start parseExpr
+%type <SynExpr> parseExpr
 
 %type <SynExpr> expr
 %type <SynExpr list> exprList
 
-%start parseNli
-%type <SynStmt list> parseNli
+%start parseStmts
+%type <SynStmt list> parseStmts
 
 %type <SynStmt> stmt
 %type <SynStmt list> stmtList
@@ -87,10 +87,10 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 
 %%
 
-parseEval:
+parseExpr:
     | expr EOF { $1 }
 
-parseNli:
+parseStmts:
     | stmtList EOF { $1 }
 
 ifThenElse:
