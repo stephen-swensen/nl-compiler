@@ -64,6 +64,9 @@ type SemanticEnvironment with
     member this.ConsType(ty) = { this with NVTs= NVT.Type(ty)::this.NVTs }
     
     member this.ConsAssembly(assm) = { this with Assemblies= assm::this.Assemblies }
+    ///The list of TypeBuilderManagers create in the context of this environment: available for
+    ///1) modification of the underlying TypeBuilder, 2) lookup by GetTypeManager (for 
+    ///custom member resolution implementations.
     member this.ConsTypeBuilder(tb) = { this with TypeBuilders= tb::this.TypeBuilders }
 
     member this.GetTypeManager(ty:Type) =
@@ -73,4 +76,3 @@ type SemanticEnvironment with
         match result with
         | Some(tm) -> tm :> TypeManager
         | None -> TypeManager.from ty
-        

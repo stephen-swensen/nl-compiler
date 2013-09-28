@@ -136,7 +136,8 @@ type public NliForm() as this =
                 let analyze () =
                     use sink = new BasicMessageSink()
                     let asmName = "VNLI-BACKGROUND-ANALYSIS"
-                    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.ReflectionOnly)
+                    //nb can't use ReflectionOnly context or get invalidoperationexception when loading e.g. the assembly containing system.numerics.biginteger
+                    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
                     let modBuilder = asmBuilder.DefineDynamicModule(asmName)
                     FrontEnd.lexParseAndSemantStmts code modBuilder (fun () -> System.Guid.NewGuid().ToString("N")) (fun () -> System.Guid.NewGuid().ToString("N")) |> ignore
                     sink.GetMessages()
