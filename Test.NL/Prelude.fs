@@ -2,6 +2,9 @@
 module Tests.Prelude
 
 open Swensen.NL
+open System
+open System.Reflection
+open System.Reflection.Emit
 
 let private csHelpersAssmLocation = typeof<Tests.NonGenericClass1>.Assembly.Location
 
@@ -21,6 +24,24 @@ let expectedWarnings codes (actualWarnings:CompilerMessage seq) =
     let actualWarnings = actualWarnings |> Seq.toArray
     <@ actualWarnings |> Array.map (fun msg -> msg.Code) = codes @>
 
+let mkTestModBuilder =
+    let cnt = ref 0
+    fun () ->
+        cnt := !cnt + 1
+        let asmName = sprintf "TEST-ASSEMBLY-%i" !cnt
+        let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
+        let modBuilder = asmBuilder.DefineDynamicModule(asmName)
+        modBuilder
+
+let nextTopLevelTypeName = 
+    let count = ref -1
+    fun () -> count := !count+1; "TOP_LEVEL" + (!count).ToString()
+
+let nextItName = 
+    let count = ref -1
+    fun () -> count := !count+1; "it" + (!count).ToString()
+
+//let lexParseAndSemant code = FrontEnd.lexParseAndSemantStmts code (mkTestModBuilder()) nextTopLevelTypeName nextItName
 //let expectedMessages codes = 
 //    let messages = MessageLogger.ActiveLogger.GetMessages()
 //    <@ messages |> Array.map (fun msg -> msg.Code) = codes @>

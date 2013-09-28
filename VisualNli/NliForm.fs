@@ -8,7 +8,8 @@ open Swensen.FsEye.Forms
 open System.Text.RegularExpressions
 open Swensen.NL
 open System.IO
-
+open System.Reflection.Emit
+open System.Reflection
 open ScintillaNET
 
 ///Info about a CodeEditor file (Name=None implies new file)
@@ -122,7 +123,7 @@ type public NliForm() as this =
     //real-time error indicators
     do
         editor.TextInsertedOrDeleted.Add <| fun _ ->
-            Async.CancelDefaultToken()
+            Async.CancelDefaultToken()//todo: use non-default token.
             let guiContext = System.Threading.SynchronizationContext.Current
             async {
                 let backgroundContext = System.Threading.SynchronizationContext.Current //always null - don't understand the point
@@ -134,7 +135,10 @@ type public NliForm() as this =
                 do! Async.SwitchToContext backgroundContext
                 let analyze () =
                     use sink = new BasicMessageSink()
-                    FrontEnd.lexParseAndSemantStmts code |> ignore
+                    let asmName = "VNLI-BACKGROUND-ANALYSIS"
+                    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.ReflectionOnly)
+                    let modBuilder = asmBuilder.DefineDynamicModule(asmName)
+                    FrontEnd.lexParseAndSemantStmts code modBuilder (fun () -> System.Guid.NewGuid().ToString("N")) (fun () -> System.Guid.NewGuid().ToString("N")) |> ignore
                     sink.GetMessages()
 
                 let messages = analyze()

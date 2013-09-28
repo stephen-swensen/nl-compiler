@@ -27,7 +27,8 @@ module CompilerMessages =
     
     //error code -1 stands for unspecified error
 
-    //let Log msg = MessageLogger.Log(msg)
+//    let Unclassified_error pos =
+//        mk MessageLevel.Error MessageType.Semantic -1 pos "Unclassified error: '%s'"
     
     let Could_not_resolve_type pos = 
         mk MessageLevel.Error MessageType.Semantic 1 pos "Could not resolve type '%s'"

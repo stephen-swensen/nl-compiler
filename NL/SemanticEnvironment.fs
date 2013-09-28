@@ -1,5 +1,6 @@
 ﻿namespace Swensen.NL
 open System.Reflection
+open System.Reflection.Emit
 open System
 
 type NVT =
@@ -18,6 +19,8 @@ type SemanticEnvironment =
         Checked: bool
         ///Indicates that the current expression is inside a loop body
         IsLoopBody: bool
+        //All TypeBuilders in the current AssemblyBuilder context
+        TypeBuilders: TypeBuilderManager list
         ///All "open" loaded assemblies
         Assemblies: Assembly list
         ///All "open" namespaces, variables, and types
@@ -28,7 +31,7 @@ type SemanticEnvironment =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
 module SemanticEnvironment =
     ///The "empty" semantic environment
-    let Empty = { IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
+    let Empty = { TypeBuilders=[]; IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
     ///The "default" / initial semantic environment
     let Default =
         { Empty with 
@@ -52,12 +55,22 @@ type SemanticEnvironment with
         this.NVTs 
         |> Seq.choose (function NVT.Variable(name,ty) -> Some(name,ty) | _ -> None) |> Map.ofSeq
     
-    member this.Types = 
+    member this.Types =
         this.NVTs 
         |> Seq.choose (function NVT.Type(ty) -> Some(ty) | _ -> None) 
 
     member this.ConsNamespace(ns) = { this with NVTs= NVT.Namespace(ns)::this.NVTs }
     member this.ConsVariable(name, ty) = { this with NVTs= NVT.Variable(name,ty)::this.NVTs }
     member this.ConsType(ty) = { this with NVTs= NVT.Type(ty)::this.NVTs }
-
+    
     member this.ConsAssembly(assm) = { this with Assemblies= assm::this.Assemblies }
+    member this.ConsTypeBuilder(tb) = { this with TypeBuilders= tb::this.TypeBuilders }
+
+    member this.GetTypeManager(ty:Type) =
+        let result = 
+            this.TypeBuilders
+            |> List.tryFind (fun tb -> tb.Type = ty)
+        match result with
+        | Some(tm) -> tm :> TypeManager
+        | None -> TypeManager.from ty
+        

@@ -17,8 +17,29 @@ module Seq =
     let cons x xs =
         seq { yield x ; yield! xs}
 
+    //copied from fsi:w
+    let distinctByResolve primaryKey resolveCollision values = seq { //make lazy seq? (YES, Seq.distinct does)
+        let cache = System.Collections.Generic.Dictionary<_,_>(HashIdentity.Structural)
+        for canidateValue in values do
+            let key = primaryKey canidateValue 
+            match cache.TryGetValue(key) with
+            | true, existingValue -> //collision
+                match resolveCollision existingValue canidateValue with
+                | x when x >= 0 -> () //if existing equal or greater, keep it
+                | _ -> //canidate key wins in collision resolution
+                    cache.Remove(key) |> ignore
+                    cache.Add(key,canidateValue)
+            | false, _ ->
+                cache.Add(key, canidateValue)
+
+        yield! cache.Values }
+
 module List =
     let contains x = List.exists ((=) x)
+    let tryHead xl =
+        match xl with
+        | [x] -> Some(x) 
+        | _ -> None
 
 //    let combine s1 s2 =
 //        seq {

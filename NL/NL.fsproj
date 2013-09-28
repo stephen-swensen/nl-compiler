@@ -110,6 +110,7 @@
     <FsYacc Include="Parser.fsy">
       <OtherFlags>--module Swensen.NL.Parser</OtherFlags>
     </FsYacc>
+    <Compile Include="TypeManagers.fs" />
     <Compile Include="Ail.fs" />
     <Compile Include="NumericPrimitive.fs" />
     <Compile Include="SemanticEnvironment.fs" />
