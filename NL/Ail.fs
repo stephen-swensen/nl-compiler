@@ -204,7 +204,5 @@ type ILExpr =
 
 ///represents a top level statement
 type ILStmt =
-    //variable stmt
-    | Let of string * ILExpr
-    //expression stmt
-    | Do of ILExpr
+    | TypeDef of System.Reflection.Emit.TypeBuilder * tyinit:ILExpr list
+    | Error

@@ -208,7 +208,6 @@ let optimizeStmts stmts =
     stmts
     |> List.map (fun x ->
         match x with
-        | ILStmt.Do(x) -> optimizeExpr x |> ILStmt.Do
-        | ILStmt.Let(name, x) -> 
-            let x = optimizeExpr x
-            ILStmt.Let(name, x))
+        | ILStmt.TypeDef(tyBuilder, tyinit) -> ILStmt.TypeDef(tyBuilder, List.map optimizeExpr tyinit)
+        | ILStmt.Error -> 
+            raise <| System.InvalidOperationException("Should not be optimizing a statement with errors"))

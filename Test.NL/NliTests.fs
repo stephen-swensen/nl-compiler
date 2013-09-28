@@ -11,20 +11,20 @@ let ``single expression is equivalent to single Do statement`` options =
 
 [<Theory;NliData>]
 let ``issue 45: double semilcolon should not reduced to single semicolon in let bindings`` options =
-    test <@ Nli(options).Submit("x = 3 in x;;") = [|("it0", 3 :> obj, typeof<int32>)|] @>
+    test <@ Nli(options).Submit("x = 3 in x;;") = [("it0", 3 :> obj, typeof<int32>)] @>
 
 [<Theory;NliData>]
 let ``single Do statement is bound to 0th it`` options =
-    test <@ Nli(options).Submit("3") = [|("it0", 3 :> obj, typeof<int32>)|] @>
+    test <@ Nli(options).Submit("3") = [("it0", 3 :> obj, typeof<int32>)] @>
 
 [<Theory;NliData>]
 let ``let statement`` options =
-    test <@ Nli(options).Submit("x = 3;;") = [|("x", 3 :> obj, typeof<int32>)|] @>
+    test <@ Nli(options).Submit("x = 3;;") = [("x", 3 :> obj, typeof<int32>)] @>
 
 [<Theory;NliData>]
 let ``let and do statements intersparsed`` options =
     test <@ Nli(options).Submit("x = 1;;2;;3;;y=4;;5;;") 
-             = [|("x", 1 :> obj, typeof<int32>);("it0", 2 :> obj, typeof<int32>);("it1", 3 :> obj, typeof<int32>);("y", 4 :> obj, typeof<int32>);("it2", 5 :> obj, typeof<int32>)|] @>
+             = [("x", 1 :> obj, typeof<int32>);("it0", 2 :> obj, typeof<int32>);("it1", 3 :> obj, typeof<int32>);("y", 4 :> obj, typeof<int32>);("it2", 5 :> obj, typeof<int32>)] @>
 
 [<Theory;NliData>]
 let ``Submit throws NliException when errors found`` options =
@@ -38,10 +38,10 @@ let ``issue 57: Need to strip TypeInitializationException from source NLI except
 let ``issue 57: Need to strip TypeInitializationException from source NLI exceptions but not if geniune`` options =
     raises<System.TypeInitializationException> <@ Nli(options).TrySubmit("throw(TypeInitializationException(\"System.Exception\", exception()))") @>
 
-[<Theory(Skip="todo");NliData;>]
+[<Theory;NliData;>]
 let ``issue 56: can reference variable from previous statement in same submit`` options =
     test <@ 
-            Nli(options).Submit("x = 3;;x + 4;;") = [|("x", 3 :> obj, typeof<int32>);("it0", 7 :> obj, typeof<int32>)|]
+            Nli(options).Submit("x = 3;;x + 4;;") = [("x", 3 :> obj, typeof<int32>);("it0", 7 :> obj, typeof<int32>)]
          @>
 
 [<Theory;NliData>]
@@ -49,7 +49,7 @@ let ``can reference variables from previous submits`` options =
     test <@ 
             let nli = Nli(options)
             nli.Submit("x = 3;;") |> ignore 
-            nli.Submit("y = x + 2;;") = [|("y", 5 :> obj, typeof<int32>)|]
+            nli.Submit("y = x + 2;;") = [("y", 5 :> obj, typeof<int32>)]
          @>
 
 [<Fact(Skip="it seems that the vs test runner holds on to the NLI-ASSEMBLY thus foiling this test")>]
