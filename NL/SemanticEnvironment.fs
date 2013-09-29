@@ -19,7 +19,7 @@ type SemanticEnvironment =
         Checked: bool
         ///Indicates that the current expression is inside a loop body
         IsLoopBody: bool
-        //All TypeBuilderManagers in the current AssemblyBuilder context
+        //All TypeBuilderManagers in the current AssemblyBuilder context keyed by FullName
         TypeBuilderManagers: Map<string,TypeBuilderManager>
         ///All "open" loaded assemblies
         Assemblies: Assembly list
@@ -67,12 +67,15 @@ type SemanticEnvironment with
     ///The list of TypeBuilderManagers create in the context of this environment: available for
     ///1) modification of the underlying TypeBuilder, 2) lookup by GetTypeManager (for 
     ///custom member resolution implementations.
-    member this.ConsTypeBuilderManager(tbm:TypeBuilderManager) = { this with TypeBuilderManagers=this.TypeBuilderManagers |> Map.add tbm.Type.AssemblyQualifiedName tbm }
+    member this.ConsTypeBuilderManager(tbm:TypeBuilderManager) = { this with TypeBuilderManagers=this.TypeBuilderManagers |> Map.add tbm.Type.FullName tbm }
 
     member this.GetTypeManager(ty:Type) =
         let result = 
-            this.TypeBuilderManagers
-            |> Map.tryFind ty.AssemblyQualifiedName
+            match ty with
+            | :? TypeBuilder as tb when tb.IsCreated() |> not ->
+                this.TypeBuilderManagers
+                |> Map.tryFind ty.FullName
+            | _ -> None
         match result with
         | Some(tm) -> tm :> TypeManager
         | None -> TypeManager.from ty

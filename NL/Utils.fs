@@ -40,6 +40,13 @@ module List =
         match xl with
         | [x] -> Some(x) 
         | _ -> None
+    let distinctByResolve primaryKey resolveCollision ls =
+        match ls with
+        | [] | _::[] -> ls //an observable optimization
+        | _ ->
+            ls
+            |> Seq.distinctByResolve primaryKey resolveCollision
+            |> List.ofSeq
 
 //    let combine s1 s2 =
 //        seq {
