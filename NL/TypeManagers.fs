@@ -9,11 +9,15 @@ open System
 ///Construct a type manager from a given type (may not be null).
 type TypeManager(ty:Type) =
     do if ty = null then raise (ArgumentNullException("ty"))
-    //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always (c# semantics but not vb semantics considered)
-    //does not consider any meta data other than just the ret and param and generic arg types
+    //todo implement "hide-by-sig" semantics on all members (currently only on methods)
+    //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always 
+    //  (c# semantics but not vb semantics considered) does not consider any meta 
+    //  data other than just the types of the signature
+    ///If the search turns of duplicate members, discard base methods which are "hidden"
+    ///by declared type members (via the "new" keyword in C#, for example)
     let discardHideBySigMembers ls =
         ls
-        |> Seq.distinctByResolve
+        |> List.distinctByResolve
             (fun (x:MethodInfo) ->
                 let paramTys = x.GetParameters() |> Array.map (fun p -> p.ParameterType)
                 let gargTys = if x.IsGenericMethod then x.GetGenericArguments() else [||]
@@ -103,8 +107,8 @@ type TypeManager(ty:Type) =
                     else
                         matches
                 | None -> matches)
-        |> discardHideBySigMembers 
-        |> Seq.toList
+        |> (function | [] | _::[] as matches -> matches //an observed optimization
+                     | _ as matches ->  matches |> discardHideBySigMembers |> List.ofSeq)
     member this.TryFindMethod(searchName, genericTyArgs: Type seq, argTys: Type seq, retTy : Type option, searchAttributes:MethodAttributes) =
         this.FindAllMethods(searchName,genericTyArgs,argTys,retTy,searchAttributes)
         |> List.tryHead
@@ -141,7 +145,6 @@ type TypeBuilderManager(ty:TypeBuilder) =
 //                this.TypeBuilder.AssemblyQualifiedName.CompareTo(that.TypeBuilder.AssemblyQualifiedName)
 //            | _ -> 1
 
-//todo implement "hide-by-sig" semantics on all members (currently on methods)
 ///An immutable TypeManager used for managing RuntimeTypes (i.e. statically defined types)
 type RuntimeTypeManager(ty:Type) =
     inherit TypeManager(ty)
