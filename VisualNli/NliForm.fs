@@ -121,28 +121,31 @@ type public NliForm() as this =
     do editor.Submit.Add submit
 
     //real-time error indicators
+    let mutable rtCts = new System.Threading.CancellationTokenSource()
     do
         editor.TextInsertedOrDeleted.Add <| fun _ ->
+            rtCts.Cancel()
+            rtCts <- new System.Threading.CancellationTokenSource()
             Async.CancelDefaultToken()//todo: use non-default token.
             let guiContext = System.Threading.SynchronizationContext.Current
             async {
                 let backgroundContext = System.Threading.SynchronizationContext.Current //always null - don't understand the point
                 do! Async.Sleep(300)
+                do! async.Return () //nop to force cancellation check
                 
                 do! Async.SwitchToContext guiContext
                 let code = editor.Text
                 
                 do! Async.SwitchToContext backgroundContext
-                let analyze () =
+                let messages = 
                     use sink = new BasicMessageSink()
                     let asmName = "VNLI-BACKGROUND-ANALYSIS"
                     //nb can't use ReflectionOnly context or get invalidoperationexception when loading e.g. the assembly containing system.numerics.biginteger
                     let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
                     let modBuilder = asmBuilder.DefineDynamicModule(asmName)
+                    //todo measure peformance of Guid based idents on large files.
                     FrontEnd.lexParseAndSemantStmts code modBuilder (fun () -> System.Guid.NewGuid().ToString("N")) (fun () -> System.Guid.NewGuid().ToString("N")) |> ignore
                     sink.GetMessages()
-
-                let messages = analyze()
                 
                 do! Async.SwitchToContext guiContext
                 callTipInfo <- messages

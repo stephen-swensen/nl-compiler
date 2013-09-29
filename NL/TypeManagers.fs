@@ -9,6 +9,19 @@ open System
 ///Construct a type manager from a given type (may not be null).
 type TypeManager(ty:Type) =
     do if ty = null then raise (ArgumentNullException("ty"))
+    //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always (c# semantics but not vb semantics considered)
+    //does not consider any meta data other than just the ret and param and generic arg types
+    let discardHideBySigMembers ls =
+        ls
+        |> Seq.distinctByResolve
+            (fun (x:MethodInfo) ->
+                let paramTys = x.GetParameters() |> Array.map (fun p -> p.ParameterType)
+                let gargTys = if x.IsGenericMethod then x.GetGenericArguments() else [||]
+                x.Name, x.ReturnType, gargTys, paramTys)
+            (fun x y -> 
+                if x.DeclaringType = y.DeclaringType then 0
+                elif x.DeclaringType.IsAssignableFrom(y.DeclaringType) then -1
+                else 1)
     ///search for members by name: first try case sensitive search and if no matches, then try case-insensitive search.
     let searchByName searchName (ls: #MemberInfo list) =
         let matchesExact = ls |> List.filter (fun m -> m.Name = searchName)
@@ -90,6 +103,8 @@ type TypeManager(ty:Type) =
                     else
                         matches
                 | None -> matches)
+        |> discardHideBySigMembers 
+        |> Seq.toList
     member this.TryFindMethod(searchName, genericTyArgs: Type seq, argTys: Type seq, retTy : Type option, searchAttributes:MethodAttributes) =
         this.FindAllMethods(searchName,genericTyArgs,argTys,retTy,searchAttributes)
         |> List.tryHead
@@ -119,27 +134,20 @@ type TypeBuilderManager(ty:TypeBuilder) =
     override this.Methods = methods |> Seq.readonly |> Seq.cast<MethodInfo>
     override this.Properties = properties |> Seq.readonly |> Seq.cast<PropertyInfo>
     override this.Constructors = constructors |> Seq.readonly |> Seq.cast<ConstructorInfo>
+//    interface IComparable with
+//        member this.CompareTo(that) =
+//            match that with
+//            | :? TypeBuilderManager as that ->
+//                this.TypeBuilder.AssemblyQualifiedName.CompareTo(that.TypeBuilder.AssemblyQualifiedName)
+//            | _ -> 1
 
 //todo implement "hide-by-sig" semantics on all members (currently on methods)
 ///An immutable TypeManager used for managing RuntimeTypes (i.e. statically defined types)
 type RuntimeTypeManager(ty:Type) =
     inherit TypeManager(ty)
-    //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always (c# semantics but not vb semantics considered)
-    //does not consider any meta data other than just the ret and param and generic arg types
-    let discardHideBySigMembers ls =
-        ls
-        |> Seq.distinctByResolve
-            (fun (x:MethodInfo) ->
-                let paramTys = x.GetParameters() |> Array.map (fun p -> p.ParameterType)
-                let gargTys = if x.IsGenericMethod then x.GetGenericArguments() else [||]
-                x.Name, x.ReturnType, gargTys, paramTys)
-            (fun x y -> 
-                if x.DeclaringType = y.DeclaringType then 0
-                elif x.DeclaringType.IsAssignableFrom(y.DeclaringType) then -1
-                else 1)
         
     override this.Fields = ty.GetFields() |> Seq.readonly
-    override this.Methods = ty.GetMethods() |> discardHideBySigMembers |> Seq.readonly
+    override this.Methods = ty.GetMethods() |> Seq.readonly
     override this.Properties = ty.GetProperties() |> Seq.readonly
     override this.Constructors = ty.GetConstructors() |> Seq.readonly
 

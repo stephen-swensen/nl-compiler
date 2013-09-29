@@ -19,8 +19,8 @@ type SemanticEnvironment =
         Checked: bool
         ///Indicates that the current expression is inside a loop body
         IsLoopBody: bool
-        //All TypeBuilders in the current AssemblyBuilder context
-        TypeBuilders: TypeBuilderManager list
+        //All TypeBuilderManagers in the current AssemblyBuilder context
+        TypeBuilderManagers: Map<string,TypeBuilderManager>
         ///All "open" loaded assemblies
         Assemblies: Assembly list
         ///All "open" namespaces, variables, and types
@@ -31,7 +31,7 @@ type SemanticEnvironment =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
 module SemanticEnvironment =
     ///The "empty" semantic environment
-    let Empty = { TypeBuilders=[]; IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
+    let Empty = { TypeBuilderManagers=Map.empty; IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
     ///The "default" / initial semantic environment
     let Default =
         { Empty with 
@@ -67,12 +67,12 @@ type SemanticEnvironment with
     ///The list of TypeBuilderManagers create in the context of this environment: available for
     ///1) modification of the underlying TypeBuilder, 2) lookup by GetTypeManager (for 
     ///custom member resolution implementations.
-    member this.ConsTypeBuilder(tb) = { this with TypeBuilders= tb::this.TypeBuilders }
+    member this.ConsTypeBuilderManager(tbm:TypeBuilderManager) = { this with TypeBuilderManagers=this.TypeBuilderManagers |> Map.add tbm.Type.AssemblyQualifiedName tbm }
 
     member this.GetTypeManager(ty:Type) =
         let result = 
-            this.TypeBuilders
-            |> List.tryFind (fun tb -> tb.Type = ty)
+            this.TypeBuilderManagers
+            |> Map.tryFind ty.AssemblyQualifiedName
         match result with
         | Some(tm) -> tm :> TypeManager
         | None -> TypeManager.from ty

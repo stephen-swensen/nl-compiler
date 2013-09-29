@@ -909,7 +909,7 @@ let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName next
                     else
                         x
                 let ilStmt = ILStmt.TypeDef(tyBuilder, [tyInitExpr])
-                let env = env.ConsType(tyBuilder).ConsTypeBuilder(tbm)
+                let env = env.ConsType(tyBuilder).ConsTypeBuilderManager(tbm)
                 loop env synStmts (ilStmt::ilStmts)                
             | SynStmt.Let(name, (assign,assignPos)) ->
                 let assign = semantExprWith env assign
@@ -922,7 +922,7 @@ let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName next
                 tbm.AddField(fi)
                 let tyInitExpr = ILExpr.StaticFieldSet(fi,assign)
                 let ilStmt = ILStmt.TypeDef(tyBuilder, [tyInitExpr])
-                let env = env.ConsType(tyBuilder).ConsTypeBuilder(tbm)
+                let env = env.ConsType(tyBuilder).ConsTypeBuilderManager(tbm)
                 loop env synStmts (ilStmt::ilStmts)
             | SynStmt.OpenAssembly(name, pos) ->
                 let asm = tryLoadAssembly name
