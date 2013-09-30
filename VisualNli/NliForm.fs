@@ -140,11 +140,14 @@ type public NliForm() as this =
                 let messages = 
                     use sink = new BasicMessageSink()
                     let asmName = "VNLI-BACKGROUND-ANALYSIS"
-                    //nb can't use ReflectionOnly context or get invalidoperationexception when loading e.g. the assembly containing system.numerics.biginteger
-                    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
-                    let modBuilder = asmBuilder.DefineDynamicModule(asmName)
-                    //todo measure peformance of Guid based idents on large files.
-                    FrontEnd.lexParseAndSemantStmts code modBuilder (fun () -> System.Guid.NewGuid().ToString("N")) (fun () -> System.Guid.NewGuid().ToString("N")) |> ignore
+                    
+                    FrontEnd.lexParseAndSemantStmtsWith 
+                        FrontEnd.DefaultOffset
+                        { SemanticEnvironment.Default with IsAnalysisOnly=true }
+                        code 
+                        null 
+                        (fun () -> raise <| InvalidOperationException("should not be emitting types for top level vars when environment is IsAnalysisOnly"))
+                        (fun () -> System.Guid.NewGuid().ToString("N")) |> ignore
                     sink.GetMessages()
                 
                 do! Async.SwitchToContext guiContext

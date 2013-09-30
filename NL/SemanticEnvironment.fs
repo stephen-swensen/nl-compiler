@@ -25,13 +25,16 @@ type SemanticEnvironment =
         Assemblies: Assembly list
         ///All "open" namespaces, variables, and types
         NVTs: NVT list
+        ///Indicates that optimizations may be made for analysis only context (e.g. we can avoid emitting types for
+        ///each interactive variable, which is a huge cost savings)
+        IsAnalysisOnly: bool
     }
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
 module SemanticEnvironment =
     ///The "empty" semantic environment
-    let Empty = { TypeBuilderManagers=Map.empty; IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
+    let Empty = { IsAnalysisOnly=false; TypeBuilderManagers=Map.empty; IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
     ///The "default" / initial semantic environment
     let Default =
         { Empty with 
