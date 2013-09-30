@@ -897,6 +897,10 @@ let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName next
         | [] -> ilStmts |> List.rev
         | synStmt::synStmts ->
             match synStmt with
+            | SynStmt.Do x when env.IsAnalysisOnly ->
+                let x = semantExprWith env x
+                let env = env.ConsVariable(nextItName(), x.Type)
+                loop env synStmts ilStmts                
             | SynStmt.Do x ->
                 let x = semantExprWith env x
                 let tyBuilder = mbuilder.DefineType(nextTopLevelTypeName(), TypeAttributes.Public)
@@ -911,6 +915,12 @@ let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName next
                 let ilStmt = ILStmt.TypeDef(tyBuilder, [tyInitExpr])
                 let env = env.ConsType(tyBuilder).ConsTypeBuilderManager(tbm)
                 loop env synStmts (ilStmt::ilStmts)                
+            | SynStmt.Let(name, (assign,assignPos)) when env.IsAnalysisOnly ->
+                let assign = semantExprWith env assign
+                if isVoidOrEscapeTy assign.Type then
+                    CM.Void_invalid_in_let_binding assignPos
+                let env = env.ConsVariable(name, assign.Type)
+                loop env synStmts ilStmts                
             | SynStmt.Let(name, (assign,assignPos)) ->
                 let assign = semantExprWith env assign
                 if isVoidOrEscapeTy assign.Type then

@@ -23,11 +23,11 @@ type Nli(?options: CompilerOptions) =
 
     let nextTopLevelTypeName = 
         let count = ref -1
-        fun () -> count := !count+1; "TOP_LEVEL" + (!count).ToString()
+        fun () -> count := !count+1; sprintf "TOP_LEVEL%i" !count
 
     let nextItName = 
         let count = ref -1
-        fun () -> count := !count+1; "it" + (!count).ToString()
+        fun () -> count := !count+1; sprintf "it%i" !count
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string, ?offset) =
