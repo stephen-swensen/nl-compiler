@@ -62,6 +62,7 @@
     <Compile Include="Prelude.fs" />
     <Compile Include="EvalDataAttribute.fs" />
     <Compile Include="NliDataAttribute.fs" />
+    <Compile Include="AnalysisOnlyDataAttribute.fs" />
     <Compile Include="LiteralTests.fs" />
     <Compile Include="NumericOpTests.fs" />
     <Compile Include="VarTests.fs" />
