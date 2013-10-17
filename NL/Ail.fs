@@ -159,18 +159,32 @@ type ILExpr =
 
             ILExpr.NumericBinop(cked, op, x, y, ty)
 
-        static member InstancePropertySet(instance:ILExpr, pi:PropertyInfo, assign:ILExpr) =
-            ILExpr.InstanceCall(instance, pi.GetSetMethod(), [assign])
+        static member InstancePropertyGet(instance:ILExpr, getter:Getter) =
+            ILExpr.InstanceCall(instance, getter.MethodInfo, [])
 
-        static member InstancePropertyGet(instance:ILExpr, pi:PropertyInfo) =
-            ILExpr.InstanceCall(instance, pi.GetGetMethod(), [])
+        static member StaticPropertyGet(getter:Getter) =
+            ILExpr.StaticCall(getter.MethodInfo, [])
 
-        static member StaticPropertySet(pi:PropertyInfo, assign:ILExpr) =
-            ILExpr.StaticCall(pi.GetSetMethod(), [assign])
+        static member PropertyGet(instance: option<ILExpr>, getter:Getter) =
+            match instance with
+            | Some(instance) ->
+                ILExpr.InstanceCall(instance, getter.MethodInfo, [])
+            | None ->
+                ILExpr.StaticCall(getter.MethodInfo, [])
 
-        static member StaticPropertyGet(pi:PropertyInfo) =
-            ILExpr.StaticCall(pi.GetGetMethod(), [])
+        static member StaticPropertySet(setter:Setter, assign:ILExpr) =
+            ILExpr.StaticCall(setter.MethodInfo, [assign])
 
+        static member InstancePropertySet(instance:ILExpr, setter:Setter, assign:ILExpr) =
+            ILExpr.InstanceCall(instance, setter.MethodInfo, [assign])
+
+        static member PropertySet(instance: option<ILExpr>, setter:Setter, assign:ILExpr) =
+            match instance with
+            | Some(instance) ->
+                ILExpr.InstancePropertySet(instance, setter, assign)
+            | None ->
+                ILExpr.StaticPropertySet(setter, assign)
+            
         static member mkStaticFieldGet(fi:FieldInfo) =
             //Issue 44:	Literal fields like Int32.MaxValue need to have their values emitted directly as constants
             if fi.IsLiteral && not fi.IsInitOnly then

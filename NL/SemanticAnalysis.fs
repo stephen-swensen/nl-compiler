@@ -34,6 +34,7 @@ let staticMethodAttributes = MethodAttributes.Public ||| MethodAttributes.Static
 let coerceIfNeeded cked targetTy (sourceExp:ILExpr) =
     if sourceExp.Type <> targetTy then Coerce(cked, sourceExp,targetTy) else sourceExp
 
+///Unchecked cast sourceExp to targetTy
 let castIfNeeded targetTy (sourceExp:ILExpr) =
     if sourceExp.Type <> targetTy then Cast(sourceExp,targetTy) else sourceExp
 
@@ -43,7 +44,7 @@ let castArgsIfNeeded (targetParameterInfo:ParameterInfo[]) sourceArgExps =
     |> List.map (fun (targetTy, sourceExp) -> castIfNeeded targetTy sourceExp)
 
 let tryResolveMethod (ty:Type) (name:string) methodAttributes (genericTyArgs:Type[]) (argTys: Type[]) (env:SemanticEnvironment) =
-    env.GetTypeManager(ty).TryFindMethod(name, genericTyArgs, argTys, None, methodAttributes) 
+    env.GetTypeManager(ty).TryFindMethod(name, genericTyArgs, Some(argTys), None, methodAttributes) 
 
 let tryResolveOpImplicit, tryResolveOpExplicit =
     let tryResolveConversionOp name (onty:Type) fromty toty =
@@ -181,15 +182,15 @@ let resolveILExprInstanceCall (instance:ILExpr) (methodName:Path) methodGenericT
 module PathResolution =
     type FP =
         | Field of FieldInfo //N.B. CONSTANT FIELDS LIKE INT32.MAXVALUE CANNOT BE ACCESSED NORMALLY: CHECK FOR ISLITERAL FIELD ATTRIBUTE AND EMIT LITERAL VALUE (CAN USE GETVALUE REFLECTION) -- IF CAN'T DO THAT, CHECK FIELDINFO HANDLE AND IF THROWS WE KNOW WE NEED TO STOP
-        | Property of PropertyInfo
+        | Property of PropertySearchResult
 
     let tryResolveFieldOrProperty ty name fieldSearchAttributes propMethodSearchAttributes (env:SemanticEnvironment) =
         match tryResolveField ty name fieldSearchAttributes env with
         | Some(fi) -> Some(FP.Field(fi))
         | None ->
             match tryResolveProperty ty name propMethodSearchAttributes env with
-            | Some(pi) -> Some(FP.Property(pi))
-            | None -> None
+            | prop when prop.HasGetterOrSetter -> Some(FP.Property(prop))
+            | _ -> None
 
     type VFP =
         | Var of string * Type
@@ -284,16 +285,17 @@ module PathResolution =
         else
             ifValid.Value
 
-    let validatePropertySet (pi:PropertyInfo) (path:Path) (assignTy:Type) (assignPos) (ifValid:Lazy<_>) =
-        if not pi.CanWrite then
-            CM.Property_has_no_setter path.Pos path.Text
-            ILExpr.Error(typeof<Void>)
-        else
-            if not <| pi.PropertyType.IsAssignableFrom(assignTy) then //allow implicit cast?
-                CM.Property_set_type_mismatch (PositionRange(path.Pos, assignPos)) path.Text pi.PropertyType.Name assignTy.Name
+    let validatePropertySet instance (pi:PropertySearchResult) (path:Path) (assign:ILExpr) (assignPos) =
+        match pi with
+        | { Setter=Some(setter) } ->    
+            if not <| setter.Type.IsAssignableFrom(assign.Type) then //allow implicit cast?
+                CM.Property_set_type_mismatch (PositionRange(path.Pos, assignPos)) path.Text setter.Type.Name assign.Type.Name
                 ILExpr.Error(typeof<Void>)
             else 
-                ifValid.Value
+                ILExpr.PropertySet(instance, setter, castIfNeeded setter.Type assign)
+        | _ ->
+            CM.Property_has_no_setter path.Pos path.Text
+            ILExpr.Error(typeof<Void>)
 
     let resolveILExprInstancePathSet (instance:ILExpr) (path:Path) (assign:ILExpr) (assignPos) env =
         match tryResolveFieldOrProperty instance.Type path.Text instanceFieldAttributes instanceMethodAttributes env with
@@ -301,8 +303,7 @@ module PathResolution =
             validateFieldSet fi path assign.Type assignPos
                 (lazy(ILExpr.InstanceFieldSet(instance, fi, castIfNeeded fi.FieldType assign)))
         | Some(FP.Property(pi)) ->
-            validatePropertySet pi path assign.Type assignPos
-                (lazy(ILExpr.InstancePropertySet(instance, pi, castIfNeeded pi.PropertyType assign)))
+            validatePropertySet (Some(instance)) pi path assign assignPos
         | None ->
             CM.Instance_field_or_property_not_found path.Pos path.Text instance.Type.Name
             ILExpr.Error(typeof<Void>)
@@ -650,8 +651,7 @@ let semantExprWith env synExpr =
                             (lazy(ILExpr.StaticFieldSet(fi, castIfNeeded fi.FieldType assign)))
                     | PR.VFP.FieldOrProperty(PR.FP.Property(pi)) ->
                         let path = path.LastPartPath
-                        PR.validatePropertySet pi path assign.Type assignPos
-                            (lazy(ILExpr.StaticPropertySet(pi, castIfNeeded pi.PropertyType assign)))
+                        PR.validatePropertySet None pi path assign assignPos
         | SynExpr.ExprPathSet(instance, path, (assign,assignPos)) -> //TODO
             let instance = semantExpr instance
             let assign = semantExpr assign

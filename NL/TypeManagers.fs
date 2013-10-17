@@ -3,13 +3,30 @@ open System.Reflection
 open System.Reflection.Emit
 open System
 
-//todo: fix problem with new methods: http://stackoverflow.com/a/288928/236255
+//todo: test directly
+
+type Setter(mi:MethodInfo) =
+    member this.MethodInfo = mi
+    member this.Type =  
+        mi.GetParameters().[0].ParameterType
+
+type Getter(mi:MethodInfo) =
+    member this.MethodInfo = mi
+    member this.Type =  
+        mi.ReturnType
+
+type PropertySearchResult = { Getter:option<Getter>; Setter:option<Setter>; }
+with
+    member this.HasGetterOrSetter =
+        match this with
+        | { Getter= Some _ } | { Setter=Some _} -> true
+        | _ -> false
 
 [<AbstractClass>]
 ///Construct a type manager from a given type (may not be null).
 type TypeManager(ty:Type) =
     do if ty = null then raise (ArgumentNullException("ty"))
-    //todo implement "hide-by-sig" semantics on all members (currently only on methods)
+    //todo implement "hide-by-sig" semantics on all members (currently only on methods and properties)
     //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always 
     //  (c# semantics but not vb semantics considered) does not consider any meta 
     //  data other than just the types of the signature
@@ -56,16 +73,22 @@ type TypeManager(ty:Type) =
     abstract Methods: MethodInfo seq   
     abstract Constructors: ConstructorInfo seq 
     member this.Type = ty
-    member this.FindAllProperties(searchName:string, searchAttributes:MethodAttributes) =
-        this.Properties 
-        |> Seq.toList 
-        |> searchByName searchName
-        |> List.filter (fun p -> 
-            p.CanRead && p.GetMethod.Attributes.HasFlag(searchAttributes) ||
-            p.CanWrite && p.SetMethod.Attributes.HasFlag(searchAttributes))
-    member this.TryFindProperty(searchName, searchAttributes) =
-        this.FindAllProperties(searchName, searchAttributes) 
+    member this.FindAllGetters(searchName:string, searchAttributes:MethodAttributes) =
+        this.FindAllMethods("get_" + searchName, [], None, None, searchAttributes)
+        |> List.map (fun mi -> Getter mi)
+    member this.TryFindGetter(searchName, searchAttributes) =
+        this.FindAllGetters(searchName, searchAttributes) 
         |> List.tryHead
+    member this.FindAllSetters(searchName:string, searchAttributes:MethodAttributes) =
+        this.FindAllMethods("set_" + searchName, [], None, None, searchAttributes)
+        |> List.map (fun mi -> Setter mi)
+    member this.TryFindSetter(searchName, searchAttributes) =
+        this.FindAllSetters(searchName, searchAttributes) 
+        |> List.tryHead
+    member this.TryFindProperty(searchName, searchAttributes) =
+        let gmi = this.TryFindGetter(searchName, searchAttributes)
+        let smi = this.TryFindSetter(searchName, searchAttributes)
+        {Getter=gmi;Setter=smi}
     member this.FindAllFields(searchName:string, searchAttributes:FieldAttributes) =
         this.Fields 
         |> Seq.toList 
@@ -74,7 +97,7 @@ type TypeManager(ty:Type) =
     member this.TryFindField(searchName:string, searchAttributes:FieldAttributes) =
         this.FindAllFields(searchName, searchAttributes)
         |> List.tryHead
-    member this.FindAllConstructors(argTys: Type seq, searchAttributes:MethodAttributes) =
+    member this.FindAllConstructors(argTys, searchAttributes:MethodAttributes) =
         this.Constructors 
         |> Seq.toList 
         |> List.filter(fun m -> m.Attributes.HasFlag(searchAttributes))
@@ -82,7 +105,7 @@ type TypeManager(ty:Type) =
     member this.TryFindConstructor(argTys: Type seq, searchAttributes:MethodAttributes) =
         this.FindAllConstructors(argTys, searchAttributes)
         |> List.tryHead
-    member this.FindAllMethods(searchName, genericTyArgs: Type seq, argTys: Type seq, retTy : Type option, searchAttributes:MethodAttributes) =
+    member this.FindAllMethods(searchName, genericTyArgs: Type seq, argTys: option<#seq<Type>>, retTy : Type option, searchAttributes:MethodAttributes) =
         this.Methods 
         |> Seq.toList 
         |> searchByName searchName
@@ -96,7 +119,7 @@ type TypeManager(ty:Type) =
                     |> List.map (fun meth -> meth.MakeGenericMethod(genericTyArgs |> Seq.toArray))
                 else
                     matches)
-        |> searchByParams argTys
+        |> (fun matches -> match argTys with Some(argTys) -> searchByParams argTys matches | None -> matches)
         |> (fun matches ->
                 match retTy with
                 | Some(retTy) -> 
@@ -109,7 +132,7 @@ type TypeManager(ty:Type) =
                 | None -> matches)
         |> (function | [] | _::[] as matches -> matches //an observed optimization
                      | _ as matches ->  matches |> discardHideBySigMembers |> List.ofSeq)
-    member this.TryFindMethod(searchName, genericTyArgs: Type seq, argTys: Type seq, retTy : Type option, searchAttributes:MethodAttributes) =
+    member this.TryFindMethod(searchName, genericTyArgs: Type seq, argTys, retTy : Type option, searchAttributes:MethodAttributes) =
         this.FindAllMethods(searchName,genericTyArgs,argTys,retTy,searchAttributes)
         |> List.tryHead
     override this.ToString() = this.Type.ToString()
