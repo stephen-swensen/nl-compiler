@@ -43,7 +43,7 @@ let castArgsIfNeeded (targetParameterInfo:ParameterInfo[]) sourceArgExps =
     List.zip (targetParameterInfo |> Seq.map (fun p -> p.ParameterType) |> Seq.toList)  sourceArgExps
     |> List.map (fun (targetTy, sourceExp) -> castIfNeeded targetTy sourceExp)
 
-let tryResolveMethod (ty:Type) (name:string) methodAttributes (genericTyArgs:Type[]) (argTys: Type[]) (env:SemanticEnvironment) =
+let tryResolveMethod (env:SemanticEnvironment) (ty:Type) (name:string) methodAttributes (genericTyArgs:Type[]) (argTys: Type[]) =
     env.GetTypeManager(ty).TryFindMethod(name, genericTyArgs, Some(argTys), None, methodAttributes) 
 
 let tryResolveOpImplicit, tryResolveOpExplicit =
@@ -107,11 +107,11 @@ let (|Resolved|NotResolved|) (env, tySigs) =
                     |> Seq.choose id 
                     |> Seq.toList)
 
-let tryResolveField (ty:Type) fieldName bindingFlags (env:SemanticEnvironment) =
+let tryResolveField (env:SemanticEnvironment) (ty:Type) fieldName bindingFlags =
     env.GetTypeManager(ty).TryFindField(fieldName, bindingFlags)
 
 //only resolves simple non-parameterized properties
-let tryResolveProperty (ty:Type) (propertyName:string) (searchAttributes:MethodAttributes) (env:SemanticEnvironment) =
+let tryResolveProperty (env:SemanticEnvironment) (ty:Type) (propertyName:string) (searchAttributes:MethodAttributes)=
     env.GetTypeManager(ty).TryFindProperty(propertyName,searchAttributes)
 
 ///Tests whethere the given namespace exists in  the list of assemblies
@@ -163,16 +163,16 @@ let resolveTySig env (tySig:TySig) =
 //        CM.Could_not_resolve_type originalTySig.Pos originalTySig.Name //todo: specific pos for ty name
 //        abort()
 
-let resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos env =
-    match tryResolveMethod ty methodName staticMethodAttributes methodGenericTyArgs argTys env with
+let resolveILExprStaticCall env ty methodName methodGenericTyArgs args argTys pos =
+    match tryResolveMethod env ty methodName staticMethodAttributes methodGenericTyArgs argTys with
     | None -> 
         CM.Invalid_static_method pos methodName ty.Name (sprintTypes argTys)
         abort()
     | Some(meth) -> 
         ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args)
 
-let resolveILExprInstanceCall (instance:ILExpr) (methodName:Path) methodGenericTyArgs args argTys env =
-    match tryResolveMethod instance.Type methodName.Text instanceMethodAttributes methodGenericTyArgs argTys env with
+let resolveILExprInstanceCall env (instance:ILExpr) (methodName:Path) methodGenericTyArgs args argTys =
+    match tryResolveMethod env instance.Type methodName.Text instanceMethodAttributes methodGenericTyArgs argTys with
     | None -> 
         CM.Invalid_instance_method methodName.Pos methodName.Text instance.Type.Name (sprintTypes argTys)
         abort()
@@ -184,11 +184,11 @@ module PathResolution =
         | Field of FieldInfo //N.B. CONSTANT FIELDS LIKE INT32.MAXVALUE CANNOT BE ACCESSED NORMALLY: CHECK FOR ISLITERAL FIELD ATTRIBUTE AND EMIT LITERAL VALUE (CAN USE GETVALUE REFLECTION) -- IF CAN'T DO THAT, CHECK FIELDINFO HANDLE AND IF THROWS WE KNOW WE NEED TO STOP
         | Property of PropertySearchResult
 
-    let tryResolveFieldOrProperty ty name fieldSearchAttributes propMethodSearchAttributes (env:SemanticEnvironment) =
-        match tryResolveField ty name fieldSearchAttributes env with
+    let tryResolveFieldOrProperty (env:SemanticEnvironment) ty name fieldSearchAttributes propMethodSearchAttributes =
+        match tryResolveField env ty name fieldSearchAttributes with
         | Some(fi) -> Some(FP.Field(fi))
         | None ->
-            match tryResolveProperty ty name propMethodSearchAttributes env with
+            match tryResolveProperty env ty name propMethodSearchAttributes with
             | prop when prop.HasGetterOrSetter -> Some(FP.Property(prop))
             | _ -> None
 
@@ -205,21 +205,21 @@ module PathResolution =
             | NVT.Namespace(ns) when path.IsMultiPart ->
                 match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
                 | Some(ty) ->
-                    match tryResolveFieldOrProperty ty path.LastPartText staticFieldAttributes staticMethodAttributes env with
+                    match tryResolveFieldOrProperty env ty path.LastPartText staticFieldAttributes staticMethodAttributes with
                     | Some(fp) -> Some(VFP.FieldOrProperty(fp))
                     | None -> None
                 | None -> None
             | NVT.Type(ty) when path.IsSinglePart -> //field or property of an open type
-                match tryResolveFieldOrProperty ty path.LastPartText staticFieldAttributes staticMethodAttributes env with
+                match tryResolveFieldOrProperty env ty path.LastPartText staticFieldAttributes staticMethodAttributes with
                 | Some(fp) -> Some(VFP.FieldOrProperty(fp))
                 | None -> None
             | _ -> None)
 
-    let tryResolveILExprStaticFieldOrPropertyGet ty name rest env =
-        match tryResolveField ty name staticFieldAttributes env with
+    let tryResolveILExprStaticFieldOrPropertyGet env ty name rest =
+        match tryResolveField env ty name staticFieldAttributes with
         | Some(fi) -> Some(ILExpr.mkStaticFieldGet(fi), rest)
         | None ->
-            match tryResolveMethod ty ("get_" + name) staticMethodAttributes [||] [||] env with
+            match tryResolveMethod env ty ("get_" + name) staticMethodAttributes [||] [||] with
             | Some(mi) -> Some(ILExpr.StaticCall(mi,[]),rest)
             | None -> None
 
@@ -236,46 +236,46 @@ module PathResolution =
             //field or property of type resolved against an open namespace
             | NVT.Namespace(ns) when path.IsMultiPart ->
                 match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
-                | Some(ty) -> tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest env
+                | Some(ty) -> tryResolveILExprStaticFieldOrPropertyGet env ty path.LastPartText rest
                 | None -> None
             //field or property of an open type
             | NVT.Type(ty) when path.IsSinglePart->
-                tryResolveILExprStaticFieldOrPropertyGet ty path.LastPartText rest env
+                tryResolveILExprStaticFieldOrPropertyGet env ty path.LastPartText rest
             | _ -> None) 
 
-    let rec tryResolveILExprInstancePathGet (ilExpr:ILExpr) (path:Path) env =
+    let rec tryResolveILExprInstancePathGet env (ilExpr:ILExpr) (path:Path) =
         let path,rest = path.FirstPartPathWithRest
         let ilExpr =
-            match tryResolveField ilExpr.Type path.Text instanceFieldAttributes env with
+            match tryResolveField env ilExpr.Type path.Text instanceFieldAttributes with
             | Some(fi) -> Some(ILExpr.InstanceFieldGet(ilExpr,fi))
             | None ->
-                match tryResolveMethod ilExpr.Type ("get_" + path.Text) instanceMethodAttributes [||] [||] env with
+                match tryResolveMethod env ilExpr.Type ("get_" + path.Text) instanceMethodAttributes [||] [||] with
                 | Some(mi) -> Some(ILExpr.InstanceCall(ilExpr,mi,[]))
                 | None -> 
                     None
 
         match ilExpr, rest with
-        | Some(ilExpr), Some(rest) -> tryResolveILExprInstancePathGet ilExpr rest env
+        | Some(ilExpr), Some(rest) -> tryResolveILExprInstancePathGet env ilExpr rest
         | Some(ilExpr), None -> Some(ilExpr)
         | None, _ -> None
 
     //the reason we don't just implement this in terms of tryResolveILExprInstancePathGet is because we 
     //want the precise point of ailure in the rest chain (of course, we could implement tryResolveILExprInstancePathGet
     //with more info returned...)
-    let rec resolveILExprInstancePathGet (ilExpr:ILExpr) (path:Path) env =
+    let rec resolveILExprInstancePathGet env (ilExpr:ILExpr) (path:Path) =
         let path,rest = path.FirstPartPathWithRest
         let ilExpr =
-            match tryResolveField ilExpr.Type path.Text instanceFieldAttributes env with
+            match tryResolveField env ilExpr.Type path.Text instanceFieldAttributes with
             | Some(fi) -> ILExpr.InstanceFieldGet(ilExpr,fi)
             | None ->
-                match tryResolveMethod ilExpr.Type ("get_" + path.Text) instanceMethodAttributes [||] [||] env with
+                match tryResolveMethod env ilExpr.Type ("get_" + path.Text) instanceMethodAttributes [||] [||] with
                 | Some(mi) -> ILExpr.InstanceCall(ilExpr,mi,[])
                 | None -> 
                     CM.Instance_field_or_property_not_found path.Pos path.Text ilExpr.Type.Name
                     abort()
 
         match rest with
-        | Some(rest) -> resolveILExprInstancePathGet ilExpr rest env
+        | Some(rest) -> resolveILExprInstancePathGet env ilExpr rest
         | None -> ilExpr
 
     let validateFieldSet (fi:FieldInfo) (path:Path) (assignTy:Type) (assignPos) (ifValid:Lazy<_>) =
@@ -297,8 +297,8 @@ module PathResolution =
             CM.Property_has_no_setter path.Pos path.Text
             ILExpr.Error(typeof<Void>)
 
-    let resolveILExprInstancePathSet (instance:ILExpr) (path:Path) (assign:ILExpr) (assignPos) env =
-        match tryResolveFieldOrProperty instance.Type path.Text instanceFieldAttributes instanceMethodAttributes env with
+    let resolveILExprInstancePathSet env (instance:ILExpr) (path:Path) (assign:ILExpr) (assignPos) =
+        match tryResolveFieldOrProperty env instance.Type path.Text instanceFieldAttributes instanceMethodAttributes with
         | Some(FP.Field(fi)) ->
             validateFieldSet fi path assign.Type assignPos
                 (lazy(ILExpr.InstanceFieldSet(instance, fi, castIfNeeded fi.FieldType assign)))
@@ -316,11 +316,11 @@ module PathResolution =
                 | NVT.Variable(name,ty) when name = path.LeadingPartsText -> //instance method call on variable
                     let instance = ILExpr.VarGet(path.LeadingPartsText,ty)
                     let methodName = path.LastPartPath
-                    Some(resolveILExprInstanceCall instance methodName genericTyArgs args argTys env)
+                    Some(resolveILExprInstanceCall env instance methodName genericTyArgs args argTys)
                 | NVT.Namespace(ns) ->
                     match tryResolveType [ns] env.Assemblies path.LeadingPartsText [] with
                     | Some(ty) -> //static method call (possibly generic) on non-generic type (need to handle generic type in another parse case, i think)
-                        Some(resolveILExprStaticCall ty path.LastPartText genericTyArgs args argTys pos env)
+                        Some(resolveILExprStaticCall env ty path.LastPartText genericTyArgs args argTys pos)
                     | None -> //constructors (generic or non-generic)
                         match tryResolveType [ns] env.Assemblies path.Text genericTyArgs with
                         | None -> 
@@ -340,7 +340,7 @@ module PathResolution =
                                 | ctor ->
                                     Some(ILExpr.Ctor(ctor, castArgsIfNeeded (ctor.GetParameters()) args, ty))
                 | NVT.Type(ty) when path.IsSinglePart -> //static methods of an open type
-                    match tryResolveMethod ty path.LastPartText staticMethodAttributes genericTyArgs argTys env with
+                    match tryResolveMethod env ty path.LastPartText staticMethodAttributes genericTyArgs argTys with
                     | Some(meth) ->
                         Some(ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) args))
                     | None ->
@@ -493,7 +493,7 @@ let semantExprWith env synExpr =
         | SynExpr.Pow(x, y, pos) ->        
             let x,y = semantExpr x, semantExpr y
             //TODO: hmm, revisit this, i'm not so sure we want to pass in static types instead of true types of x and y, we know this should resolve
-            match tryResolveMethod typeof<System.Math> "Pow" staticMethodAttributes [||] [|typeof<float>;typeof<float>|] env with
+            match tryResolveMethod env typeof<System.Math> "Pow" staticMethodAttributes [||] [|typeof<float>;typeof<float>|] with
             | None -> 
                 CM.Internal_error pos "Failed to resolve 'System.Math.Pow(float,float)' for synthetic operator '**'"
                 ILExpr.Error(typeof<float>)
@@ -510,7 +510,7 @@ let semantExprWith env synExpr =
             | Some(targetTy) -> //primitive
                 ILExpr.mkNumericBinop(env.Checked, op, coerceIfNeeded env.Checked targetTy x, coerceIfNeeded env.Checked targetTy y, targetTy)
             | None when op = SynNumericBinop.Plus && (x.Type = typeof<string> || y.Type = typeof<string>) -> //string
-                let meth = tryResolveMethod typeof<System.String> "Concat" staticMethodAttributes [||] [|x.Type; y.Type|] env
+                let meth = tryResolveMethod env typeof<System.String> "Concat" staticMethodAttributes [||] [|x.Type; y.Type|]
                 match meth with
                 | None ->
                     //there should always be a String.Concat(obj,obj) overload
@@ -520,8 +520,8 @@ let semantExprWith env synExpr =
                     ILExpr.StaticCall(meth, castArgsIfNeeded (meth.GetParameters()) [x;y])
             | None -> //static "op_*" overloads
                 let meth = seq {
-                    yield tryResolveMethod x.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|] env
-                    yield tryResolveMethod y.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|] env } |> Seq.tryPick id
+                    yield tryResolveMethod env x.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|]
+                    yield tryResolveMethod env y.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|] } |> Seq.tryPick id
 
                 match meth with
                 | None ->
@@ -539,8 +539,8 @@ let semantExprWith env synExpr =
             | None ->
                 //next operator overloads
                 let meth = seq {
-                    yield tryResolveMethod x.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|] env
-                    yield tryResolveMethod y.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|] env } |> Seq.tryPick id
+                    yield tryResolveMethod env x.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|]
+                    yield tryResolveMethod env y.Type op.Name staticMethodAttributes [||] [|x.Type; y.Type|] } |> Seq.tryPick id
 
                 match meth, op with
                 | Some(meth), _ ->
@@ -562,7 +562,7 @@ let semantExprWith env synExpr =
             | Some(ty) ->
                 let args = args |> List.map (semantExpr)
                 let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
-                resolveILExprStaticCall ty methodName methodGenericTyArgs args argTys pos env
+                resolveILExprStaticCall env ty methodName methodGenericTyArgs args argTys pos
         //this is our most complex part of the grammer...
         | SynExpr.PathCall(path, methodGenericTyArgs, args, pos) ->
             let args = args |> List.map (semantExpr)
@@ -576,7 +576,7 @@ let semantExprWith env synExpr =
                     | None ->
                         None
                     | Some(ilExpr, Some(rest)) -> 
-                        PR.tryResolveILExprInstancePathGet ilExpr rest env
+                        PR.tryResolveILExprInstancePathGet env ilExpr rest
                     | Some(ilExpr, None) ->
                         Some(ilExpr)
                 | None -> None
@@ -584,7 +584,7 @@ let semantExprWith env synExpr =
             match instance with
             | Some(instance) ->
                 let methodName = path.LastPartPath
-                resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys env
+                resolveILExprInstanceCall env instance methodName methodGenericTyArgs args argTys
             | None ->
                 PR.resolveFullPathCall env path methodGenericTyArgs args argTys pos
         | SynExpr.ExprPathCall(instance, path, methodGenericTyArgs, args, pos) ->
@@ -599,7 +599,7 @@ let semantExprWith env synExpr =
             let argTys = args |> Seq.map(fun arg -> arg.Type) |> Seq.toArray
             let methodGenericTyArgs = resolveTySigs env methodGenericTyArgs
 
-            resolveILExprInstanceCall instance methodName methodGenericTyArgs args argTys env
+            resolveILExprInstanceCall env instance methodName methodGenericTyArgs args argTys
         ///variable, static field, or static (non-parameterized) property
         | SynExpr.PathGet(path) ->
             match PR.tryResolveLeadingPathGet env path with
@@ -607,12 +607,12 @@ let semantExprWith env synExpr =
                 CM.Variable_field_or_property_not_found path.Pos path.Text
                 abort()
             | Some(ilExpr, Some(rest)) -> 
-                PR.resolveILExprInstancePathGet ilExpr rest env
+                PR.resolveILExprInstancePathGet env ilExpr rest
             | Some(ilExpr, None) ->
                 ilExpr
         | SynExpr.ExprPathGet(x, path) ->
             let x = semantExpr x
-            PR.resolveILExprInstancePathGet x path env
+            PR.resolveILExprInstancePathGet env x path
         | SynExpr.PathSet(path, (assign, assignPos)) ->
             let assign = semantExpr assign
 
@@ -623,7 +623,7 @@ let semantExprWith env synExpr =
                     | None ->
                         None
                     | Some(ilExpr, Some(rest)) -> 
-                        Some(PR.resolveILExprInstancePathGet ilExpr rest env)
+                        Some(PR.resolveILExprInstancePathGet env ilExpr rest)
                     | Some(ilExpr, None) ->
                         Some(ilExpr)
                 | None -> None
@@ -631,7 +631,7 @@ let semantExprWith env synExpr =
             match instance with
             | Some(instance) ->
                 let path = path.LastPartPath
-                PR.resolveILExprInstancePathSet instance path assign assignPos env
+                PR.resolveILExprInstancePathSet env instance path assign assignPos
             | None ->
                 match PR.tryResolveStaticVarFieldOrProperty env path with
                 | None ->
@@ -657,10 +657,10 @@ let semantExprWith env synExpr =
             let assign = semantExpr assign
             match path.LeadingPartsPath with
             | Some(leadingPath) -> 
-                let instance = PR.resolveILExprInstancePathGet instance leadingPath env
-                PR.resolveILExprInstancePathSet instance path.LastPartPath assign assignPos env
+                let instance = PR.resolveILExprInstancePathGet env instance leadingPath
+                PR.resolveILExprInstancePathSet env instance path.LastPartPath assign assignPos
             | None ->
-                PR.resolveILExprInstancePathSet instance path assign assignPos env
+                PR.resolveILExprInstancePathSet env instance path assign assignPos
         | SynExpr.Let(name, (assign, assignPos), body) ->
             let assign = semantExpr assign
             if isVoidOrEscapeTy assign.Type then
