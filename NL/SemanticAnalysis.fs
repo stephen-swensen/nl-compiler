@@ -46,6 +46,9 @@ let castArgsIfNeeded (targetParameterInfo:ParameterInfo[]) sourceArgExps =
 let tryResolveMethod (env:SemanticEnvironment) (ty:Type) (name:string) methodAttributes (genericTyArgs:Type[]) (argTys: Type[]) =
     env.GetTypeManager(ty).TryFindMethod(name, genericTyArgs, Some(argTys), None, methodAttributes) 
 
+let tryResolveGetter (env:SemanticEnvironment) (ty:Type) (name:string) methodAttributes =
+    env.GetTypeManager(ty).TryFindGetter(name, methodAttributes)
+
 let tryResolveOpImplicit, tryResolveOpExplicit =
     let tryResolveConversionOp name (onty:Type) fromty toty =
         onty.GetMethods(BindingFlags.Static ||| BindingFlags.Public)
@@ -219,8 +222,8 @@ module PathResolution =
         match tryResolveField env ty name staticFieldAttributes with
         | Some(fi) -> Some(ILExpr.mkStaticFieldGet(fi), rest)
         | None ->
-            match tryResolveMethod env ty ("get_" + name) staticMethodAttributes [||] [||] with
-            | Some(mi) -> Some(ILExpr.StaticCall(mi,[]),rest)
+            match tryResolveGetter env ty name staticMethodAttributes with
+            | Some getter -> Some(ILExpr.StaticPropertyGet(getter),rest)
             | None -> None
 
     let tryResolveLeadingPathGet env (path:Path) =
@@ -249,8 +252,8 @@ module PathResolution =
             match tryResolveField env ilExpr.Type path.Text instanceFieldAttributes with
             | Some(fi) -> Some(ILExpr.InstanceFieldGet(ilExpr,fi))
             | None ->
-                match tryResolveMethod env ilExpr.Type ("get_" + path.Text) instanceMethodAttributes [||] [||] with
-                | Some(mi) -> Some(ILExpr.InstanceCall(ilExpr,mi,[]))
+                match tryResolveGetter env ilExpr.Type path.Text instanceMethodAttributes with
+                | Some(getter) -> Some(ILExpr.InstancePropertyGet(ilExpr,getter))
                 | None -> 
                     None
 
@@ -268,8 +271,8 @@ module PathResolution =
             match tryResolveField env ilExpr.Type path.Text instanceFieldAttributes with
             | Some(fi) -> ILExpr.InstanceFieldGet(ilExpr,fi)
             | None ->
-                match tryResolveMethod env ilExpr.Type ("get_" + path.Text) instanceMethodAttributes [||] [||] with
-                | Some(mi) -> ILExpr.InstanceCall(ilExpr,mi,[])
+                match tryResolveGetter env ilExpr.Type path.Text instanceMethodAttributes with
+                | Some(getter) -> ILExpr.InstancePropertyGet(ilExpr,getter)
                 | None -> 
                     CM.Instance_field_or_property_not_found path.Pos path.Text ilExpr.Type.Name
                     abort()
