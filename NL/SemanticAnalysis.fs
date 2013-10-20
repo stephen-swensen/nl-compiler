@@ -655,7 +655,7 @@ let semantExprWith env synExpr =
                     | PR.VFP.FieldOrProperty(PR.FP.Property(pi)) ->
                         let path = path.LastPartPath
                         PR.validatePropertySet None pi path assign assignPos
-        | SynExpr.ExprPathSet(instance, path, (assign,assignPos)) -> //TODO
+        | SynExpr.ExprPathSet(instance, path, (assign,assignPos)) ->
             let instance = semantExpr instance
             let assign = semantExpr assign
             match path.LeadingPartsPath with
@@ -890,7 +890,6 @@ let semantExprWith env synExpr =
         semantExprWith env synExpr        
     with CompilerInterruptException ->
         ILExpr.Error(typeof<obj>)
-       
         
 let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName nextItName =
     let topLevelFieldAttrs = FieldAttributes.Public ||| FieldAttributes.Static
