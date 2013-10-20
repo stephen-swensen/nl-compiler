@@ -56,13 +56,14 @@ type TypeManager(ty:Type) =
             hideBySigResolution
     ///search for members by name: first try case sensitive search and if no matches, then try case-insensitive search.
     let searchByName searchName (ls: #MemberInfo list) =
-        let matchesExact = ls |> List.filter (fun m -> m.Name = searchName)
-        let matches = 
-            if matchesExact.Length = 0 then 
-                ls |> List.filter (fun m -> String.Equals(m.Name, searchName, StringComparison.OrdinalIgnoreCase))
-            else 
-                matchesExact
-        matches
+        ls |> List.filter (fun m -> String.Equals(m.Name, searchName, StringComparison.OrdinalIgnoreCase))
+//        let matchesExact = ls |> List.filter (fun m -> m.Name = searchName)
+//        let matches = 
+//            if matchesExact.Length = 0 then 
+//                ls |> List.filter (fun m -> String.Equals(m.Name, searchName, StringComparison.OrdinalIgnoreCase))
+//            else 
+//                matchesExact
+//        matches
     ///search for a method base (method or ctor) by params: params length matches argTys length and then we first try
     ///exact equals match of params types and argTys and if no matches then we try param tys assignable to arg tys.
     let searchByParams argTys (ls:#MethodBase list) = 
