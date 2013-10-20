@@ -74,3 +74,8 @@ let ``call generic instance method with 2 of 3 invalid generic type args`` optio
     raisesWith 
         <@ evalWith options (openPrefix + "NonGenericClass1().InstanceGenericMethodWithThreeTypeArgs[INVALID1, int32, INVALID2]()")@>
         (expectedErrors [|1;1|])
+
+[<Theory;EvalData>]
+let ``hide by sig`` options =
+    test <@ evalWith options (openPrefix + "HideBySigClassB().Method1(0)") = 2 @>
+
