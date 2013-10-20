@@ -26,23 +26,34 @@ with
 ///Construct a type manager from a given type (may not be null).
 type TypeManager(ty:Type) =
     do if ty = null then raise (ArgumentNullException("ty"))
+
+    let hideBySigResolution (x:MemberInfo) (y:MemberInfo) =
+        if x.DeclaringType = y.DeclaringType then 0
+        elif x.DeclaringType.IsAssignableFrom(y.DeclaringType) then -1
+        else 1
+
     //todo implement "hide-by-sig" semantics on all members (currently only on methods and properties)
     //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always 
     //  (c# semantics but not vb semantics considered) does not consider any meta 
     //  data other than just the types of the signature
-    ///If the search turns of duplicate members, discard base methods which are "hidden"
-    ///by declared type members (via the "new" keyword in C#, for example)
-    let discardHideBySigMembers ls =
+    ///If the search turns up duplicate methods, discard base methods which are "hidden"
+    ///by declared type methods (via the "new" keyword in C#, for example)
+    let discardHideBySigMethods ls =
         ls
         |> List.distinctByResolve
             (fun (x:MethodInfo) ->
                 let paramTys = x.GetParameters() |> Array.map (fun p -> p.ParameterType)
                 let gargTys = if x.IsGenericMethod then x.GetGenericArguments() else [||]
                 x.Name, x.ReturnType, gargTys, paramTys)
-            (fun x y -> 
-                if x.DeclaringType = y.DeclaringType then 0
-                elif x.DeclaringType.IsAssignableFrom(y.DeclaringType) then -1
-                else 1)
+            hideBySigResolution
+    ///If the search turns up duplicate fields, discard base fields which are "hidden"
+    ///by declared type fields (via the "new" keyword in C#, for example)
+    let discardHideBySigFields ls =
+        ls
+        |> List.distinctByResolve
+            (fun (x:FieldInfo) ->
+                x.Name, x.FieldType)
+            hideBySigResolution
     ///search for members by name: first try case sensitive search and if no matches, then try case-insensitive search.
     let searchByName searchName (ls: #MemberInfo list) =
         let matchesExact = ls |> List.filter (fun m -> m.Name = searchName)
@@ -94,6 +105,7 @@ type TypeManager(ty:Type) =
         |> Seq.toList 
         |> searchByName searchName
         |> List.filter(fun m -> m.Attributes.HasFlag(searchAttributes))
+        |> discardHideBySigFields
     member this.TryFindField(searchName:string, searchAttributes:FieldAttributes) =
         this.FindAllFields(searchName, searchAttributes)
         |> List.tryHead
@@ -130,8 +142,7 @@ type TypeManager(ty:Type) =
                     else
                         matches
                 | None -> matches)
-        |> (function | [] | _::[] as matches -> matches //an observed optimization
-                     | _ as matches ->  matches |> discardHideBySigMembers |> List.ofSeq)
+        |> discardHideBySigMethods
     member this.TryFindMethod(searchName, genericTyArgs: Type seq, argTys, retTy : Type option, searchAttributes:MethodAttributes) =
         this.FindAllMethods(searchName,genericTyArgs,argTys,retTy,searchAttributes)
         |> List.tryHead
