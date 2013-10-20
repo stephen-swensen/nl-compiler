@@ -99,3 +99,7 @@ let ``implicit static property assignment type coersion`` options =
 [<Theory;EvalData>]
 let ``set instance property of an expression is valid`` options = //but do we really want it to be?
     test <@ evalWith options (Prelude.openAsm + "Tests.NonGenericClass1().instance_property_int <- 0") = null @>
+
+[<Theory;EvalData>]
+let ``hide by sig`` options =
+    test <@ evalWith options (openPrefix + "HideBySigClassB().Property1") = 2 @>

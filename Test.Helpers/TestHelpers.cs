@@ -98,4 +98,25 @@ namespace Tests
     {
         public static R StaticGenericMethod<R>() { return default(R); }
     }
+
+    public class HideBySigClassA
+    {
+        public int Field1 = 1;
+        public int Property1 { get { return 1; } }
+        public int Method1(int dummy)
+        {
+            return 1;
+        }
+    }
+
+    public class HideBySigClassB : HideBySigClassA
+    {
+
+        public new int Field1 = 2;
+        public new int Property1 { get { return 2; } }
+        public new int Method1(int dummy)
+        {
+            return 2;
+        }
+    }
 }

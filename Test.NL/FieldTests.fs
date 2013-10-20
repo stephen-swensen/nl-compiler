@@ -183,3 +183,7 @@ let ``CSharp static readonly field`` options =
 [<Theory;EvalData>]
 let ``CSharp instance readonly field`` options =
     test <@ evalWith options (Prelude.openPrefix + "NonGenericClass1().instance_readonly_field_int") = 3 @>
+
+[<Theory;EvalData>]
+let ``hide by sig`` options =
+    test <@ evalWith options (openPrefix + "HideBySigClassB().Field1") = 2 @>
