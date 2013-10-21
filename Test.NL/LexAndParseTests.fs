@@ -20,3 +20,7 @@ let ``error recovery in the presence of unrecognized charactors`` options =
 [<Theory;EvalData>]
 let ``issue 55: should be able to subtract two ints with no spaces without parse error`` options =
     test <@ evalWith options "3-3" = 0 @>
+
+[<Theory;EvalData>]
+let ``verbatim identifier`` options =
+    test <@ evalWith options "type[system.@type]" = typeof<System.Type> @>

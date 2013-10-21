@@ -41,6 +41,7 @@ let digit = ['0'-'9']
 let alpha = (['a' - 'z'] | ['A' - 'Z'])
 let whitespace = [' ' '\t' ]
 let newline = ('\n' | '\r' '\n')
+let ident = (alpha | '_')+(digit | alpha | '_')* 
 
 rule tokenize = parse
 | whitespace { tokenize lexbuf }
@@ -182,8 +183,14 @@ rule tokenize = parse
         DOUBLE(input)
     }
 
-// Names
-| (alpha | '_')+(digit | alpha | '_')* 
+//verbatim identifiers
+| '@'ident 
+    {
+        let input = (lexeme lexbuf).ToLower()
+        IDENT(input.Substring(1,input.Length-1))
+    }
+// keywords and other identifiers
+| ident 
     { 
         let input = (lexeme lexbuf).ToLower()
         match keywords |> Map.tryFind input with
