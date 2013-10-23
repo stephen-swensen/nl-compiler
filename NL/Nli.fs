@@ -13,9 +13,10 @@ open System.Text.RegularExpressions
 type EL = MessageLogger
 
 ///The NL interactive
-type Nli(?options: CompilerOptions) = 
+type Nli(?options: CompilerOptions) as this = 
     let options = defaultArg options CompilerOptions.Default
     let mutable env = options.SemanticEnvironment
+    let mutable vars = Map.empty : Map<string,obj*Type>
 
     let asmName = "NLI-ASSEMBLY"
     let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
@@ -28,6 +29,13 @@ type Nli(?options: CompilerOptions) =
     let nextItName = 
         let count = ref -1
         fun () -> count := !count+1; sprintf "it%i" !count
+
+    do //add pointer to this in the nli session
+        ignore <| this.Submit("nli = null[Swensen.NL.Nli]")
+        //we could possibly have Nli.Submit return FieldInfo to avoid this hack
+        let nliVarTy = env.Types |> Seq.head
+        let nliVar = nliVarTy.GetField("nli")
+        nliVar.SetValue(null, this)
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string, ?offset) =
@@ -57,6 +65,7 @@ type Nli(?options: CompilerOptions) =
                     | ILStmt.Error -> 
                         failwith "Should not be emitting opcodes for an ilStmt with errors")
                 
+                //collect all return values, if any
                 let retval =
                     tys
                     |> Seq.filter (fun ty -> ty.FullName.StartsWith("TOP_LEVEL"))
@@ -77,7 +86,14 @@ type Nli(?options: CompilerOptions) =
                             Some(field.Name, field.GetValue(), field.FieldType)
                         | _ -> failwith "Unexpected number of fields in TOP_LEVEL type"
                     ) |> Seq.toList |> Some
-                    
+                   
+                //update variables from return values, if any
+                match retval with
+                | Some(retval) ->
+                    for key,o,ty in retval do
+                        vars <- vars |> Map.add key (o,ty) 
+                | None -> ()
+
                 retval, sink.GetMessages()
 
     member this.Submit(code:string) =
@@ -85,3 +101,7 @@ type Nli(?options: CompilerOptions) =
         | Some(xl), _ -> xl
         | None, msgs ->
             raise <| NliException(msgs)
+
+    member this.Environment = env
+    member this.Options = options
+    member this.Variables = vars
