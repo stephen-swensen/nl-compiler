@@ -134,7 +134,9 @@ type public NliForm() as this =
                 do! async.Return () //nop to force cancellation check
                 
                 do! Async.SwitchToContext guiContext
-                let code = editor.Text
+                //Nli is constructed with reference to self in variable "nli"
+                let prelude = sprintf "nli = default[%s]" (typeof<Swensen.NL.Nli>.FullName)
+                let code = prelude + editor.Text
                 
                 do! Async.SwitchToContext backgroundContext
                 let messages = 
