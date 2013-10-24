@@ -12,6 +12,17 @@ open System.Text.RegularExpressions
 
 type EL = MessageLogger
 
+type NliVariable(fi:FieldInfo) =
+    let name = fi.Name
+    let value = fi.GetValue()
+    let ty = fi.FieldType
+    member __.FieldInfo = fi
+    member __.Name = name
+    member __.Value = value
+    member __.Type = ty
+
+type NliSubmitResults = { HasErrors:bool; Variables: NliVariable list; Messages: CompilerMessage[] }
+
 ///The NL interactive
 type Nli(?options: CompilerOptions) as this = 
     let options = defaultArg options CompilerOptions.Default
@@ -37,11 +48,11 @@ type Nli(?options: CompilerOptions) as this =
         let ilStmts = FrontEnd.lexParseAndSemantStmtsWith offset env code modBuilder nextTopLevelTypeName nextItName
 
         if sink.HasErrors then
-            None, sink.GetMessages()
+            { HasErrors=true; Variables=[]; Messages=sink.GetMessages()} 
         else
             let stmts = if options.Optimize then Optimization.optimizeStmts ilStmts else ilStmts
             if sink.HasErrors then
-                None, sink.GetMessages()
+                { HasErrors=true; Variables=[]; Messages=sink.GetMessages()} 
             else
                 let tys = ilStmts |> List.map (fun ilStmt -> 
                     match ilStmt with
@@ -75,38 +86,34 @@ type Nli(?options: CompilerOptions) as this =
                         | 1 -> 
                             env <- env.ConsType(ty)
                             let field = fields.[0] 
-                            Some(field, field.Name, field.GetValue(), field.FieldType)
+                            let nv = NliVariable(field)
+                            vars <- vars |> Map.add nv.Name (nv.Value,nv.Type) 
+                            Some(nv)
                         | _ -> failwith "Unexpected number of fields in TOP_LEVEL type"
-                    ) |> Seq.toList |> Some
-                   
-                //update variables from return values, if any
-                match retval with
-                | Some(retval) ->
-                    for _,key,o,ty in retval do
-                        vars <- vars |> Map.add key (o,ty) 
-                | None -> ()
+                    ) |> Seq.toList
+                
+                { HasErrors=false; Variables=retval; Messages=sink.GetMessages()} 
 
-                retval, sink.GetMessages()
+    let submit code =
+        match trySubmit code None with
+        | { HasErrors=false; Variables=vars } -> vars |> List.map (fun v -> v.Name, v.Value, v.Type)
+        | { Messages=msgs } ->
+            raise <| NliException(msgs)
 
     let addVar name (o:'a) =
         let code = sprintf "%s = default[%s]" name typeof<'a>.FullName
-        let (Some[fi,_,_,_]),_ = trySubmit code None
-        fi.SetValue(null, o)
+        let { Variables=[v] } = trySubmit code None
+        v.FieldInfo.SetValue(null, o)
 
     do //add pointer to this in the nli session
         addVar "nli" this
 
     //Submit the given NL fragment, returning a list of variables and their values bound to the session.
     member this.TrySubmit(code:string, ?offset) =
-        let retval, msgs = trySubmit code offset
-        let retval = retval |> Option.map (fun ls -> ls |> List.map (fun (_,key,o,ty) -> key,o,ty))
-        retval,msgs
+        trySubmit code offset
 
     member this.Submit(code:string) =
-        match this.TrySubmit(code) with
-        | Some(xl), _ -> xl
-        | None, msgs ->
-            raise <| NliException(msgs)
+        submit code
 
     ///Add a variable to the session (allows you to interact dynamically with static code instances).
     member this.AddVariable(name, o) = addVar name o
