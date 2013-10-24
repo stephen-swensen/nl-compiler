@@ -30,15 +30,7 @@ type Nli(?options: CompilerOptions) as this =
         let count = ref -1
         fun () -> count := !count+1; sprintf "it%i" !count
 
-    do //add pointer to this in the nli session
-        ignore <| this.Submit("nli = null[Swensen.NL.Nli]")
-        //we could possibly have Nli.Submit return FieldInfo to avoid this hack
-        let nliVarTy = env.Types |> Seq.head
-        let nliVar = nliVarTy.GetField("nli")
-        nliVar.SetValue(null, this)
-
-    //Submit the given NL fragment, returning a list of variables and their values bound to the session.
-    member this.TrySubmit(code:string, ?offset) =
+    let trySubmit code offset =
         let offset = defaultArg offset FrontEnd.DefaultOffset
         use sink = new BasicMessageSink(options.ConsoleLogging)
         
@@ -83,24 +75,41 @@ type Nli(?options: CompilerOptions) as this =
                         | 1 -> 
                             env <- env.ConsType(ty)
                             let field = fields.[0] 
-                            Some(field.Name, field.GetValue(), field.FieldType)
+                            Some(field, field.Name, field.GetValue(), field.FieldType)
                         | _ -> failwith "Unexpected number of fields in TOP_LEVEL type"
                     ) |> Seq.toList |> Some
                    
                 //update variables from return values, if any
                 match retval with
                 | Some(retval) ->
-                    for key,o,ty in retval do
+                    for _,key,o,ty in retval do
                         vars <- vars |> Map.add key (o,ty) 
                 | None -> ()
 
                 retval, sink.GetMessages()
+
+    let addVar name (o:'a) =
+        let code = sprintf "%s = default[%s]" name typeof<'a>.FullName
+        let (Some[fi,_,_,_]),_ = trySubmit code None
+        fi.SetValue(null, o)
+
+    do //add pointer to this in the nli session
+        addVar "nli" this
+
+    //Submit the given NL fragment, returning a list of variables and their values bound to the session.
+    member this.TrySubmit(code:string, ?offset) =
+        let retval, msgs = trySubmit code offset
+        let retval = retval |> Option.map (fun ls -> ls |> List.map (fun (_,key,o,ty) -> key,o,ty))
+        retval,msgs
 
     member this.Submit(code:string) =
         match this.TrySubmit(code) with
         | Some(xl), _ -> xl
         | None, msgs ->
             raise <| NliException(msgs)
+
+    ///Add a variable to the session (allows you to interact dynamically with static code instances).
+    member this.AddVariable(name, o) = addVar name o
 
     member this.Environment = env
     member this.Options = options
