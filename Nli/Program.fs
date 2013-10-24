@@ -9,12 +9,9 @@ let rec loop(nli:Nli) =
     | "exit" -> ()
     | code ->
         try
-            match nli.TrySubmit(code) with
-            | Some(results), _ ->
-                for fName,fValue,fTy in results do
-                    printfn "[%s] %s = %A" fTy.Name fName fValue
-            | None, _ ->
-                ()
+            let results =  nli.Submit(code)
+            for fName,fValue,fTy in results do
+                printfn "[%s] %s = %A" fTy.Name fName fValue
         with
         | e -> printfn "%A" e
 

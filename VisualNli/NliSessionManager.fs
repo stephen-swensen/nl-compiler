@@ -25,8 +25,10 @@ type NliSessionManager() as this =
         let results, msgs =
             try
                 match this.nli.TrySubmit(code, offset) with
-                | Some(results), msgs -> [| yield! results |], msgs
-                | None, msgs -> [||], msgs
+                | { HasErrors=false; Variables=results; Messages=msgs } -> 
+                    let results = results |> List.map (fun v -> v.Name, v.Value, v.Type) 
+                    [| yield! results |], msgs
+                | { Messages=msgs } -> [||], msgs
             with e ->
                 Console.WriteLine(e.ToString())
                 let result = sprintf "exn%i" this.exnCount, e :> obj, e.GetType()
