@@ -61,3 +61,10 @@ let ``Reset frees dynamic assembly for collection`` () =
     System.GC.Collect()
     let asmNames = System.AppDomain.CurrentDomain.GetAssemblies() |> Array.map (fun asm -> asm.FullName)
     test <@ asmNames |> Seq.filter (fun name -> name.Contains("NLI-ASSEMBLY")) |> Seq.length = 1 @>
+
+[<Fact>]
+let ``self reference in session`` () =
+    let nli = new Nli()
+    test <@ let nli' = nli.Variables.["nli"].Value in nli' :?> Nli = nli @>
+    test <@ let [(_,nli',_)] = nli.Submit("nli") in nli' :?> Nli = nli @>
+    test <@ let [(_,nli',_)] = nli.Submit("nli.Submit(\"nli\").get_Item(0).Item2") in nli' :?> Nli = nli @>
