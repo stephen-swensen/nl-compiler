@@ -68,3 +68,12 @@ let ``self reference in session`` () =
     test <@ let nli' = nli.Variables.["nli"].Value in nli' :?> Nli = nli @>
     test <@ let [(_,nli',_)] = nli.Submit("nli") in nli' :?> Nli = nli @>
     test <@ let [(_,nli',_)] = nli.Submit("nli.Submit(\"nli\").get_Item(0).Item2") in nli' :?> Nli = nli @>
+
+[<Theory;NliData>]
+let ``add variable`` options =
+    let nli = new Nli(options)
+    nli.AddVariable("x", 3)
+    test <@ nli.Variables.["x"].Value :?> int = 3 @>
+    test <@ let [(_,res,_)] = nli.Submit("x + 1") in res :?> int = 4 @>
+    nli.Submit("x <- 5") |> ignore
+    test <@ nli.Variables.["x"].Value :?> int = 5 @>
