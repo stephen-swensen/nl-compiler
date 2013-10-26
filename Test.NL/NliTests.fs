@@ -77,3 +77,8 @@ let ``add variable`` options =
     test <@ let [(_,res,_)] = nli.Submit("x + 1") in res :?> int = 4 @>
     nli.Submit("x <- 5") |> ignore
     test <@ nli.Variables.["x"].Value :?> int = 5 @>
+
+[<Theory;NliData>]
+let ``prelude`` options =
+    let nli = new Nli()
+    test <@ let [(_,res,_)] = nli.Submit("""eval[int32]("3 + 2 + eval[int32](\"1\")")""") in res :?> int = 6 @>

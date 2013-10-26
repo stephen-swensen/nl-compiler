@@ -45,10 +45,11 @@ module SemanticEnvironment =
                   "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map Assembly.Load)
                  @ [System.Reflection.Assembly.GetExecutingAssembly()]
             NVTs= //assuming that none of these namespaces have any colliding types (i.e. order doesn't matter here as far as possible shadowing)!
-                ["" //n.b. System.Type.GetType(".system.string",false,true) IS valid (the leading ".", that is)
-                 "system"
-                 "system.collections.generic"
-                 "system.numerics"] |> List.map NVT.Namespace }
+                (["" //n.b. System.Type.GetType(".system.string",false,true) IS valid (the leading ".", that is)
+                  "system"
+                  "system.collections.generic"
+                  "system.numerics"] |> List.map NVT.Namespace)
+                @ [Type(Type.GetType("Swensen.NL.NlPrelude"))]}
 
 type SemanticEnvironment with
     member this.Namespaces = 

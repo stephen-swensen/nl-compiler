@@ -124,6 +124,7 @@
     <Compile Include="Compilation.fs" />
     <Compile Include="Nli.fs" />
     <Compile Include="Evaluation.fs" />
+    <Compile Include="NlPrelude.fs" />
     <None Include="Script.fsx" />
   </ItemGroup>
   <ItemGroup>
