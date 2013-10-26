@@ -13,13 +13,12 @@ open System.Text.RegularExpressions
 type EL = MessageLogger
 
 type NliVariable(fi:FieldInfo) =
-    let name = fi.Name
-    let value = fi.GetValue()
-    let ty = fi.FieldType
+    ///The underlying static field info where the nli variable is stored
     member __.FieldInfo = fi
-    member __.Name = name
-    member __.Value = value
-    member __.Type = ty
+    member __.Name = fi.Name
+    ///Get the current value of the nli variable
+    member __.Value = fi.GetValue()
+    member __.Type = fi.FieldType
 
 type NliSubmitResults = { HasErrors:bool; Variables: NliVariable list; Messages: CompilerMessage[] }
 
@@ -27,7 +26,7 @@ type NliSubmitResults = { HasErrors:bool; Variables: NliVariable list; Messages:
 type Nli(?options: CompilerOptions) as this = 
     let options = defaultArg options CompilerOptions.Default
     let mutable env = options.SemanticEnvironment
-    let mutable vars = Map.empty : Map<string,obj*Type>
+    let mutable vars = Map.empty : Map<string,NliVariable>
 
     let asmName = "NLI-ASSEMBLY"
     let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
@@ -54,6 +53,7 @@ type Nli(?options: CompilerOptions) as this =
             if sink.HasErrors then
                 { HasErrors=true; Variables=[]; Messages=sink.GetMessages()} 
             else
+                //generate and collect all types used for top-level bindings
                 let tys = ilStmts |> List.map (fun ilStmt -> 
                     match ilStmt with
                     | ILStmt.TypeDef(tyBuilder, tyinit) ->
@@ -68,7 +68,7 @@ type Nli(?options: CompilerOptions) as this =
                     | ILStmt.Error -> 
                         failwith "Should not be emitting opcodes for an ilStmt with errors")
                 
-                //collect all return values, if any
+                //run and collect all return values, if any
                 let retval =
                     tys
                     |> Seq.filter (fun ty -> ty.FullName.StartsWith("TOP_LEVEL"))
@@ -87,7 +87,7 @@ type Nli(?options: CompilerOptions) as this =
                             env <- env.ConsType(ty)
                             let field = fields.[0] 
                             let nv = NliVariable(field)
-                            vars <- vars |> Map.add nv.Name (nv.Value,nv.Type) 
+                            vars <- vars |> Map.add nv.Name nv
                             Some(nv)
                         | _ -> failwith "Unexpected number of fields in TOP_LEVEL type"
                     ) |> Seq.toList
