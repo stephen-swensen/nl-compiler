@@ -52,8 +52,18 @@ let ``call invalid generic static method on generic type`` options =
         (expectedErrors [|11|])
 
 [<Theory;EvalData>]
-let ``call generic static method with explicit generic args and no type-wise overloads on non-generic static type`` options = //these could be inferable
+let ``call generic static method with explicit generic args and no type-wise overloads on non-generic static type`` options = 
     test <@ evalWith options "tuple.create[int32,datetime](3, datetime())" = (3, System.DateTime()) @>
+
+[<Theory;EvalData>]
+let ``do not resolve static generic method when no generic args provided and method arg types are generic`` options =
+    raisesWith <@ evalWith options "tuple.create(3, datetime())" @>
+        (expectedErrors [|11|])
+
+[<Theory;EvalData>]
+let ``do not resolve static generic method when no generic args provided and method arg types are non-generic`` options =
+    raisesWith <@ evalWith options (openPrefix + "StaticGenericClass1[int32].StaticGenericMethod()") @>
+        (expectedErrors [|11|])
 
 [<Theory;EvalData>]
 let ``call generic instance method with explicit generic args and no overloads on var`` options =
@@ -62,6 +72,16 @@ let ``call generic instance method with explicit generic args and no overloads o
 [<Theory;EvalData>]
 let ``call generic instance method with explicit generic args and no overloads on expression`` options =
     test <@ evalWith options (openPrefix + "NonGenericClass1().InstanceGenericMethod[int32](1)") = 1 @>
+
+[<Theory;EvalData>]
+let ``do not resolve instance generic method when no generic args provided`` options =
+    raisesWith <@ evalWith options (openPrefix + "NonGenericClass1().InstanceGenericMethod(1)") @>
+        (expectedErrors [|10|])
+
+[<Theory;EvalData>]
+let ``do not resolve instance generic method when no generic args provided and method arg types are non-generic`` options =
+    raisesWith <@ evalWith options (openPrefix + "NonGenericClass1().InstanceGenericMethodWithThreeTypeArgs()") @>
+        (expectedErrors [|10|])
 
 [<Theory;EvalData>]
 let ``call generic instance method with invalid generic type args`` options =
