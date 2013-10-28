@@ -131,7 +131,7 @@ type TypeManager(ty:Type) =
                         meth.GetGenericArguments().Length = Seq.length genericTyArgs) 
                     |> List.map (fun meth -> meth.MakeGenericMethod(genericTyArgs |> Seq.toArray))
                 else
-                    matches)
+                    matches |> List.filter (fun meth -> not meth.IsGenericMethod))
         |> (fun matches -> match argTys with Some(argTys) -> searchByParams argTys matches | None -> matches)
         |> (fun matches ->
                 match retTy with
