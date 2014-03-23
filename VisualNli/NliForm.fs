@@ -135,7 +135,7 @@ type public NliForm() as this =
                 
                 do! Async.SwitchToContext guiContext
                 //Nli is constructed with reference to self in variable "nli"
-                let prelude = sprintf "nli = default[%s];;" (typeof<Swensen.NL.Nli>.FullName)
+                let prelude = sprintf "nli = default[%s];;%s" (typeof<Swensen.NL.Nli>.FullName) Environment.NewLine
                 let code = prelude + editor.Text
                 
                 do! Async.SwitchToContext backgroundContext
@@ -144,7 +144,7 @@ type public NliForm() as this =
                     let asmName = "VNLI-BACKGROUND-ANALYSIS"
                     
                     FrontEnd.lexParseAndSemantStmtsWith 
-                        FrontEnd.DefaultOffset
+                        (0, 1, -prelude.Length) //offset adjusted for prelude
                         { SemanticEnvironment.Default with IsAnalysisOnly=true }
                         code 
                         null 
