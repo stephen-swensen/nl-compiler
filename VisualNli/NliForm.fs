@@ -135,7 +135,7 @@ type public NliForm() as this =
                 
                 do! Async.SwitchToContext guiContext
                 //Nli is constructed with reference to self in variable "nli"
-                let prelude = sprintf "nli = default[%s]" (typeof<Swensen.NL.Nli>.FullName)
+                let prelude = sprintf "nli = default[%s];;" (typeof<Swensen.NL.Nli>.FullName)
                 let code = prelude + editor.Text
                 
                 do! Async.SwitchToContext backgroundContext
