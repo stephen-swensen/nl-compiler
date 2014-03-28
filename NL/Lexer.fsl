@@ -218,9 +218,10 @@ and comments level = parse
         else comments (level-1) lexbuf
     }
 | "/*"    { comments (level+1) lexbuf }
-| _       { comments level lexbuf }
+| newline    { lexbuf.EndPos <- lexbuf.EndPos.NextLine; comments level lexbuf }
 | eof { EOF }
+| _       { comments level lexbuf }
 and comment = parse
-| _          { comment lexbuf }
 | newline    { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
 | eof { EOF }
+| _          { comment lexbuf }
