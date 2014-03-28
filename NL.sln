@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.20617.1 PREVIEW
+VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{3C0D8048-702B-4541-AE25-0627F59638C5}"
 	ProjectSection(SolutionItems) = preProject
@@ -84,8 +84,5 @@ Global
 		{E129172C-1BA6-41F8-B8D6-4E6D42D49A51} = {98EB7565-4A5B-4274-94E9-9AB4D4466741}
 		{7FE87916-4378-4556-9931-BA9BEA5C0101} = {98EB7565-4A5B-4274-94E9-9AB4D4466741}
 		{B4C05982-A833-4721-A616-82DE7B3C1250} = {98EB7565-4A5B-4274-94E9-9AB4D4466741}
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
