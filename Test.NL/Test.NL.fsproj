@@ -92,6 +92,7 @@
     <Compile Include="TryCatchFinallyTests.fs" />
     <Compile Include="RethrowTests.fs" />
     <Compile Include="LexParseAndSemantTests.fs" />
+    <Compile Include="CommentTests.fs" />
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>

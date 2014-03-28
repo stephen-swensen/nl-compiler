@@ -44,6 +44,8 @@ let newline = ('\n' | '\r' '\n')
 let ident = (alpha | '_')+(digit | alpha | '_')* 
 
 rule tokenize = parse
+| "//"       { comment lexbuf }
+| "/*"       { comments 0 lexbuf }
 | whitespace { tokenize lexbuf }
 | newline    { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
 
@@ -208,3 +210,17 @@ rule tokenize = parse
         CM.Unrecognized_input (range lexbuf) input
         tokenize lexbuf 
     }
+//based on question/answer from Evgeny Gavrin http://stackoverflow.com/q/7117975/236255
+and comments level = parse
+| "*/"
+    {
+        if level = 0 then tokenize lexbuf
+        else comments (level-1) lexbuf
+    }
+| "/*"    { comments (level+1) lexbuf }
+| _       { comments level lexbuf }
+| eof { EOF }
+and comment = parse
+| _          { comment lexbuf }
+| newline    { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf }
+| eof { EOF }
