@@ -31,7 +31,8 @@ type CodeEditor(font:Font) as this =
         this.Lexing.Lexer <- Lexer.Container;
 
         let stylesConfig = [
-            (SyntaxStyle.Default, Color.Black)
+            (SyntaxStyle.Comments, Color.Gray)
+            (SyntaxStyle.OtherTokens, Color.Black)
             (SyntaxStyle.Keyword, Color.Blue)
             (SyntaxStyle.TextLiteral, Color.DarkRed)
             (SyntaxStyle.NumericLiteral, Color.Teal)
@@ -43,6 +44,7 @@ type CodeEditor(font:Font) as this =
             style.Font <- font
 
         this.StyleNeeded.Add (fun e ->
+            e.Range.SetStyle(SyntaxStyle.Comments) //by exclusion, comments are "default"
             let text = e.Range.Text
             let offset = e.Range.Start
             CodeEditorService.textColorRanges text

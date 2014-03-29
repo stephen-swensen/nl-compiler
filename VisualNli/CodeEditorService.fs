@@ -3,10 +3,11 @@ open Swensen.NL
 open Microsoft.FSharp.Text.Lexing
 
 module SyntaxStyle =
-    let [<Literal>] Default = 0
-    let [<Literal>] Keyword = 1
-    let [<Literal>] TextLiteral = 2
-    let [<Literal>] NumericLiteral = 3
+    let [<Literal>] Comments = 0
+    let [<Literal>] OtherTokens = 1
+    let [<Literal>] Keyword = 2
+    let [<Literal>] TextLiteral = 3
+    let [<Literal>] NumericLiteral = 4
 
 ///Code editor services for e.g. syntax highlighting a range of text.
 module CodeEditorService =
@@ -55,7 +56,7 @@ module CodeEditorService =
                 | Parser.token.UINT64 _
                     -> yield curRange(), SyntaxStyle.NumericLiteral
                 | _ 
-                    -> yield curRange(), SyntaxStyle.Default
+                    -> yield curRange(), SyntaxStyle.OtherTokens
         }
 
 
