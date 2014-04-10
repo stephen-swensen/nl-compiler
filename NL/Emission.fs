@@ -64,6 +64,8 @@ let emit optimize (il:SmartILGenerator) ilExpr =
             let local = il.ILGenerator.DeclareLocal(assign.Type) //can't use local.SetLocalSymInfo(id) in dynamic assemblies / methods
             setLocalVar local assign
             emitWith loopLabel (Map.add name local lenv) body
+        | VarGet("this", _) ->
+            il.Emit(OpCodes.Ldarg_0) //todo make part of smartilgen
         | VarGet(name, _) ->
             let local = lenv |> Map.find name
             il.Ldloc(local)

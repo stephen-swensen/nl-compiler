@@ -914,7 +914,7 @@ let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName next
                         ILExpr.StaticFieldSet(fi,x)
                     else
                         x
-                let ilStmt = ILStmt.TypeDef(tyBuilder, [tyInitExpr])
+                let ilStmt = ILStmt.TypeDef(tyBuilder, [tyInitExpr], [])
                 let env = env.ConsType(tyBuilder).ConsTypeBuilderManager(tbm)
                 loop env synStmts (ilStmt::ilStmts)                
             | SynStmt.Let(name, (assign,assignPos)) when env.IsAnalysisOnly ->
@@ -933,7 +933,7 @@ let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName next
                 let fi = tyBuilder.DefineField(name, assign.Type, topLevelFieldAttrs)
                 tbm.AddField(fi)
                 let tyInitExpr = ILExpr.StaticFieldSet(fi,assign)
-                let ilStmt = ILStmt.TypeDef(tyBuilder, [tyInitExpr])
+                let ilStmt = ILStmt.TypeDef(tyBuilder, [tyInitExpr], [])
                 let env = env.ConsType(tyBuilder).ConsTypeBuilderManager(tbm)
                 loop env synStmts (ilStmt::ilStmts)
             | SynStmt.OpenAssembly(name, pos) ->
@@ -956,6 +956,43 @@ let semantStmtsWith env stmts (mbuilder:ModuleBuilder) nextTopLevelTypeName next
                     | None ->
                         CM.Namespace_or_type_not_found nsOrTy.Pos nsOrTy.Name (sprintAssemblies env.Assemblies)
                         loop env synStmts ilStmts //error recovery
+            | SynStmt.TypeDef(name, istmts) when env.IsAnalysisOnly ->
+                loop env synStmts ilStmts                
+            | SynStmt.TypeDef(name, istmts) ->
+                let tyBuilder = mbuilder.DefineType(name, TypeAttributes.Public)
+                let tbm = TypeBuilderManager(tyBuilder)
+                let env = env.ConsType(tyBuilder).ConsTypeBuilderManager(tbm)
+                
+                //declare the members
+                let decs =
+                    istmts
+                    |> List.map (function
+                        | SynTypeDefStmt.MemberDef(name, tySig, assign)-> 
+                            let ty = resolveTySig env tySig
+                            if isVoidOrEscapeTy ty then
+                                CM.Void_invalid_in_let_binding tySig.Pos //TODO: make field specific message
+                                abort()
+                            let fi = tyBuilder.DefineField(name, ty, FieldAttributes.Public)
+                            tbm.AddField(fi)
+                            fi, assign) //cur only support field types, can expand to other members with DU
+
+                //todo: may need an formal representation of "this" for optimizations
+                //semant the istms and collect the ty inits
+                let objinitExprs = 
+                    decs
+                    |> List.map (function
+                        | (fi:FieldBuilder,(assign,assignPos)) ->
+                            let env = env.ConsVariable("this", tbm.Type)
+                            let assign = semantExprWith env assign
+                            if assign.Type <> fi.FieldType then
+                                CM.Member_def_type_mismatch assignPos name fi.FieldType.Name assign.Type.Name
+                            let objinitExpr = ILExpr.InstanceFieldSet(ILExpr.VarGet("this", tbm.Type), fi,assign)
+                            objinitExpr
+                        )
+                
+                let ilStmt = ILStmt.TypeDef(tyBuilder, [], objinitExprs)
+                loop env synStmts (ilStmt::ilStmts)
+                
     try
         loop env xl []
     with CompilerInterruptException ->

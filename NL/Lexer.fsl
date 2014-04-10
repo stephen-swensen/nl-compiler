@@ -33,6 +33,7 @@ let keywords =
         "try", TRY
         "catch", CATCH
         "finally", FINALLY
+        "static", STATIC
     ] |> Map.ofList
 }
 

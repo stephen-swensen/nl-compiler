@@ -218,5 +218,5 @@ type ILExpr =
 
 ///represents a top level statement
 type ILStmt =
-    | TypeDef of System.Reflection.Emit.TypeBuilder * tyinit:ILExpr list
+    | TypeDef of System.Reflection.Emit.TypeBuilder * tyinit:ILExpr list * objinit:ILExpr list
     | Error
