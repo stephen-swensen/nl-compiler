@@ -109,7 +109,7 @@ module CompilerMessages =
     let Double_literal_out_of_range pos = 
         mk MessageLevel.Error MessageType.Semantic 27 pos "'System.Double' literal must be between %f and %f but is %s" Double.MinValue Double.MaxValue
 
-    let Invalid_pathifier pos = 
+    let Invalid_path pos = 
         mk MessageLevel.Error MessageType.Semantic 28 pos "Path '%s' cannot contain any '%s' characters"
 
     let Instance_field_or_property_not_found pos = 
@@ -180,3 +180,6 @@ module CompilerMessages =
 
     let Parse_error pos =
         mk MessageLevel.Error MessageType.Syntactic 53 pos "Parse error: possible missing or extra syntactic element such as ',' or ';;'"
+
+    let Member_def_type_mismatch pos =
+        mk MessageLevel.Error MessageType.Semantic 54 pos "Type mismatch: member '%s' of type '%s' cannot be assigned a value of the incompatible type '%s'"

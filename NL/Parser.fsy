@@ -49,6 +49,7 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 %token CHECKED UNCHECKED
 %token THROW RETHROW
 %token TRY CATCH FINALLY
+%token STATIC
 
 %right SEMICOLON
 %nonassoc SET
@@ -77,6 +78,9 @@ let range (parseState:IParseState) rangeStart rangeEnd =
 
 %type <SynStmt> stmt
 %type <SynStmt list> stmtList
+
+%type <SynTypeDefStmt> tyDefStmt
+%type <SynTypeDefStmt list> tyDefStmtList
 
 %type <TySig> tySig
 %type <TySig list> tySigList
@@ -327,6 +331,11 @@ stmtList:
     | stmt DOUBLE_SEMICOLON stmtList { $1::$3 }
 
 stmt:
+    //type definition
+    | TYPE path LBRACE tyDefStmtList RBRACE
+        {
+            SynStmt.TypeDef($2.Text, $4)
+        }
     //open namespace
     | OPEN tySig
         { SynStmt.OpenNamespaceOrType($2) }
@@ -339,10 +348,33 @@ stmt:
     | path EQ expr
         { 
             if $1.Length > 1 then
-                CM.Invalid_pathifier (range parseState 1 1) ($1.Text) "."
+                CM.Invalid_path (range parseState 1 1) ($1.Text) "."
 
             SynStmt.Let($1.Text, ($3, range parseState 3 3))
         }
-
+//    | tyDef { $1 }
     | expr
         { SynStmt.Do($1) }
+
+tyDefStmtList:
+    | tyDefStmt { [$1] }
+    | tyDefStmt DOUBLE_SEMICOLON { [$1] }
+    | tyDefStmt DOUBLE_SEMICOLON tyDefStmtList { $1::$3 }
+
+tyDefStmt:
+    | path LBRACKET tySig RBRACKET EQ expr
+        { 
+            if $1.Length > 1 then
+                CM.Invalid_path (range parseState 1 1) ($1.Text) "."
+
+            SynTypeDefStmt.MemberDef($1.Text, $3, ($6, range parseState 6 6))
+        }
+
+//    | expr
+//        { SynTypeDefStmt.Do($1) }
+
+//tyDef:
+//    | path EQ TYPE RBRACE tyDefStmtList LBRACE
+        {
+            SynStmt.TypeDef($1.Text, $5)
+        }

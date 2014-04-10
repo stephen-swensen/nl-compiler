@@ -238,8 +238,12 @@ type SynExpr =
     ///try * catch list * finally option * pos
     | TryCatchFinally of SynExpr * (((TySig option) * (String option) * SynExpr * PositionRange) list) * (SynExpr option) * PositionRange
 
+type SynTypeDefStmt =
+    | MemberDef of string * TySig * (SynExpr * PositionRange)
+
 type SynStmt =
     | Let of string * (SynExpr * PositionRange)
     | OpenNamespaceOrType of TySig
     | OpenAssembly of string * PositionRange
     | Do of SynExpr
+    | TypeDef of string * (SynTypeDefStmt list)

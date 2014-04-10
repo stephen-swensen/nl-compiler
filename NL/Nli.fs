@@ -25,12 +25,12 @@ type NliSubmitResults = { HasErrors:bool; Variables: NliVariable list; Messages:
 ///The NL interactive
 type Nli(?options: CompilerOptions) as this = 
     let options = defaultArg options CompilerOptions.Default
-    let mutable env = options.SemanticEnvironment
     let mutable vars = Map.empty : Map<string,NliVariable>
 
     let asmName = "NLI-ASSEMBLY"
     let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
     let modBuilder = asmBuilder.DefineDynamicModule(asmName)
+    let mutable env = options.SemanticEnvironment.ConsAssembly(asmBuilder)
 
     let nextTopLevelTypeName = 
         let count = ref -1
@@ -56,13 +56,25 @@ type Nli(?options: CompilerOptions) as this =
                 //generate and collect all types used for top-level bindings
                 let tys = ilStmts |> List.map (fun ilStmt -> 
                     match ilStmt with
-                    | ILStmt.TypeDef(tyBuilder, tyinit) ->
-                        let tyInitBuilder = tyBuilder.DefineTypeInitializer()
-                        let ilgen = tyInitBuilder.GetILGenerator() |> SmartILGenerator.fromILGenerator
-                        let emit = Emission.emit options.Optimize ilgen
-                        for tyinitExpr in tyinit do
-                            emit tyinitExpr
-                        ilgen.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
+                    | ILStmt.TypeDef(tyBuilder, tyinit, objinit) ->
+                        //ty init
+                        do
+                            let tyInitBuilder = tyBuilder.DefineTypeInitializer()
+                            let ilgen = tyInitBuilder.GetILGenerator() |> SmartILGenerator.fromILGenerator
+                            let emit = Emission.emit options.Optimize ilgen
+                            for tyinitExpr in tyinit do
+                                emit tyinitExpr
+                            ilgen.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
+
+                        //obj init
+                        do 
+                            let tyCtorBuilder = tyBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [||])
+                            let ilgen = tyCtorBuilder.GetILGenerator() |> SmartILGenerator.fromILGenerator
+                            let emit = Emission.emit options.Optimize ilgen
+                            for objinitExpr in objinit do
+                                emit objinitExpr
+                            ilgen.Emit(OpCodes.Ret) 
+
                         let ty = tyBuilder.CreateType()
                         ty
                     | ILStmt.Error -> 
