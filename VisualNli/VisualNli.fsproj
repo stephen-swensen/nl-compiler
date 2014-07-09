@@ -70,7 +70,20 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsEye">
-      <HintPath>..\lib\FsEye\FsEye.dll</HintPath>
+      <HintPath>..\packages\FsEye.2.1.0\lib\net40\FsEye.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FsEye.DataGridView.Plugin">
+      <HintPath>..\packages\FsEye.2.1.0\lib\net40\plugins\FsEye.DataGridView.Plugin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FsEye.PropertyGrid.Plugin">
+      <HintPath>..\packages\FsEye.2.1.0\lib\net40\plugins\FsEye.PropertyGrid.Plugin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FsEye.TreeView.Plugin">
+      <HintPath>..\packages\FsEye.2.1.0\lib\net40\plugins\FsEye.TreeView.Plugin.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
