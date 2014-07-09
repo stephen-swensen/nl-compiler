@@ -67,6 +67,10 @@
     <Compile Include="NliForm.fs" />
     <Compile Include="Program.fs" />
     <None Include="packages.config" />
+    <None Include="..\lib\scintilla\SciLexer.dll">
+      <Link>SciLexer.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsEye">
