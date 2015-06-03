@@ -19,7 +19,7 @@ let consoleSink = new BasicMessageSink(true)
 //all these ASTs would be tedious to say the least. we can use code coverage analysis tools like NCover to give us 
 //more confidence that we are indeed following all paths).
 
-///used with xunit Theory and PropertyData for some exhaustive repitive tests on constants folding under operators.
+///used with xunit Theory and PropertyData for some exhaustive repetitive tests on constants folding under operators.
 let numericConstantFoldingSuffixes =
     [
         "y"
