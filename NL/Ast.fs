@@ -2,7 +2,6 @@
 module Swensen.NL.Ast
 
 open System
-open Microsoft.FSharp.Text.Lexing
 
 type SynNumericBinop = Plus | Minus | Times | Div
     with

@@ -5,7 +5,6 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 
-open Microsoft.FSharp.Text.Lexing
 open Lexer
 open Parser
 open System.Text.RegularExpressions

@@ -1,6 +1,6 @@
 ﻿%{
 
-open Microsoft.FSharp.Text.Parsing
+open FSharp.Text.Parsing
 open Swensen.NL
 open Swensen.NL.Ast
 open System

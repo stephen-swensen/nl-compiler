@@ -1,7 +1,7 @@
 ﻿namespace Swensen.NL
 
 open System
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 
 type PositionRange(posStart:Position, posEnd:Position) =
     static member Empty = PositionRange(Position.Empty, Position.Empty)

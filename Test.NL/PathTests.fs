@@ -6,7 +6,7 @@ open Swensen.NL
 open System.Collections.Generic
 open System
 open Ast
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 
 open Evaluation
 

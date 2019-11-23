@@ -5,7 +5,7 @@ open Swensen.NL
 open Swensen.NL.Ail
 open Swensen.NL.Ast
 
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 open Lexer
 open Parser
 
