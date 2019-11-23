@@ -94,8 +94,8 @@
       <HintPath>..\packages\FSharp.Core.4.7.0\lib\net45\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FsLexYacc.Runtime">
-      <HintPath>..\packages\FsLexYacc.6.0.1\lib\net40\FsLexYacc.Runtime.dll</HintPath>
+    <Reference Include="FsLexYacc.Runtime, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\FsLexYacc.Runtime.10.0.0\lib\net46\FsLexYacc.Runtime.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
@@ -127,7 +127,13 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105.The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\FSharp.Compiler.Tools.10.2.3\build\FSharp.Compiler.Tools.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\FSharp.Compiler.Tools.10.2.3\build\FSharp.Compiler.Tools.props'))" />
+    <Error Condition="!Exists('..\packages\FsLexYacc.10.0.0\build\FsLexYacc.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\FsLexYacc.10.0.0\build\FsLexYacc.targets'))" />
+    <Error Condition="!Exists('..\packages\FsLexYacc.10.0.0\build\fsyacc\net46\FsLexYacc.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\FsLexYacc.10.0.0\build\fsyacc\net46\FsLexYacc.targets'))" />
+    <Error Condition="!Exists('..\packages\FsLexYacc.10.0.0\build\fsyacc\netcoreapp3.0\FsLexYacc.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\FsLexYacc.10.0.0\build\fsyacc\netcoreapp3.0\FsLexYacc.targets'))" />
   </Target>
+  <Import Project="..\packages\FsLexYacc.10.0.0\build\FsLexYacc.targets" Condition="Exists('..\packages\FsLexYacc.10.0.0\build\FsLexYacc.targets')" />
+  <Import Project="..\packages\FsLexYacc.10.0.0\build\fsyacc\net46\FsLexYacc.targets" Condition="Exists('..\packages\FsLexYacc.10.0.0\build\fsyacc\net46\FsLexYacc.targets')" />
+  <Import Project="..\packages\FsLexYacc.10.0.0\build\fsyacc\netcoreapp3.0\FsLexYacc.targets" Condition="Exists('..\packages\FsLexYacc.10.0.0\build\fsyacc\netcoreapp3.0\FsLexYacc.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
