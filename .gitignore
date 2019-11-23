@@ -2,3 +2,7 @@
 bin
 obj
 packages
+Lexer.fs
+Parser.fs
+Parser.fsi
+Parser.fsyacc.output
