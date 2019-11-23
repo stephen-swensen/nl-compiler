@@ -44,7 +44,7 @@ type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:Messa
                 | 2 -> "00"
                 | 3 -> "0"
                 | 4 -> ""
-                | _ -> failwith "error code out of range: %i" msgCode
+                | _ -> failwithf "error code out of range: %i" msgCode
             sprintf "NL%s%i" leadingZeros msgCode
     
     #if DEBUG

@@ -10,7 +10,7 @@ open Microsoft.FSharp.Text.Lexing
 open Lexer
 open Parser
 
-type EL = MessageLogger
+type internal EL = MessageLogger
 
 open Compilation
 

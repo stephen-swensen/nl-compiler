@@ -10,7 +10,7 @@ open Lexer
 open Parser
 open System.Text.RegularExpressions
 
-type EL = MessageLogger
+type internal EL = MessageLogger
 
 type NliVariable(fi:FieldInfo) =
     ///The underlying static field info where the nli variable is stored

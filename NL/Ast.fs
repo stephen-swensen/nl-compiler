@@ -66,7 +66,7 @@ type SynComparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
 type Path(parts:(string * PositionRange) seq) =
     do
         if parts = null then
-            nullArg "parts" "must not be null"
+            nullArg "parts"
 
         if parts |> Seq.isEmpty then
             invalidArg "parts" "must not be empty"
