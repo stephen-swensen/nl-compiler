@@ -1,2 +1,6 @@
 **/bin
 **/obj
+
+NL/Lexer.fs
+NL/Parser.fs
+NL/Parser.fsi
