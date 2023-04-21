@@ -2,7 +2,7 @@
 module Swensen.NL.Ast
 
 open System
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 
 type SynNumericBinop = Plus | Minus | Times | Div
     with
@@ -21,7 +21,7 @@ type SynNumericBinop = Plus | Minus | Times | Div
             | Minus -> "-"
             | Times -> "*"
             | Div -> "/"
-        
+
         ///Call the F# analog to this operator on the operands (used for constants folding during optimization)
         member inline x.Call(lhs:'a,rhs:'a):'a =
             let fsop =
@@ -66,7 +66,7 @@ type SynComparisonBinop = Eq | Lt | Gt | LtEq | GtEq | Neq
 type Path(parts:(string * PositionRange) seq) =
     do
         if parts = null then
-            nullArg "parts" "must not be null"
+            nullArg "parts"
 
         if parts |> Seq.isEmpty then
             invalidArg "parts" "must not be empty"
@@ -85,16 +85,16 @@ type Path(parts:(string * PositionRange) seq) =
     member this.Parts = parts |> Seq.readonly
     member this.Text = parts |> Seq.map fst |> String.concat "."
     override this.ToString() = this.Text
-    
+
     new(part:string, pos:PositionRange) = Path(Seq.singleton (part,pos))
     new(single:string * PositionRange) = Path(Seq.singleton single)
 
-    new(path:Path, last:string*PositionRange) = Path(seq { yield! path.Parts ; yield last }) 
+    new(path:Path, last:string*PositionRange) = Path(seq { yield! path.Parts ; yield last })
     new(first:string*PositionRange, path:Path) = Path(seq { yield first ; yield! path.Parts })
 
     static member op_Addition(path:Path, last:string * PositionRange) = Path(path, last)
     static member op_Addition(first:string*PositionRange, path:Path) = Path(first, path)
-        
+
     ///e.g. "a.b.c" -> "a.b". May be empty string if Path only contains one part (e.g. "a" -> "")
     member this.LeadingPartsText =
         if this.IsSinglePart then ""
@@ -127,23 +127,23 @@ type Path(parts:(string * PositionRange) seq) =
             let lastIndex = parts.Length-1
             for i in 0..lastIndex do
                 let remaining =
-                    if i = lastIndex then 
-                        None 
-                    else 
+                    if i = lastIndex then
+                        None
+                    else
                         Some(Path(parts.[i+1..lastIndex]))
-                
+
                 yield Path(parts.[0..i]), remaining
         }
 
     override this.Equals(other:obj) =
         match other with
-        | :? Path as other -> 
+        | :? Path as other ->
             parts = (other.Parts |> Seq.toArray)
         | _ -> false
 
     override this.GetHashCode() =
         this.Text.GetHashCode()
-        
+
 
 type TySig(genericName:string, genericArgs: TySig list, pos:PositionRange) =
     do
@@ -153,7 +153,7 @@ type TySig(genericName:string, genericArgs: TySig list, pos:PositionRange) =
     new (genericName:string, pos) = TySig(genericName,[], pos)
     new (genericName:Path, genericArgs, pos) = TySig(genericName.Text, genericArgs, pos)
     new (genericName:Path, pos) = TySig(genericName.Text,[], pos)
-    
+
     ///i.e. Dictionary in Dictionary<'T, 'R>
     member x.GenericName = genericName
     ///i.e. String and Int in Dictionary<String, Int>
@@ -171,12 +171,12 @@ type TySig with
     override x.ToString() =
         x.Name
 
-    
+
 //n.b. PositionRange convention is: 1) if position range applies to the entire expression,
 //     then it is the last element in the tupled case, 2) if position range applies to a pariticular
 //     sub-expression or token, then it is tupled with the subexpression or token
 ///Raw (untyped) parsed expression
-type SynExpr =    
+type SynExpr =
     //we do the actual parsing semantic analysis of the numeric const in SemanticAnalysis
     | SByte of string * PositionRange //y
     | Byte of string * PositionRange //uy
@@ -219,7 +219,7 @@ type SynExpr =
     ///discard left hand side, return right hand side
     | Sequential of SynExpr * (SynExpr * PositionRange)
     ///open a namespace or type
-    | OpenNamespaceOrType of TySig * SynExpr 
+    | OpenNamespaceOrType of TySig * SynExpr
     ///reference an assembly by name or dll path
     | OpenAssembly of (string * PositionRange) * SynExpr
     | LogicalNot of SynExpr * PositionRange

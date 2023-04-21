@@ -5,12 +5,12 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 open Lexer
 open Parser
 open System.Text.RegularExpressions
 
-type EL = MessageLogger
+type internal EL = MessageLogger
 
 type NliVariable(fi:FieldInfo) =
     ///The underlying static field info where the nli variable is stored
@@ -23,38 +23,38 @@ type NliVariable(fi:FieldInfo) =
 type NliSubmitResults = { HasErrors:bool; Variables: NliVariable list; Messages: CompilerMessage[] }
 
 ///The NL interactive
-type Nli(?options: CompilerOptions) as this = 
+type Nli(?options: CompilerOptions) as this =
     let options = defaultArg options CompilerOptions.Default
     let mutable vars = Map.empty : Map<string,NliVariable>
 
     let asmName = "NLI-ASSEMBLY"
-    let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
+    let asmBuilder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
     let modBuilder = asmBuilder.DefineDynamicModule(asmName)
     let mutable env = options.SemanticEnvironment.ConsAssembly(asmBuilder)
 
-    let nextTopLevelTypeName = 
+    let nextTopLevelTypeName =
         let count = ref -1
         fun () -> count := !count+1; sprintf "TOP_LEVEL%i" !count
 
-    let nextItName = 
+    let nextItName =
         let count = ref -1
         fun () -> count := !count+1; sprintf "it%i" !count
 
     let trySubmit code offset =
         let offset = defaultArg offset FrontEnd.DefaultOffset
         use sink = new BasicMessageSink(options.ConsoleLogging)
-        
+
         let ilStmts = FrontEnd.lexParseAndSemantStmtsWith offset env code modBuilder nextTopLevelTypeName nextItName
 
         if sink.HasErrors then
-            { HasErrors=true; Variables=[]; Messages=sink.GetMessages()} 
+            { HasErrors=true; Variables=[]; Messages=sink.GetMessages()}
         else
             let stmts = if options.Optimize then Optimization.optimizeStmts ilStmts else ilStmts
             if sink.HasErrors then
-                { HasErrors=true; Variables=[]; Messages=sink.GetMessages()} 
+                { HasErrors=true; Variables=[]; Messages=sink.GetMessages()}
             else
                 //generate and collect all types used for top-level bindings
-                let tys = ilStmts |> List.map (fun ilStmt -> 
+                let tys = ilStmts |> List.map (fun ilStmt ->
                     match ilStmt with
                     | ILStmt.TypeDef(tyBuilder, tyinit, objinit) ->
                         //ty init
@@ -67,19 +67,19 @@ type Nli(?options: CompilerOptions) as this =
                             ilgen.Emit(OpCodes.Ret) //got to remember the static constructor is a method too
 
                         //obj init
-                        do 
+                        do
                             let tyCtorBuilder = tyBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [||])
                             let ilgen = tyCtorBuilder.GetILGenerator() |> SmartILGenerator.fromILGenerator
                             let emit = Emission.emit options.Optimize ilgen
                             for objinitExpr in objinit do
                                 emit objinitExpr
-                            ilgen.Emit(OpCodes.Ret) 
+                            ilgen.Emit(OpCodes.Ret)
 
                         let ty = tyBuilder.CreateType()
                         ty
-                    | ILStmt.Error -> 
+                    | ILStmt.Error ->
                         failwith "Should not be emitting opcodes for an ilStmt with errors")
-                
+
                 //run and collect all return values, if any
                 let retval =
                     tys
@@ -89,22 +89,22 @@ type Nli(?options: CompilerOptions) as this =
                         //http://stackoverflow.com/a/4181676/236255
                         try
                             System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(ty.TypeHandle)
-                        with 
+                        with
                             | :? TypeInitializationException as ex when Regex.IsMatch(ex.Message, @"^The type initializer for 'TOP_LEVEL(\d+)' threw an exception.$") && ex.InnerException <> null ->
                                 raise ex.InnerException
                         let fields = ty.GetFields(BindingFlags.Static ||| BindingFlags.Public)
                         match fields.Length with
                         | 0 -> None
-                        | 1 -> 
+                        | 1 ->
                             env <- env.ConsType(ty)
-                            let field = fields.[0] 
+                            let field = fields.[0]
                             let nv = NliVariable(field)
                             vars <- vars |> Map.add nv.Name nv
                             Some(nv)
                         | _ -> failwith "Unexpected number of fields in TOP_LEVEL type"
                     ) |> Seq.toList
-                
-                { HasErrors=false; Variables=retval; Messages=sink.GetMessages()} 
+
+                { HasErrors=false; Variables=retval; Messages=sink.GetMessages()}
 
     let submit code =
         match trySubmit code None with

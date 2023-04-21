@@ -1,7 +1,7 @@
 ﻿namespace Swensen.NL
 
 open System
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 open System.Diagnostics
 
 type MessageLevel =
@@ -44,15 +44,15 @@ type CompilerMessage(msgRange:PositionRange, msgType:MessageType, msgLevel:Messa
                 | 2 -> "00"
                 | 3 -> "0"
                 | 4 -> ""
-                | _ -> failwith "error code out of range: %i" msgCode
+                | _ -> failwithf "error code out of range: %i" msgCode
             sprintf "NL%s%i" leadingZeros msgCode
-    
+
     #if DEBUG
     member __.StackTrace = stackTrace
     #endif
 
     override this.ToString() =
-        let posMsg = 
+        let posMsg =
             if msgRange.StartLine = msgRange.EndLine && msgRange.StartColumn = msgRange.EndColumn then
                 sprintf "at (%i,%i)" msgRange.StartLine msgRange.StartColumn
             else

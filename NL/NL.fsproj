@@ -20,4 +20,32 @@
       <OtherFlags>--module Swensen.NL.Parser</OtherFlags>
     </FsYacc>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Prelude.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="PositionRange.fs" />
+    <Compile Include="CompilerMessage.fs" />
+    <Compile Include="MessageLogging.fs" />
+    <Compile Include="CompilerMessages.fs" />
+    <Compile Include="Ast.fs" />
+    <Compile Include="Parser.fs" />
+    <Compile Include="Lexer.fs" />
+    <Compile Include="TypeManagers.fs" />
+    <Compile Include="Ail.fs" />
+    <Compile Include="NumericPrimitive.fs" />
+    <Compile Include="SemanticEnvironment.fs" />
+    <Compile Include="SemanticAnalysis.fs" />
+    <Compile Include="Optimization.fs" />
+    <Compile Include="SmartILGenerator.fs" />
+    <Compile Include="Emission.fs" />
+    <Compile Include="CompilerOptions.fs" />
+    <Compile Include="FrontEnd.fs" />
+    <Compile Include="CompilerServiceExceptions.fs" />
+    <Compile Include="Compilation.fs" />
+    <Compile Include="Nli.fs" />
+    <Compile Include="Evaluation.fs" />
+    <Compile Include="NlPrelude.fs" />
+    <None Include="Script.fsx" />
+  </ItemGroup>
 </Project>

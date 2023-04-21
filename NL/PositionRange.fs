@@ -1,7 +1,7 @@
 ﻿namespace Swensen.NL
 
 open System
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 
 type PositionRange(posStart:Position, posEnd:Position) =
     static member Empty = PositionRange(Position.Empty, Position.Empty)
@@ -14,8 +14,8 @@ type PositionRange(posStart:Position, posEnd:Position) =
     member __.FileName = posStart.FileName
     member __.Start = posStart
     member __.End = posEnd
-    new(posRangeStart:PositionRange, posRangeEnd:PositionRange) = 
-        new PositionRange(posRangeStart.Start, posRangeEnd.End)    
+    new(posRangeStart:PositionRange, posRangeEnd:PositionRange) =
+        new PositionRange(posRangeStart.Start, posRangeEnd.End)
 
     override this.Equals(other:obj) =
         match other with
