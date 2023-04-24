@@ -1,5 +1,4 @@
-﻿
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Test.AssemblyResolveTarget</RootNamespace>
@@ -7,3 +6,4 @@
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 </Project>
+
