@@ -6,7 +6,7 @@ open Swensen.NL
 open System.Collections.Generic
 open System
 open Ast
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 
 open Evaluation
 
@@ -14,13 +14,17 @@ let range (xln,xcol) (yln,ycol) =
     let xpos = { pos_bol = 0
                  pos_fname = ""
                  pos_cnum = xcol
-                 pos_lnum = xln }
+                 pos_lnum = xln
+                 //TODO
+                 pos_orig_lnum = xln }
 
     let ypos = { pos_bol = 0
                  pos_fname = ""
                  pos_cnum = ycol
-                 pos_lnum = yln }
-    
+                 pos_lnum = yln
+                 //TODO
+                 pos_orig_lnum = yln }
+
     PositionRange(xpos,ypos)
 
 let pos:PositionRange = range (1,0) (1,1)
@@ -44,7 +48,7 @@ let ``single part equals`` () =
 let ``multi part equals`` () =
     let p1 = Path(multiPartPathSeq)
     let p2 = Path(multiPartPathSeq)
-    
+
     test <@ p1.Equals(p2) @>
     test <@ p1 = p2 @>
 

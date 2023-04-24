@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Helpers", "Test.Helpers\Test.Helpers.csproj", "{7AAF2FAE-D6D5-4840-BE98-1D468B4935EB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.AssemblyResolveTarget", "Test.AssemblyResolveTarget\Test.AssemblyResolveTarget.csproj", "{0D60211A-D800-4F6E-B5EB-1D6CA456C921}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.NL", "Test.NL\Test.NL.fsproj", "{8B86BD23-CA08-47C3-853C-1EDF64240070}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,5 +38,9 @@ Global
 		{0D60211A-D800-4F6E-B5EB-1D6CA456C921}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D60211A-D800-4F6E-B5EB-1D6CA456C921}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0D60211A-D800-4F6E-B5EB-1D6CA456C921}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B86BD23-CA08-47C3-853C-1EDF64240070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B86BD23-CA08-47C3-853C-1EDF64240070}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B86BD23-CA08-47C3-853C-1EDF64240070}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B86BD23-CA08-47C3-853C-1EDF64240070}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

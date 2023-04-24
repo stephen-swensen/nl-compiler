@@ -14,12 +14,12 @@ open System
 //so that we see error details in console output while doing parse operations which don't install their own error loggers
 let consoleSink = new BasicMessageSink(true)
 
-//N.B. we use lexParseAndSemant to obtain a ILExpr tree for convienence and readability, but we are really only testing 
+//N.B. we use lexParseAndSemant to obtain a ILExpr tree for convienence and readability, but we are really only testing
 //ILExpr -> ILExpr transformations for optimization. (this does make me a little nervous, of course, but hand constructing
-//all these ASTs would be tedious to say the least. we can use code coverage analysis tools like NCover to give us 
+//all these ASTs would be tedious to say the least. we can use code coverage analysis tools like NCover to give us
 //more confidence that we are indeed following all paths).
 
-///used with xunit Theory and PropertyData for some exhaustive repetitive tests on constants folding under operators.
+///used with xunit Theory and MemberData for some exhaustive repetitive tests on constants folding under operators.
 let numericConstantFoldingSuffixes =
     [
         "y"
@@ -104,7 +104,7 @@ let ``static call sub expressions optimized`` () =
 let ``condition is optimized but doesn't result in whole if then else being optimized away`` () =
     test <@ FrontEnd.lexParseAndSemantExpr "if (true || true).getType() == type[boolean] { true } else { false }" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "if true.getType() == type[boolean] { true } else { false }" @>
 
-[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+[<Theory;MemberData("numericConstantFoldingSuffixes")>]
 let ``numeric literal constants folding`` (suffix:string) =
     let input = System.String.Format("((2{0} * 3{0}) + 45{0}) - (24{0} / 2{0})", suffix)
     let outcome = sprintf "39%s" suffix
@@ -130,34 +130,34 @@ let ``coersion subexpression doesn't fold but is optimized`` () =
 let ``constants folding with optimized implicit int to double coersion`` () =
     test <@ FrontEnd.lexParseAndSemantExpr "2 + 3.0" |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "5.0" @>
 
-[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+[<Theory;MemberData("numericConstantFoldingSuffixes")>]
 let ``numeric literal equals comparison constants folding true`` (suffix:string) =
     let input = String.Format("2{0} == 2{0}", suffix)
     test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
-[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+[<Theory;MemberData("numericConstantFoldingSuffixes")>]
 let ``numeric literal equals comparison constants folding false`` (suffix:string) =
     let input = String.Format("2{0} == 3{0}", suffix)
     test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
 //don't need to do != this cases since they are logical not (!) optimization
 
-[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+[<Theory;MemberData("numericConstantFoldingSuffixes")>]
 let ``numeric literal less than comparison constants folding true`` (suffix:string) =
     let input = String.Format("2{0} < 3{0}", suffix)
     test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
-[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+[<Theory;MemberData("numericConstantFoldingSuffixes")>]
 let ``numeric literal less than comparison constants folding false`` (suffix:string) =
     let input = String.Format("3{0} < 2{0}", suffix)
     test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
 
-[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+[<Theory;MemberData("numericConstantFoldingSuffixes")>]
 let ``numeric literal greater than comparison constants folding true`` (suffix:string) =
     let input = String.Format("2{0} > 1{0}", suffix)
     test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "true" @>
 
-[<Theory;PropertyData("numericConstantFoldingSuffixes")>]
+[<Theory;MemberData("numericConstantFoldingSuffixes")>]
 let ``numeric literal greater than comparison constants folding false`` (suffix:string) =
     let input = String.Format("1{0} > 2{0}", suffix)
     test <@ FrontEnd.lexParseAndSemantExpr input |> O.optimizeExpr = FrontEnd.lexParseAndSemantExpr "false" @>
@@ -300,7 +300,7 @@ let ``varset assign is optimized`` () =
 let ``can't optimize Error case`` () =
     raises<exn> <@ ILExpr.Error(typeof<System.Boolean>) |> O.optimizeExpr @>
 
-[<Theory;PropertyData("numericDefaultTypeNamesAndSuffixes")>]
+[<Theory;MemberData("numericDefaultTypeNamesAndSuffixes")>]
 let ``default numeric primitive is optimized to its constant`` (tyName:string) (suffix:string) =
     let input = sprintf "default[%s]" tyName
     let expected = sprintf "0%s" suffix

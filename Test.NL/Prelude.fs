@@ -15,12 +15,12 @@ let OpenNamespaceOrType = "open Tests in "
 ///prefix used to reference this assembly and this namespace in dynamic NL tests
 let openPrefix = openAsm + OpenNamespaceOrType
 
-let expectedErrors codes = 
+let expectedErrors codes =
     fun (e:CompilerServiceException) ->
         let errors = e.Errors |> Seq.toArray
         <@ errors |> Array.map (fun err -> err.Code) = codes @>
 
-let expectedWarnings codes (actualWarnings:CompilerMessage seq) = 
+let expectedWarnings codes (actualWarnings:CompilerMessage seq) =
     let actualWarnings = actualWarnings |> Seq.toArray
     <@ actualWarnings |> Array.map (fun msg -> msg.Code) = codes @>
 
@@ -29,20 +29,19 @@ let mkTestModBuilder =
     fun () ->
         cnt := !cnt + 1
         let asmName = sprintf "TEST-ASSEMBLY-%i" !cnt
-        let asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
+        let asmBuilder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName(Name=asmName), AssemblyBuilderAccess.RunAndCollect)
         let modBuilder = asmBuilder.DefineDynamicModule(asmName)
         modBuilder
 
-let nextTopLevelTypeName = 
+let nextTopLevelTypeName =
     let count = ref -1
     fun () -> count := !count+1; "TOP_LEVEL" + (!count).ToString()
 
-let nextItName = 
+let nextItName =
     let count = ref -1
     fun () -> count := !count+1; "it" + (!count).ToString()
 
 //let lexParseAndSemant code = FrontEnd.lexParseAndSemantStmts code (mkTestModBuilder()) nextTopLevelTypeName nextItName
-//let expectedMessages codes = 
+//let expectedMessages codes =
 //    let messages = MessageLogger.ActiveLogger.GetMessages()
 //    <@ messages |> Array.map (fun msg -> msg.Code) = codes @>
-
