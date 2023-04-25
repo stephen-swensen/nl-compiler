@@ -8,7 +8,7 @@ open Evaluation
 
 [<Theory;EvalData>]
 let ``ref relative path dll`` options =
-    test <@ evalWith<obj> options "open \"xunit.dll\" in Xunit.Record()" :? Xunit.Record @>
+    test <@ evalWith<obj> options "open \"xunit.core.dll\" in Xunit.Record()" :? Xunit.Record @>
 
 [<Theory;EvalData>]
 let ``open assembly display name`` options =
@@ -25,4 +25,4 @@ let ``connot resolve assembly`` options =
 [<Theory;EvalData>]
 let ``get type from assembly that is not referenced in this assembly`` options =
     //for this to work do not want to copy the dll to the output directory
-    test <@ evalWith<obj> options "open @\"..\\..\\Test.AssemblyResolveTarget.dll\" in Test.AssemblyResolveTarget.Class1()" <> null @>
+    test <@ evalWith<obj> options "open @\"..\\..\\..\\Test.AssemblyResolveTarget.dll\" in Test.AssemblyResolveTarget.Class1()" <> null @>
