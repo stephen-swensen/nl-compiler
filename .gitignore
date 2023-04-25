@@ -6,3 +6,5 @@ NL/Parser.fs
 NL/Parser.fsi
 
 .fake
+
+**/TestResults
