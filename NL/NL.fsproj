@@ -29,7 +29,9 @@
     <Compile Include="MessageLogging.fs" />
     <Compile Include="CompilerMessages.fs" />
     <Compile Include="Ast.fs" />
+    <None Include="Parser.fsy" />
     <Compile Include="Parser.fs" />
+    <None Include="Lexer.fsl" />
     <Compile Include="Lexer.fs" />
     <Compile Include="TypeManagers.fs" />
     <Compile Include="Ail.fs" />
