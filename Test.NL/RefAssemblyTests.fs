@@ -12,11 +12,11 @@ let ``ref relative path dll`` options =
 
 [<Theory;EvalData>]
 let ``open assembly display name`` options =
-    test <@ evalWith options "open @\"System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\" in open System.Web.Mail in SmtpMail.get_SmtpServer()" = "" @>
+    test <@ evalWith options "open @\"System.Net.Mail, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51\" in open System.Net.Mail in MailMessage().get_From()" = null @>
 
 [<Theory;EvalData>]
 let ``connot resolve assembly`` options =
-    raisesWith 
+    raisesWith
         <@ evalWith options "open @\"not an assembly\" in ()" @>
         (expectedErrors [|19|])
 
