@@ -420,14 +420,16 @@ module NumericParsing =
 
     let parseSingle input pos =
         match System.Single.TryParse(input:string) with
-        | true, value -> ILExpr.Single(value)
+        | true, value when value <> Single.PositiveInfinity && value <> Single.NegativeInfinity ->
+            ILExpr.Single(value)
         | _ ->
             CM.Single_literal_out_of_range pos input
             ILExpr.Single(0.0f) //error recovery
 
     let parseDouble input pos =
         match System.Double.TryParse(input:string) with
-        | true, value -> ILExpr.Double(value)
+        | true, value when value <> Double.PositiveInfinity && value <> Double.NegativeInfinity ->
+            ILExpr.Double(value)
         | _ ->
             CM.Double_literal_out_of_range pos input
             ILExpr.Double(0.0) //error recovery
