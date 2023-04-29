@@ -9,7 +9,7 @@ type NVT =
     | Type of Type
 
 ///Environmental context passed to each recursive expression process during semantic analysis
-type SemanticEnvironment = 
+type SemanticEnvironment =
     {
         ///Indicates that the current expression is inside a finally body of the current exception handler
         IsFinallyBodyOfCurrentExceptionHandler: bool
@@ -31,18 +31,22 @@ type SemanticEnvironment =
     }
 
 [<RequireQualifiedAccess>]
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>] 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module SemanticEnvironment =
     ///The "empty" semantic environment
     let Empty = { IsAnalysisOnly=false; TypeBuilderManagers=Map.empty; IsFinallyBodyOfCurrentExceptionHandler=false; IsCatchBody=false; Checked=false; IsLoopBody=false; Assemblies=[]; NVTs=[] }
     ///The "default" / initial semantic environment
     let Default =
-        { Empty with 
+        { Empty with
             Assemblies=
-                (["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                  "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                  "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                  "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"] |> List.map Assembly.Load)
+                (["System.Private.CoreLib"
+                  "System.Core"
+                  "System.Console"
+                  "System.Runtime"
+                  "System.Runtime.Extensions"
+                  "System.Linq"
+                  "System.Collections"
+                  "System.Numerics"] |> List.map Assembly.Load)
                  @ [System.Reflection.Assembly.GetExecutingAssembly()]
             NVTs= //assuming that none of these namespaces have any colliding types (i.e. order doesn't matter here as far as possible shadowing)!
                 (["" //n.b. System.Type.GetType(".system.string",false,true) IS valid (the leading ".", that is)
@@ -52,30 +56,30 @@ module SemanticEnvironment =
                 @ [Type(Type.GetType("Swensen.NL.NlPrelude"))]}
 
 type SemanticEnvironment with
-    member this.Namespaces = 
-        this.NVTs 
+    member this.Namespaces =
+        this.NVTs
         |> Seq.choose (function NVT.Namespace(ns) -> Some(ns) | _ -> None)
-    
-    member this.Variables = 
-        this.NVTs 
+
+    member this.Variables =
+        this.NVTs
         |> Seq.choose (function NVT.Variable(name,ty) -> Some(name,ty) | _ -> None) |> Map.ofSeq
-    
+
     member this.Types =
-        this.NVTs 
-        |> Seq.choose (function NVT.Type(ty) -> Some(ty) | _ -> None) 
+        this.NVTs
+        |> Seq.choose (function NVT.Type(ty) -> Some(ty) | _ -> None)
 
     member this.ConsNamespace(ns) = { this with NVTs= NVT.Namespace(ns)::this.NVTs }
     member this.ConsVariable(name, ty) = { this with NVTs= NVT.Variable(name,ty)::this.NVTs }
     member this.ConsType(ty) = { this with NVTs= NVT.Type(ty)::this.NVTs }
-    
+
     member this.ConsAssembly(assm) = { this with Assemblies= assm::this.Assemblies }
     ///The list of TypeBuilderManagers create in the context of this environment: available for
-    ///1) modification of the underlying TypeBuilder, 2) lookup by GetTypeManager (for 
+    ///1) modification of the underlying TypeBuilder, 2) lookup by GetTypeManager (for
     ///custom member resolution implementations.
     member this.ConsTypeBuilderManager(tbm:TypeBuilderManager) = { this with TypeBuilderManagers=this.TypeBuilderManagers |> Map.add tbm.Type.FullName tbm }
 
     member this.GetTypeManager(ty:Type) =
-        let result = 
+        let result =
             match ty with
             | :? TypeBuilder as tb when tb.IsCreated() |> not ->
                 this.TypeBuilderManagers

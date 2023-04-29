@@ -2,7 +2,7 @@
 module Swensen.NL.Lexer
 open System
 open Parser
-open Microsoft.FSharp.Text.Lexing
+open FSharp.Text.Lexing
 
 module CM = CompilerMessages
 

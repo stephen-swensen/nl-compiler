@@ -39,7 +39,7 @@ let ``instance property has not setter`` options =
 let ``get instance property has not getter raises eval exception`` options =
     raises<EvaluationException> <@ evalWith options (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int_without_getter") @>
 
-[<Fact (Skip="telling me not found instead of doesn't have getter")>]
+[<Theory (Skip="telling me not found instead of doesn't have getter"); EvalData>]
 let ``get instance property has not getter`` options =
     raisesWith <@ evalWith options (Prelude.openAsm + "x = Tests.NonGenericClass1() in x.instance_property_int_without_getter") = 0 @>
         (expectedErrors [||])
@@ -53,7 +53,7 @@ let ``set static_property_int_without_setter`` options =
 let ``get static_property_int_without_getter raises evaluation exception`` options =
     raises<EvaluationException> <@ evalWith options (Prelude.openAsm + "Tests.NonGenericClass1.instance_property_int_without_getter") @>
 
-[<Fact(Skip="todo: show better error message")>]
+[<Theory(Skip="todo: show better error message");EvalData>]
 let ``set static_property_int_without_getter raises good error messaage`` options =
     raisesWith <@ evalWith options (Prelude.openAsm + "Tests.NonGenericClass1.instance_property_int_without_getter") = 0 @>
         (expectedErrors [||])
@@ -75,25 +75,25 @@ let ``incompatible instance property assignment type`` options =
 
 [<Theory;EvalData>]
 let ``implicit static property assignment type down cast`` options =
-    test <@ evalWith options (Prelude.openAsm + 
-                    "Tests.NonGenericClass1.static_property_object <- 3; 
-                     temp = Tests.NonGenericClass1.static_property_object in 
-                     Tests.NonGenericClass1.static_property_object <- 0; 
+    test <@ evalWith options (Prelude.openAsm +
+                    "Tests.NonGenericClass1.static_property_object <- 3;
+                     temp = Tests.NonGenericClass1.static_property_object in
+                     Tests.NonGenericClass1.static_property_object <- 0;
                      temp[int32]") = 3 @>
 
 [<Theory;EvalData>]
 let ``implicit instance property assignment type down cast`` options =
-    test <@ evalWith options (Prelude.openAsm + 
+    test <@ evalWith options (Prelude.openAsm +
                     "x = Tests.NonGenericClass1() in
-                     x.instance_property_object <- 3; 
+                     x.instance_property_object <- 3;
                      x.instance_property_object[int32]") = 3 @>
 
-[<Fact(Skip="currently not supported")>] //should have a version for instance too
+[<Theory(Skip="currently not supported"); EvalData>] //should have a version for instance too
 let ``implicit static property assignment type coersion`` options =
-    test <@ evalWith options (Prelude.openAsm + 
-                    "Tests.NonGenericClass1.static_property_double <- 3; 
-                     temp = Tests.NonGenericClass1.static_property_double in 
-                     Tests.NonGenericClass1.static_property_double <- 0.0; 
+    test <@ evalWith options (Prelude.openAsm +
+                    "Tests.NonGenericClass1.static_property_double <- 3;
+                     temp = Tests.NonGenericClass1.static_property_double in
+                     Tests.NonGenericClass1.static_property_double <- 0.0;
                      temp") @>
 
 [<Theory;EvalData>]

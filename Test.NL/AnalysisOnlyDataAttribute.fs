@@ -8,12 +8,13 @@ open System.Diagnostics.CodeAnalysis
 open System.Reflection
 open Xunit
 open Xunit.Extensions
+open Xunit.Sdk
 open System.Reflection
 
 [<AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)>]
 type AnalysisOnlyDataAttribute() =
     inherit DataAttribute()
-    override this.GetData(_:MethodInfo, _:Type[]) : IEnumerable<obj[]> =
+    override this.GetData(_:MethodInfo) : IEnumerable<obj[]> =
         seq {
             yield [| { SemanticEnvironment.Default with IsAnalysisOnly=false } |]
             yield [| { SemanticEnvironment.Default with IsAnalysisOnly=true } |]

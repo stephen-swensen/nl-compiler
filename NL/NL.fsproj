@@ -1,96 +1,26 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{e25f2830-8e94-4680-882b-39e30ce3d586}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootIdentspace>Swensen.NL</RootIdentspace>
     <AssemblyIdent>NL</AssemblyIdent>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
+    <TargetFramework>net7.0</TargetFramework>
     <Ident>NL</Ident>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
-    <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <Tailcalls>false</Tailcalls>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Debug\NL.xml</DocumentationFile>
-    <OtherFlags>--nowarn:60</OtherFlags>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <Tailcalls>true</Tailcalls>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Release\NL.xml</DocumentationFile>
-    <OtherFlags>
-    </OtherFlags>
     <NoWarn>60</NoWarn>
   </PropertyGroup>
-  <PropertyGroup>
-    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
-  </PropertyGroup>
-  <Choose>
-    <When Condition="'$(VisualStudioVersion)' == '11.0'">
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-  <Import Project="$(FSharpTargetsPath)" />
-  <Import Project="$(SolutionDir)\packages\FsLexYacc.6.0.1\bin\FsLexYacc.targets" />
-  <PropertyGroup>
-    <FsLexOutputFolder>$(IntermediateOutputPath)</FsLexOutputFolder>
-    <FsYaccOutputFolder>$(IntermediateOutputPath)</FsYaccOutputFolder>
-    <FsLexToolPath>$(SolutionDir)\packages\FsLexYacc.6.0.1\bin</FsLexToolPath>
-    <FsLexToolExe>fslex.exe</FsLexToolExe>
-    <FsYaccToolPath>$(SolutionDir)\packages\FsLexYacc.6.0.1\bin</FsYaccToolPath>
-    <FsYaccToolExe>fsyacc.exe</FsYaccToolExe>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <Tailcalls>false</Tailcalls>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\NL.xml</DocumentationFile>
-    <OtherFlags>--nowarn:60</OtherFlags>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <Tailcalls>true</Tailcalls>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\NL.xml</DocumentationFile>
-    <OtherFlags />
-    <NoWarn>60</NoWarn>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FsLexYacc" Version="11.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FsLex Include="Lexer.fsl">
+      <OtherFlags>--unicode</OtherFlags>
+    </FsLex>
+    <FsYacc Include="Parser.fsy">
+      <OtherFlags>--module Swensen.NL.Parser</OtherFlags>
+    </FsYacc>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Prelude.fs" />
     <Compile Include="Utils.fs" />
@@ -99,20 +29,10 @@
     <Compile Include="MessageLogging.fs" />
     <Compile Include="CompilerMessages.fs" />
     <Compile Include="Ast.fs" />
-    <Compile Include="$(IntermediateOutputPath)\Parser.fs">
-      <Visible>false</Visible>
-      <Link>Parser.fs</Link>
-    </Compile>
-    <Compile Include="$(IntermediateOutputPath)\Lexer.fs">
-      <Visible>false</Visible>
-      <Link>Lexer.fs</Link>
-    </Compile>
-    <FsLex Include="Lexer.fsl">
-      <OtherFlags>--unicode</OtherFlags>
-    </FsLex>
-    <FsYacc Include="Parser.fsy">
-      <OtherFlags>--module Swensen.NL.Parser</OtherFlags>
-    </FsYacc>
+    <None Include="Parser.fsy" />
+    <Compile Include="Parser.fs" />
+    <None Include="Lexer.fsl" />
+    <Compile Include="Lexer.fs" />
     <Compile Include="TypeManagers.fs" />
     <Compile Include="Ail.fs" />
     <Compile Include="NumericPrimitive.fs" />
@@ -129,30 +49,5 @@
     <Compile Include="Evaluation.fs" />
     <Compile Include="NlPrelude.fs" />
     <None Include="Script.fsx" />
-    <None Include="app.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="FsLexYacc.Runtime">
-      <HintPath>..\packages\FsLexYacc.6.0.1\lib\net40\FsLexYacc.Runtime.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-  </ItemGroup>
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Ident="BeforeBuild">
-  </Target>
-  <Target Ident="AfterBuild">
-  </Target>
-  -->
 </Project>

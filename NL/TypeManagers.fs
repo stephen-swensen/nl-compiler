@@ -7,12 +7,12 @@ open System
 
 type Setter(mi:MethodInfo) =
     member this.MethodInfo = mi
-    member this.Type =  
+    member this.Type =
         mi.GetParameters().[0].ParameterType
 
 type Getter(mi:MethodInfo) =
     member this.MethodInfo = mi
-    member this.Type =  
+    member this.Type =
         mi.ReturnType
 
 type PropertySearchResult = { Getter:option<Getter>; Setter:option<Setter>; }
@@ -22,8 +22,8 @@ with
         | { Getter= Some _ } | { Setter=Some _} -> true
         | _ -> false
 
-[<AbstractClass>]
 ///Construct a type manager from a given type (may not be null).
+[<AbstractClass>]
 type TypeManager(ty:Type) =
     do if ty = null then raise (ArgumentNullException("ty"))
 
@@ -33,8 +33,8 @@ type TypeManager(ty:Type) =
         else 1
 
     //todo implement "hide-by-sig" semantics on all members (currently only on methods and properties)
-    //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always 
-    //  (c# semantics but not vb semantics considered) does not consider any meta 
+    //todo: incomplete, needs to be more rigorous. e.g. hides-by-sig-and-name always
+    //  (c# semantics but not vb semantics considered) does not consider any meta
     //  data other than just the types of the signature
     ///If the search turns up duplicate methods, discard base methods which are "hidden"
     ///by declared type methods (via the "new" keyword in C#, for example)
@@ -58,52 +58,52 @@ type TypeManager(ty:Type) =
     let searchByName searchName (ls: #MemberInfo list) =
         ls |> List.filter (fun m -> String.Equals(m.Name, searchName, StringComparison.OrdinalIgnoreCase))
 //        let matchesExact = ls |> List.filter (fun m -> m.Name = searchName)
-//        let matches = 
-//            if matchesExact.Length = 0 then 
+//        let matches =
+//            if matchesExact.Length = 0 then
 //                ls |> List.filter (fun m -> String.Equals(m.Name, searchName, StringComparison.OrdinalIgnoreCase))
-//            else 
+//            else
 //                matchesExact
 //        matches
     ///search for a method base (method or ctor) by params: params length matches argTys length and then we first try
     ///exact equals match of params types and argTys and if no matches then we try param tys assignable to arg tys.
-    let searchByParams argTys (ls:#MethodBase list) = 
+    let searchByParams argTys (ls:#MethodBase list) =
         let matchesByNumber = ls |> List.filter (fun m -> m.GetParameters().Length = Seq.length argTys)
-        let matchesExact = 
-            matchesByNumber 
-            |> List.filter (fun m -> 
+        let matchesExact =
+            matchesByNumber
+            |> List.filter (fun m ->
                 Seq.zip (m.GetParameters()) argTys |> Seq.forall (fun (p,aty) -> p.ParameterType = aty))
-        let matches =   
+        let matches =
             if matchesExact.Length = 0 then
-                matchesByNumber 
-                |> List.filter (fun m -> 
+                matchesByNumber
+                |> List.filter (fun m ->
                     Seq.zip (m.GetParameters()) argTys |> Seq.forall (fun (p,aty) -> p.ParameterType.IsAssignableFrom(aty)))
             else
                 matchesExact
         matches
-    abstract Fields: FieldInfo seq 
-    abstract Properties : PropertyInfo seq 
-    abstract Methods: MethodInfo seq   
-    abstract Constructors: ConstructorInfo seq 
+    abstract Fields: FieldInfo seq
+    abstract Properties : PropertyInfo seq
+    abstract Methods: MethodInfo seq
+    abstract Constructors: ConstructorInfo seq
     member this.Type = ty
     member this.FindAllGetters(searchName:string, searchAttributes:MethodAttributes) =
         this.FindAllMethods("get_" + searchName, [], None, None, searchAttributes)
         |> List.map (fun mi -> Getter mi)
     member this.TryFindGetter(searchName, searchAttributes) =
-        this.FindAllGetters(searchName, searchAttributes) 
+        this.FindAllGetters(searchName, searchAttributes)
         |> List.tryHead
     member this.FindAllSetters(searchName:string, searchAttributes:MethodAttributes) =
         this.FindAllMethods("set_" + searchName, [], None, None, searchAttributes)
         |> List.map (fun mi -> Setter mi)
     member this.TryFindSetter(searchName, searchAttributes) =
-        this.FindAllSetters(searchName, searchAttributes) 
+        this.FindAllSetters(searchName, searchAttributes)
         |> List.tryHead
     member this.TryFindProperty(searchName, searchAttributes) =
         let gmi = this.TryFindGetter(searchName, searchAttributes)
         let smi = this.TryFindSetter(searchName, searchAttributes)
         {Getter=gmi;Setter=smi}
     member this.FindAllFields(searchName:string, searchAttributes:FieldAttributes) =
-        this.Fields 
-        |> Seq.toList 
+        this.Fields
+        |> Seq.toList
         |> searchByName searchName
         |> List.filter(fun m -> m.Attributes.HasFlag(searchAttributes))
         |> discardHideBySigFields
@@ -111,32 +111,32 @@ type TypeManager(ty:Type) =
         this.FindAllFields(searchName, searchAttributes)
         |> List.tryHead
     member this.FindAllConstructors(argTys, searchAttributes:MethodAttributes) =
-        this.Constructors 
-        |> Seq.toList 
+        this.Constructors
+        |> Seq.toList
         |> List.filter(fun m -> m.Attributes.HasFlag(searchAttributes))
         |> searchByParams argTys
     member this.TryFindConstructor(argTys: Type seq, searchAttributes:MethodAttributes) =
         this.FindAllConstructors(argTys, searchAttributes)
         |> List.tryHead
     member this.FindAllMethods(searchName, genericTyArgs: Type seq, argTys: option<#seq<Type>>, retTy : Type option, searchAttributes:MethodAttributes) =
-        this.Methods 
-        |> Seq.toList 
+        this.Methods
+        |> Seq.toList
         |> searchByName searchName
         |> List.filter(fun m -> m.Attributes.HasFlag(searchAttributes))
         |> (fun matches ->
-                if genericTyArgs |> Seq.length > 0 then 
+                if genericTyArgs |> Seq.length > 0 then
                     matches
-                    |> List.filter (fun meth -> 
-                        meth.IsGenericMethod && 
-                        meth.GetGenericArguments().Length = Seq.length genericTyArgs) 
+                    |> List.filter (fun meth ->
+                        meth.IsGenericMethod &&
+                        meth.GetGenericArguments().Length = Seq.length genericTyArgs)
                     |> List.map (fun meth -> meth.MakeGenericMethod(genericTyArgs |> Seq.toArray))
                 else
                     matches |> List.filter (fun meth -> not meth.IsGenericMethod))
         |> (fun matches -> match argTys with Some(argTys) -> searchByParams argTys matches | None -> matches)
         |> (fun matches ->
                 match retTy with
-                | Some(retTy) -> 
-                    let matches = 
+                | Some(retTy) ->
+                    let matches =
                         matches |> List.filter (fun meth -> retTy = meth.ReturnType)
                     if matches.Length = 0 then
                         matches |> List.filter (fun meth -> retTy.IsAssignableFrom(meth.ReturnType))
@@ -149,7 +149,7 @@ type TypeManager(ty:Type) =
         |> List.tryHead
     override this.ToString() = this.Type.ToString()
     ///Equality based on underlying Type.
-    override this.Equals(other:obj) = 
+    override this.Equals(other:obj) =
         match other with
         | :? TypeManager as other -> this.Type = other.Type
         | _ -> false
@@ -183,7 +183,7 @@ type TypeBuilderManager(ty:TypeBuilder) =
 ///An immutable TypeManager used for managing RuntimeTypes (i.e. statically defined types)
 type RuntimeTypeManager(ty:Type) =
     inherit TypeManager(ty)
-        
+
     override this.Fields = ty.GetFields() |> Seq.readonly
     override this.Methods = ty.GetMethods() |> Seq.readonly
     override this.Properties = ty.GetProperties() |> Seq.readonly
