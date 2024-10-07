@@ -14,3 +14,11 @@ Links (also see the [Wiki](../../wiki)):
 * .NET 7.0 doesn't support AssemblyBuilder.Save. But that should be coming in .NET 8. 
 * There is new position pos_orig_lnum that's part of FsLex that we aren't sure how to use yet.
 * VisualNli hasn't been migrated. But it might be possible. But we might prefer to focus energies on VSCode integration.
+
+## Notes on .NET 9 upgrade
+
+### AssemblyBuilder.Save
+
+* https://github.com/dotnet/runtime/issues/15704
+* https://github.com/dotnet/runtime/issues/97015
+* https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-reflection-emit-persistedassemblybuilder
