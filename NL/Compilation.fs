@@ -52,6 +52,17 @@ let compileFromAil (ail:ILExpr) (asmName:string) =
     use fileStream = new FileStream(asmFileName, FileMode.Create, FileAccess.Write)
     peBlob.WriteContentTo(fileStream)
 
+    let runtimeConfigContent = """{
+        "runtimeOptions": {
+            "tfm": "net9.0",
+            "framework": {
+                "name": "Microsoft.NETCore.App",
+                "version": "9.0.0"
+            }
+        }
+    }"""
+    File.WriteAllText(asmName + ".runtimeconfig.json", runtimeConfigContent)
+
 ///Compile the given source code string into an assembly
 ///code -> assemblyName -> unit
 let compileFromString =
