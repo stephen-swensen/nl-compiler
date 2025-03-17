@@ -12,3 +12,4 @@ NL/Parser.fsi
 .idea
 NL.sln.DotSettings.user
 *.runtimeconfig.json
+*.exe
