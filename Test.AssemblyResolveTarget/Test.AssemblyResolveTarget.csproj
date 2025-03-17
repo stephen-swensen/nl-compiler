@@ -3,7 +3,6 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Test.AssemblyResolveTarget</RootNamespace>
     <AssemblyName>Test.AssemblyResolveTarget</AssemblyName>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 </Project>
-

@@ -3,7 +3,6 @@
     <OutputType>Library</OutputType>
     <RootIdentspace>Test.CSHelpers</RootIdentspace>
     <AssemblyIdent>Test.CSHelpers</AssemblyIdent>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 </Project>
-
