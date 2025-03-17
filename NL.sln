@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.AssemblyResolveTarget"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.NL", "Test.NL\Test.NL.fsproj", "{8B86BD23-CA08-47C3-853C-1EDF64240070}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Nlc", "Nlc\Nlc.fsproj", "{BF2E9F79-B185-46F7-A93C-4D9EDBFFB160}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{8B86BD23-CA08-47C3-853C-1EDF64240070}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B86BD23-CA08-47C3-853C-1EDF64240070}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B86BD23-CA08-47C3-853C-1EDF64240070}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF2E9F79-B185-46F7-A93C-4D9EDBFFB160}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF2E9F79-B185-46F7-A93C-4D9EDBFFB160}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF2E9F79-B185-46F7-A93C-4D9EDBFFB160}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF2E9F79-B185-46F7-A93C-4D9EDBFFB160}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

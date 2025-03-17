@@ -24,5 +24,6 @@ let ``connot resolve assembly`` options =
 
 [<Theory;EvalData>]
 let ``get type from assembly that is not referenced in this assembly`` options =
-    //for this to work do not want to copy the dll to the output directory
-    test <@ evalWith<obj> options "open @\"..\\..\\..\\Test.AssemblyResolveTarget.dll\" in Test.AssemblyResolveTarget.Class1()" <> null @>
+    //n.b. for this to work do not want to copy the dll to the output directory
+    //n.b. this is platform sensitive w.r.t. to file seperators
+    test <@ evalWith<obj> options "open @\"../../../Test.AssemblyResolveTarget.dll\" in Test.AssemblyResolveTarget.Class1()" <> null @>

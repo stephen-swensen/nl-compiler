@@ -8,3 +8,8 @@ NL/Parser.fsi
 .fake
 
 **/TestResults
+
+.idea
+NL.sln.DotSettings.user
+*.runtimeconfig.json
+*.exe

@@ -3,13 +3,13 @@
     <OutputType>Library</OutputType>
     <RootIdentspace>Swensen.NL</RootIdentspace>
     <AssemblyIdent>NL</AssemblyIdent>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Ident>NL</Ident>
     <NoWarn>60</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FsLexYacc" Version="11.0.1" />
+    <PackageReference Include="FsLexYacc" Version="11.3.0" />
   </ItemGroup>
 
   <ItemGroup>
